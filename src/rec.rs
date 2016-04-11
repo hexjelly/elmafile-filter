@@ -67,7 +67,7 @@ impl Rec {
     /// ```
     /// let rec = elma::rec::Rec::new();
     /// ```
-    pub fn new () -> Rec {
+    pub fn new() -> Rec {
         Rec {
             frame_count: 0,
             multi: false,
@@ -86,7 +86,11 @@ impl Rec {
     /// ```
     /// let rec = elma::rec::Rec::load_replay("tests/test.rec");
     /// ```
-    pub fn load_replay (filename: &str) -> Rec {
+    pub fn load_replay(_filename: &str) -> Rec {
         Rec::new()
     }
+}
+
+impl Default for Rec {
+    fn default() -> Rec { Rec::new() }
 }

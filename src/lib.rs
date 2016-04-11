@@ -7,7 +7,6 @@ extern crate rand;
 
 use std::io::Read;
 use std::ffi::CString;
-use rand::random;
 
 pub mod lev;
 pub mod rec;
@@ -30,12 +29,11 @@ fn read_n<R> (reader: R, bytes: u64) -> Vec<u8>
         buffer
 }
 
-/// Read CString data from byte vector and stop at null byte.
+/// Read `CString` data from byte vector and stop at null byte.
 fn cstring_read (buffer: Vec<u8>) -> CString {
-    let mut name :Vec<u8> = vec![];
-    for n in 0..buffer.len() {
-        if buffer[n] != 0 { name.push(buffer[n]); }
-        else { break };
-    }
-    CString::new(name).unwrap()
+    CString::new(buffer.iter()
+                       .cloned()
+                       .take_while(|x| *x != 0)
+                       .collect::<Vec<u8>>()
+                ).unwrap()
 }

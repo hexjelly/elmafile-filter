@@ -5,7 +5,6 @@ use std::fs::File;
 use std::ffi::CString;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use super::{ cstring_read, Position, read_n };
-use super::rand::Rng;
 
 // Magic arbitrary number; signifies end-of-data. Followed by Top10 list(s).
 const EOD: i32 = 0x0067103A;
@@ -28,14 +27,14 @@ pub enum ObjectType {
     Player
 }
 
-/// Object struct. Every level requires one ObjectType::Player Object and at least one ObjectType::Exit Object.
+/// Object struct. Every level requires one `ObjectType::Player` Object and at least one `ObjectType::Exit` Object.
 #[derive(Debug, PartialEq)]
 pub struct Object {
-    /// Position. See Position struct.
+    /// Position. See `Position` struct.
     pub position: Position<f64>,
-    /// Type of Object, see ObjectType.
+    /// Type of Object, see `ObjectType`.
     pub object_type: ObjectType,
-    /// Applies to ObjectType::Apple only.
+    /// Applies to `ObjectType::Apple` only.
     ///
     /// 0 = normal
     /// 1 = gravity up
@@ -44,12 +43,12 @@ pub struct Object {
     /// 4 = gravity right
     // TODO: enum with gravity
     pub gravity: i32,
-    /// Applies to ObjectType::Apple only. Valid values are 1 to 9.
+    /// Applies to `ObjectType::Apple` only. Valid values are 1 to 9.
     pub animation: i32
 }
 
 /// Polygon struct.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Polygon {
     /// Grass polygon.
     pub grass: bool,
@@ -308,14 +307,18 @@ impl Level {
     }
 }
 
+impl Default for Level {
+    fn default() -> Level { Level::new() }
+}
+
 /// Decrypt and encrypt top10 list data. Same algorithm for both.
 pub fn crypt_top10 (mut top10: Vec<u8>) -> Vec<u8> {
     // Who knows
     let mut ebp8: i16 = 0x15;
     let mut ebp10: i16 = 0x2637;
 
-    for n in 0..688 {
-        top10[n] ^= (ebp8 & 0xFF) as u8;
+    for mut t in top10.iter_mut().take(688) {
+        *t ^= (ebp8 & 0xFF) as u8;
         ebp10 = ebp10.wrapping_add((ebp8.wrapping_rem(0xD3D)).wrapping_mul(0xD3D));
         ebp8 = ebp10.wrapping_mul(0x1F).wrapping_add(0xD3D);
     }
@@ -323,7 +326,7 @@ pub fn crypt_top10 (mut top10: Vec<u8>) -> Vec<u8> {
     top10
 }
 
-/// Parse top10 lists and return a vector of ListEntrys
+/// Parse top10 lists and return a vector of `ListEntry`s
 pub fn parse_top10 (top10: &[u8]) -> Vec<ListEntry> {
     let mut list: Vec<ListEntry> = vec![];
     let times = LittleEndian::read_i32(&top10[0..4]);
@@ -332,13 +335,13 @@ pub fn parse_top10 (top10: &[u8]) -> Vec<ListEntry> {
         let time_end: usize = time_offset + 4;
         let name_offset: usize = (44 + n * 15) as usize;
         let name_end: usize = name_offset + 15;
-        let name2_offset: usize = (194 + n * 15) as usize;
-        let name2_end: usize = name2_offset + 15;
+        let name_2_offset: usize = (194 + n * 15) as usize;
+        let name_2_end: usize = name_2_offset + 15;
         // All of this pains me even though I don't understand it...
         let mut name = vec![];
         let mut name2 = vec![];
         name.extend_from_slice(&top10[name_offset..name_end]);
-        name2.extend_from_slice(&top10[name2_offset..name2_end]);
+        name2.extend_from_slice(&top10[name_2_offset..name_2_end]);
         list.push(ListEntry {
             time: LittleEndian::read_i32(&top10[time_offset..time_end]),
             name_1: cstring_read(name),
