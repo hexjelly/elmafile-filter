@@ -65,6 +65,7 @@ impl Polygon {
 }
 
 /// Picture struct.
+#[derive(Debug, PartialEq)]
 pub struct Picture {
     /// Picture name.
     pub name: String,
@@ -301,6 +302,7 @@ impl Level {
     /// and calculate integrity sums.
     fn update (&self) {
         // TODO: convert
+        self.calculate_integrity_sums();
     }
 
     fn calculate_integrity_sums (&self) {

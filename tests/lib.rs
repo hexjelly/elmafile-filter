@@ -106,9 +106,23 @@ mod tests {
                                             gravity: 0,
                                             animation: 1
                                         }]);
-
-        // TODO: proper pictures tests
         assert_eq!(level.pictures.len(), 2);
+        assert_eq!(level.pictures, vec![lev::Picture {
+                                            name: String::from("barrel"),
+                                            texture: String::new(),
+                                            mask: String::new(),
+                                            position: Position { x: -19.37674118849727, y: 0.895119783101471 },
+                                            distance: 380,
+                                            clip: 2
+                                        },
+                                        lev::Picture {
+                                            name: String::new(),
+                                            texture: String::from("stone1"),
+                                            mask: String::from("maskbig"),
+                                            position: Position { x: -24.465394017511894, y: -3.964829547979911 },
+                                            distance: 750,
+                                            clip: 2
+                                        }]);
         // TODO: test top10 list
     }
 
