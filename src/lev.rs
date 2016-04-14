@@ -278,7 +278,7 @@ impl Level {
                 clip: clip
             });
         }
-/*
+
         // EOD marker expected at this point.
         let expected = rem.read_i32::<LittleEndian>().unwrap();
         if expected != EOD { panic!("EOD marker mismatch: x0{:x} != x0{:x}", expected, EOD); }
@@ -297,7 +297,7 @@ impl Level {
 
         // EOF marker expected at this point.
         let expected = rem.read_i32::<LittleEndian>().unwrap();
-        if expected != EOF { panic!("EOF marker mismatch: x0{:x} != x0{:x}", expected, EOF); } */
+        if expected != EOF { panic!("EOF marker mismatch: x0{:x} != x0{:x}", expected, EOF); }
     }
 
     /// Combines the Level struct fields to generate the raw binary data,
@@ -324,7 +324,7 @@ impl Level {
         // TODO: write stuff.
     }
 }
-/*
+
 /// Decrypt and encrypt top10 list data. Same algorithm for both.
 pub fn crypt_top10 (top10: &[u8]) -> &[u8] {
     // Who knows
@@ -338,7 +338,7 @@ pub fn crypt_top10 (top10: &[u8]) -> &[u8] {
     }
 
     top10
-}*/
+}
 
 /// Parse top10 lists and return a vector of `ListEntry`s
 pub fn parse_top10 (top10: &[u8]) -> Vec<ListEntry> {
