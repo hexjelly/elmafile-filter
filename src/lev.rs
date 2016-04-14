@@ -178,8 +178,7 @@ impl Level {
     fn parse_level (&mut self) {
         let rem = self.raw.as_slice();
 
-        // Elma = POT14, Across = POT06.
-        // TODO: make Across compatible in 2025.
+        // POT06 = Across, POT14 = Elma.
         let (version, rem) = rem.split_at(5);
         self.version = match version {
             [80, 79, 84, 49, 52] => Version::Elma,
@@ -210,7 +209,7 @@ impl Level {
         self.sky = trim_string(sky).unwrap();
 
         // Polygons.
-        let poly_count = (rem.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as u16;
+        let poly_count = (rem.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as usize;
         for _ in 0..poly_count {
             let grass = rem.read_i32::<LittleEndian>().unwrap() > 0;
             let vertex_count = rem.read_i32::<LittleEndian>().unwrap();
@@ -230,7 +229,7 @@ impl Level {
         }
 
         // Objects.
-        let object_count = (rem.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as u16;
+        let object_count = (rem.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as usize;
         for _ in 0..object_count {
             let x = rem.read_f64::<LittleEndian>().unwrap();
             let y = rem.read_f64::<LittleEndian>().unwrap();
@@ -254,7 +253,7 @@ impl Level {
         }
 
         // Pictures.
-        let picture_count = (rem.read_f64::<LittleEndian>().unwrap() - 0.2345672).round() as u16;
+        let picture_count = (rem.read_f64::<LittleEndian>().unwrap() - 0.2345672).round() as usize;
         for _ in 0..picture_count {
             let (name, rem) = rem.split_at(10);
             let name = trim_string(name).unwrap();
