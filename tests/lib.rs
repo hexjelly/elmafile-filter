@@ -3,7 +3,6 @@ extern crate rand;
 #[cfg(test)]
 mod tests {
     use elma::{ lev, rec };
-    use std::ffi::CString;
     use rand::random;
 
     #[test]
@@ -23,10 +22,10 @@ mod tests {
         assert_eq!(level.version, lev::Version::Elma);
         assert_eq!(level.link, 0);
         assert_eq!(level.integrity, [0.0_f64; 4]);
-        assert_eq!(level.name, CString::new("").unwrap());
-        assert_eq!(level.lgr, CString::new("default").unwrap());
-        assert_eq!(level.ground, CString::new("ground").unwrap());
-        assert_eq!(level.sky, CString::new("sky").unwrap());
+        assert_eq!(level.name, String::new();
+        assert_eq!(level.lgr, String::from("default");
+        assert_eq!(level.ground, String::from("ground");
+        assert_eq!(level.sky, String::from("sky");
     }
 
     #[test]
@@ -38,10 +37,10 @@ mod tests {
                                       1164056.210607791,
                                       1162467.210607791,
                                       1162283.210607791]);
-        assert_eq!(level.name, CString::new("Rust test").unwrap());
-        assert_eq!(level.lgr, CString::new("default").unwrap());
-        assert_eq!(level.ground, CString::new("ground").unwrap());
-        assert_eq!(level.sky, CString::new("sky").unwrap());
+        assert_eq!(level.name, String::from("Rust test");
+        assert_eq!(level.lgr, String::from("default");
+        assert_eq!(level.ground, String::from("ground");
+        assert_eq!(level.sky, String::from("sky");
         assert_eq!(level.polygons.len(), 2);
         // TODO: add polygon vertex and grass tests etc.
         //assert_eq!(level.polygons, vec![lev::Polygon { grass: false, vertices: vec![] }, lev::Polygon { grass: true, vertices: vec![] }]);
@@ -58,7 +57,7 @@ mod tests {
         assert_eq!(rec.multi, false);
         assert_eq!(rec.flag_tag, false);
         assert_eq!(rec.link, 0);
-        assert_eq!(rec.level, CString::new("").unwrap());
+        assert_eq!(rec.level, String::new();
         assert_eq!(rec.frames, vec![]);
         assert_eq!(rec.events, vec![]);
     }

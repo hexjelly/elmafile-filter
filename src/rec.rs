@@ -2,7 +2,7 @@
 use std::io::{ Read, Write };
 use std::fs::File;
 use byteorder::{ ReadBytesExt, WriteBytesExt, LittleEndian };
-use super::{ Position };
+use super::{ Position, trim_string };
 
 // Magic arbitrary number to signify end of replay file.
 const EOR: u32 = 0x00492F75;
@@ -51,7 +51,7 @@ pub struct Rec {
     /// Random number to link with level file.
     pub link: u32,
     /// Full level filename.
-    pub level: CString,
+    pub level: String,
     /// Vector with Frame structs.
     pub frames: Vec<Frame>,
     /// Events.
@@ -72,7 +72,7 @@ impl Rec {
             multi: false,
             flag_tag: false,
             link: 0,
-            level: CString::new("").unwrap(),
+            level: String::new(),
             frames: vec![],
             events: vec![]
         }

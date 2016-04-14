@@ -3,7 +3,7 @@
 use std::io::{ Read, Write };
 use std::fs::File;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
-use super::{ Position };
+use super::{ Position, trim_string };
 
 // Magic arbitrary number; signifies end-of-data. Followed by Top10 list(s).
 const EOD: i32 = 0x0067103A;
@@ -144,7 +144,7 @@ impl Level {
             raw: vec![],
             link: 0,
             integrity: [0.0f64; 4],
-            name: String::from(""),
+            name: String::new(),
             lgr: String::from("default"),
             ground: String::from("ground"),
             sky: String::from("sky"),
@@ -187,7 +187,7 @@ impl Level {
         };
 
         // Link.
-        let (_, rem) = rem.split_at(2); // Never used
+        let (_, mut rem) = rem.split_at(2); // Never used
         self.link = rem.read_i32::<LittleEndian>().unwrap();
 
         // Integrity checksums.
@@ -197,34 +197,26 @@ impl Level {
 
         // Level name.
         let (name, rem) = rem.split_at(51);
-        for name_trimmed in name.splitn(1, |c| c == 0) {
-            self.name = String::from_utf8(name_trimmed.to_vec()).unwrap();
-        }
+        self.name = trim_string(name);
         // LGR name.
         let (lgr, rem) = rem.split_at(16);
-        for lgr_trimmed in lgr.splitn(1, |c| c == 0) {
-            self.lgr = String::from_utf8(lgr_trimmed.to_vec()).unwrap();
-        }
+        self.lgr = trim_string(lgr);
         // Ground texture name.
         let (ground, rem) = rem.split_at(10);
-        for ground_trimmed in ground.splitn(1, |c| c == 0) {
-            self.ground = String::from_utf8(ground_trimmed.to_vec()).unwrap();
-        }
+        self.ground = trim_string(ground);
         // Sky texture name.
-        let (sky, rem) = rem.split_at(10);
-        for sky_trimmed in sky.splitn(1, |c| c == 0) {
-            self.sky = String::from_utf8(sky_trimmed.to_vec()).unwrap();
-        }
+        let (sky, mut rem) = rem.split_at(10);
+        self.sky = trim_string(sky);
 
         // Polygons.
-        let poly_count = (buffer.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as u16;
+        let poly_count = (rem.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as u16;
         for _ in 0..poly_count {
-            let grass = buffer.read_i32::<LittleEndian>().unwrap() > 0;
-            let vertex_count = buffer.read_i32::<LittleEndian>().unwrap();
+            let grass = rem.read_i32::<LittleEndian>().unwrap() > 0;
+            let vertex_count = rem.read_i32::<LittleEndian>().unwrap();
             let mut vertices: Vec<Position<f64>> = vec![];
             for _ in 0..vertex_count {
-                let x = buffer.read_f64::<LittleEndian>().unwrap();
-                let y = buffer.read_f64::<LittleEndian>().unwrap();
+                let x = rem.read_f64::<LittleEndian>().unwrap();
+                let y = rem.read_f64::<LittleEndian>().unwrap();
                 vertices.push(Position {
                     x: x,
                     y: y
@@ -237,20 +229,20 @@ impl Level {
         }
 
         // Objects.
-        let object_count = (buffer.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as u16;
+        let object_count = (rem.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as u16;
         for _ in 0..object_count {
-            let x = buffer.read_f64::<LittleEndian>().unwrap();
-            let y = buffer.read_f64::<LittleEndian>().unwrap();
+            let x = rem.read_f64::<LittleEndian>().unwrap();
+            let y = rem.read_f64::<LittleEndian>().unwrap();
             let position = Position { x: x, y: y };
-            let object_type = match buffer.read_i32::<LittleEndian>().unwrap() {
+            let object_type = match rem.read_i32::<LittleEndian>().unwrap() {
                 1 => ObjectType::Exit,
                 2 => ObjectType::Apple,
                 3 => ObjectType::Killer,
                 4 => ObjectType::Player,
                 _ => panic!("Not a valid object type")
             };
-            let gravity = buffer.read_i32::<LittleEndian>().unwrap();
-            let animation = buffer.read_i32::<LittleEndian>().unwrap() + 1;
+            let gravity = rem.read_i32::<LittleEndian>().unwrap();
+            let animation = rem.read_i32::<LittleEndian>().unwrap() + 1;
 
             self.objects.push(Object {
                 position: position,
@@ -261,15 +253,18 @@ impl Level {
         }
 
         // Pictures.
-        let picture_count = (buffer.read_f64::<LittleEndian>().unwrap() - 0.2345672).round() as u16;
+        let picture_count = (rem.read_f64::<LittleEndian>().unwrap() - 0.2345672).round() as u16;
         for _ in 0..picture_count {
-            let name = cstring_read(read_n(&mut buffer, 10));
-            let texture = cstring_read(read_n(&mut buffer, 10));
-            let mask = cstring_read(read_n(&mut buffer, 10));
-            let x = buffer.read_f64::<LittleEndian>().unwrap();
-            let y = buffer.read_f64::<LittleEndian>().unwrap();
-            let distance = buffer.read_i32::<LittleEndian>().unwrap();
-            let clip = buffer.read_i32::<LittleEndian>().unwrap();
+            let (name, rem) = rem.split_at(10);
+            let name = trim_string(name);
+            let (texture, rem) = rem.split_at(10);
+            let texture = trim_string(texture);
+            let (mask, mut rem) = rem.split_at(10);
+            let mask = trim_string(mask);
+            let x = rem.read_f64::<LittleEndian>().unwrap();
+            let y = rem.read_f64::<LittleEndian>().unwrap();
+            let distance = rem.read_i32::<LittleEndian>().unwrap();
+            let clip = rem.read_i32::<LittleEndian>().unwrap();
 
             self.pictures.push(Picture {
                 name: name,
@@ -282,11 +277,12 @@ impl Level {
         }
 
         // EOD marker expected at this point.
-        let expected = buffer.read_i32::<LittleEndian>().unwrap();
+        let expected = rem.read_i32::<LittleEndian>().unwrap();
         if expected != EOD { panic!("EOD marker mismatch: x0{:x} != x0{:x}", expected, EOD); }
 
         // First decrypt the top10 blocks.
-        let decrypted_top10_data = crypt_top10(read_n(&mut buffer, 688));
+        let (mut top10, mut rem) = rem.split_at(688);
+        let decrypted_top10_data = crypt_top10(top10);
 
         // Single-player list.
         let single = &decrypted_top10_data[0..344];
@@ -297,7 +293,7 @@ impl Level {
         self.top10_multi = parse_top10(multi);
 
         // EOF marker expected at this point.
-        let expected = buffer.read_i32::<LittleEndian>().unwrap();
+        let expected = rem.read_i32::<LittleEndian>().unwrap();
         if expected != EOF { panic!("EOF marker mismatch: x0{:x} != x0{:x}", expected, EOF); }
     }
 
@@ -316,13 +312,13 @@ impl Level {
     /// Saves level as a file.
     pub fn save_lev (self, filename: &str) {
         self.update();
-        let mut file = File::create(&filename).unwrap();
+        // let file = File::create(&filename).unwrap();
         // TODO: write stuff.
     }
 }
 
 /// Decrypt and encrypt top10 list data. Same algorithm for both.
-pub fn crypt_top10 (mut top10: Vec<u8>) -> Vec<u8> {
+pub fn crypt_top10 (top10: &[u8]) -> &[u8] {
     // Who knows
     let mut ebp8: i16 = 0x15;
     let mut ebp10: i16 = 0x2637;
@@ -341,21 +337,19 @@ pub fn parse_top10 (top10: &[u8]) -> Vec<ListEntry> {
     let mut list: Vec<ListEntry> = vec![];
     let times = LittleEndian::read_i32(&top10[0..4]);
     for n in 0..times {
-        let time_offset: usize = (4 + n * 4) as usize;
-        let time_end: usize = time_offset + 4;
-        let name_offset: usize = (44 + n * 15) as usize;
-        let name_end: usize = name_offset + 15;
-        let name_2_offset: usize = (194 + n * 15) as usize;
-        let name_2_end: usize = name_2_offset + 15;
+        let time_offset = (4 + n * 4) as usize;
+        let time_end = time_offset + 4;
+        let name_1_offset = (44 + n * 15) as usize;
+        let name_1_end = name_1_offset + 15;
+        let name_2_offset = (194 + n * 15) as usize;
+        let name_2_end = name_2_offset + 15;
         // All of this pains me even though I don't understand it...
-        let mut name = vec![];
-        let mut name2 = vec![];
-        name.extend_from_slice(&top10[name_offset..name_end]);
-        name2.extend_from_slice(&top10[name_2_offset..name_2_end]);
+        let name_1 = &top10[name_1_offset..name_1_end];
+        let name_2 = &top10[name_2_offset..name_2_end];
         list.push(ListEntry {
             time: LittleEndian::read_i32(&top10[time_offset..time_end]),
-            name_1: cstring_read(name),
-            name_2: cstring_read(name2)
+            name_1: trim_string(name_1),
+            name_2: trim_string(name_2)
         });
     }
     list

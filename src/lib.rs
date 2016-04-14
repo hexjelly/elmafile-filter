@@ -18,3 +18,11 @@ pub struct Position<T> {
     /// Y-position.
     pub y: T
 }
+
+pub fn trim_string (string: &[u8]) -> String {
+    let mut trimmed_string = String::new();
+    for trimmed in string.splitn(1, |c| c == &0) {
+        let trimmed_string = String::from_utf8(trimmed.to_vec()).unwrap();
+    }
+    trimmed_string
+}
