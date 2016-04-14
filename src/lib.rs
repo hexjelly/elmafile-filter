@@ -5,8 +5,6 @@
 extern crate byteorder;
 extern crate rand;
 
-use std::io::Read;
-
 pub mod lev;
 pub mod rec;
 
@@ -19,10 +17,12 @@ pub struct Position<T> {
     pub y: T
 }
 
-pub fn trim_string (string: &[u8]) -> String {
-    let mut trimmed_string = String::new();
-    for trimmed in string.splitn(1, |c| c == &0) {
-        let trimmed_string = String::from_utf8(trimmed.to_vec()).unwrap();
-    }
-    trimmed_string
+/// Trims trailing bytes after and including null byte.
+pub fn trim_string (data: &[u8]) -> Result<String, std::string::FromUtf8Error> {
+    let bytes: Vec<u8> = data.into_iter()
+                             .take_while(|&&d| d != 0)
+                             .cloned()
+                             .collect();
+
+    String::from_utf8(bytes)
 }

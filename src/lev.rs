@@ -1,8 +1,8 @@
 //! Read and write Elasto Mania level files.
 
-use std::io::{ Read, Write };
+use std::io::{ Read };
 use std::fs::File;
-use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
+use byteorder::{ ByteOrder, ReadBytesExt, LittleEndian };
 use super::{ Position, trim_string };
 
 // Magic arbitrary number; signifies end-of-data. Followed by Top10 list(s).
@@ -175,7 +175,7 @@ impl Level {
 
     /// Parses the raw binary data into Level struct fields.
     fn parse_level (&mut self) {
-        let mut rem = self.raw.as_slice();
+        let rem = self.raw.as_slice();
 
         // Elma = POT14, Across = POT06.
         // TODO: make Across compatible in 2025.
@@ -197,16 +197,16 @@ impl Level {
 
         // Level name.
         let (name, rem) = rem.split_at(51);
-        self.name = trim_string(name);
+        self.name = trim_string(name).unwrap();
         // LGR name.
         let (lgr, rem) = rem.split_at(16);
-        self.lgr = trim_string(lgr);
+        self.lgr = trim_string(lgr).unwrap();
         // Ground texture name.
         let (ground, rem) = rem.split_at(10);
-        self.ground = trim_string(ground);
+        self.ground = trim_string(ground).unwrap();
         // Sky texture name.
         let (sky, mut rem) = rem.split_at(10);
-        self.sky = trim_string(sky);
+        self.sky = trim_string(sky).unwrap();
 
         // Polygons.
         let poly_count = (rem.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as u16;
@@ -256,11 +256,11 @@ impl Level {
         let picture_count = (rem.read_f64::<LittleEndian>().unwrap() - 0.2345672).round() as u16;
         for _ in 0..picture_count {
             let (name, rem) = rem.split_at(10);
-            let name = trim_string(name);
+            let name = trim_string(name).unwrap();
             let (texture, rem) = rem.split_at(10);
-            let texture = trim_string(texture);
+            let texture = trim_string(texture).unwrap();
             let (mask, mut rem) = rem.split_at(10);
-            let mask = trim_string(mask);
+            let mask = trim_string(mask).unwrap();
             let x = rem.read_f64::<LittleEndian>().unwrap();
             let y = rem.read_f64::<LittleEndian>().unwrap();
             let distance = rem.read_i32::<LittleEndian>().unwrap();
@@ -279,7 +279,7 @@ impl Level {
         // EOD marker expected at this point.
         let expected = rem.read_i32::<LittleEndian>().unwrap();
         if expected != EOD { panic!("EOD marker mismatch: x0{:x} != x0{:x}", expected, EOD); }
-
+/*
         // First decrypt the top10 blocks.
         let (mut top10, mut rem) = rem.split_at(688);
         let decrypted_top10_data = crypt_top10(top10);
@@ -294,7 +294,7 @@ impl Level {
 
         // EOF marker expected at this point.
         let expected = rem.read_i32::<LittleEndian>().unwrap();
-        if expected != EOF { panic!("EOF marker mismatch: x0{:x} != x0{:x}", expected, EOF); }
+        if expected != EOF { panic!("EOF marker mismatch: x0{:x} != x0{:x}", expected, EOF); } */
     }
 
     /// Combines the Level struct fields to generate the raw binary data,
@@ -320,7 +320,7 @@ impl Level {
         // TODO: write stuff.
     }
 }
-
+/*
 /// Decrypt and encrypt top10 list data. Same algorithm for both.
 pub fn crypt_top10 (top10: &[u8]) -> &[u8] {
     // Who knows
@@ -334,7 +334,7 @@ pub fn crypt_top10 (top10: &[u8]) -> &[u8] {
     }
 
     top10
-}
+}*/
 
 /// Parse top10 lists and return a vector of `ListEntry`s
 pub fn parse_top10 (top10: &[u8]) -> Vec<ListEntry> {
@@ -352,8 +352,8 @@ pub fn parse_top10 (top10: &[u8]) -> Vec<ListEntry> {
         let name_2 = &top10[name_2_offset..name_2_end];
         list.push(ListEntry {
             time: LittleEndian::read_i32(&top10[time_offset..time_end]),
-            name_1: trim_string(name_1),
-            name_2: trim_string(name_2)
+            name_1: trim_string(name_1).unwrap(),
+            name_2: trim_string(name_2).unwrap()
         });
     }
     list
