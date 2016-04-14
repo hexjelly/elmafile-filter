@@ -275,11 +275,11 @@ impl Level {
                 clip: clip
             });
         }
-
+/*
         // EOD marker expected at this point.
         let expected = rem.read_i32::<LittleEndian>().unwrap();
         if expected != EOD { panic!("EOD marker mismatch: x0{:x} != x0{:x}", expected, EOD); }
-/*
+
         // First decrypt the top10 blocks.
         let (mut top10, mut rem) = rem.split_at(688);
         let decrypted_top10_data = crypt_top10(top10);

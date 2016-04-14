@@ -2,7 +2,7 @@ extern crate elma;
 extern crate rand;
 #[cfg(test)]
 mod tests {
-    use elma::{ lev, rec };
+    use elma::{ lev, rec, Position };
     use rand::random;
 
     /*#[test]
@@ -42,8 +42,21 @@ mod tests {
         assert_eq!(level.ground, String::from("ground"));
         assert_eq!(level.sky, String::from("sky"));
         assert_eq!(level.polygons.len(), 2);
-        // TODO: add polygon vertex and grass tests etc.
-        //assert_eq!(level.polygons, vec![lev::Polygon { grass: false, vertices: vec![] }, lev::Polygon { grass: true, vertices: vec![] }]);
+        assert_eq!(level.polygons, vec![lev::Polygon {
+                                                grass: false, vertices: vec![
+                                                    Position { x: -23.993693053024586, y: -3.135779367971911 },
+                                                    Position { x: -15.989070625361132, y: -3.135779367971911 },
+                                                    Position { x: -15.989070625361132, y: 1.995755366905195 },
+                                                    Position { x: -24f64, y: 2f64 }
+                                            ]},
+                                            lev::Polygon {
+                                                grass: true, vertices: vec![
+                                                    Position { x: -23.83645939819548, y: 2.310222676563402 },
+                                                    Position { x: -17.60428907951465, y: 2.2816347393217473 },
+                                                    Position { x: -17.53281923641051, y: 1.8956975865594021 },
+                                                    Position { x: -23.96510511578293, y: 1.924285523801057 }
+                                            ]}
+                                        ]);
         // TODO: proper object tests
         assert_eq!(level.objects.len(), 8);
         // TODO: proper pictures tests
