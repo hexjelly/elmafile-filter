@@ -48,6 +48,7 @@ mod tests {
         assert_eq!(level.objects.len(), 8);
         // TODO: proper pictures tests
         assert_eq!(level.pictures.len(), 2);
+        // TODO: test top10 list
     }
 
     #[test]

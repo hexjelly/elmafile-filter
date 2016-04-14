@@ -104,7 +104,7 @@ pub struct Level {
     raw: Vec<u8>,
     /// Random number that links level file to replay files.
     pub link: i32,
-    /// Contains four integrity checks (See create_integrity()).
+    /// Contains four integrity checks (See calculate_integrity_sums()).
     pub integrity: [f64; 4],
     /// Level name.
     pub name: String,
@@ -301,6 +301,10 @@ impl Level {
     /// and calculate integrity sums.
     fn update (&self) {
         // TODO: convert
+    }
+
+    fn calculate_integrity_sums (&self) {
+        // TODO: do that
     }
 
     /// Converts all struct fields into raw binary form and returns it.
