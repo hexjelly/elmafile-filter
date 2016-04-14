@@ -1,10 +1,9 @@
 //! Read and write Elasto Mania level files.
 
-use std::io::{ Cursor, Read, Write };
+use std::io::{ Read, Write };
 use std::fs::File;
-use std::ffi::CString;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
-use super::{ cstring_read, Position, read_n };
+use super::{ Position };
 
 // Magic arbitrary number; signifies end-of-data. Followed by Top10 list(s).
 const EOD: i32 = 0x0067103A;
@@ -68,11 +67,11 @@ impl Polygon {
 /// Picture struct.
 pub struct Picture {
     /// Picture name.
-    pub name: CString,
+    pub name: String,
     /// Texture name.
-    pub texture: CString,
+    pub texture: String,
     /// Mask name.
-    pub mask: CString,
+    pub mask: String,
     /// Position. See Position struct.
     pub position: Position<f64>,
     /// Z-distance
@@ -90,9 +89,9 @@ pub struct Picture {
 #[derive(Debug)]
 pub struct ListEntry {
     /// Player 1 name.
-    pub name_1: CString,
+    pub name_1: String,
     /// Player 2 name.
-    pub name_2: CString,
+    pub name_2: String,
     /// Time.
     pub time: i32
 }
@@ -108,13 +107,13 @@ pub struct Level {
     /// Contains four integrity checks (See create_integrity()).
     pub integrity: [f64; 4],
     /// Level name.
-    pub name: CString,
+    pub name: String,
     /// LGR file name.
-    pub lgr: CString,
+    pub lgr: String,
     /// Ground texture name.
-    pub ground: CString,
+    pub ground: String,
     /// Sky texture name.
-    pub sky: CString,
+    pub sky: String,
     /// Vector with all polygons (See Polygon).
     pub polygons: Vec<Polygon>,
     /// Vector with all objects (See Object).
@@ -125,6 +124,10 @@ pub struct Level {
     pub top10_single: Vec<ListEntry>,
     /// Vector of Top10 multi-player names and times.
     pub top10_multi: Vec<ListEntry>
+}
+
+impl Default for Level {
+    fn default() -> Level { Level::new() }
 }
 
 impl Level {
@@ -141,10 +144,10 @@ impl Level {
             raw: vec![],
             link: 0,
             integrity: [0.0f64; 4],
-            name: CString::new("").unwrap(),
-            lgr: CString::new("default").unwrap(),
-            ground: CString::new("ground").unwrap(),
-            sky: CString::new("sky").unwrap(),
+            name: String::from(""),
+            lgr: String::from("default"),
+            ground: String::from("ground"),
+            sky: String::from("sky"),
             polygons: vec![],
             objects: vec![],
             pictures: vec![],
@@ -172,35 +175,46 @@ impl Level {
 
     /// Parses the raw binary data into Level struct fields.
     fn parse_level (&mut self) {
-        let mut buffer = Cursor::new(&self.raw);
-        let mut _data :Vec<u8>;
+        let mut rem = self.raw.as_slice();
 
         // Elma = POT14, Across = POT06.
         // TODO: make Across compatible in 2025.
-        let version = read_n(&mut buffer, 5);
-        self.version = match version.as_slice() {
+        let (version, rem) = rem.split_at(5);
+        self.version = match version {
             [80, 79, 84, 49, 52] => Version::Elma,
             [80, 79, 84, 48, 54] => Version::Across,
             _ => panic!("Not a valid level file.")
         };
 
         // Link.
-        _data = read_n(&mut buffer, 2); // Never used
-        self.link = buffer.read_i32::<LittleEndian>().unwrap();
+        let (_, rem) = rem.split_at(2); // Never used
+        self.link = rem.read_i32::<LittleEndian>().unwrap();
 
         // Integrity checksums.
         for i in 0..4 {
-            self.integrity[i] = buffer.read_f64::<LittleEndian>().unwrap();
+            self.integrity[i] = rem.read_f64::<LittleEndian>().unwrap();
         }
 
         // Level name.
-        self.name = cstring_read(read_n(&mut buffer, 51));
+        let (name, rem) = rem.split_at(51);
+        for name_trimmed in name.splitn(1, |c| c == 0) {
+            self.name = String::from_utf8(name_trimmed.to_vec()).unwrap();
+        }
         // LGR name.
-        self.lgr = cstring_read(read_n(&mut buffer, 16));
+        let (lgr, rem) = rem.split_at(16);
+        for lgr_trimmed in lgr.splitn(1, |c| c == 0) {
+            self.lgr = String::from_utf8(lgr_trimmed.to_vec()).unwrap();
+        }
         // Ground texture name.
-        self.ground = cstring_read(read_n(&mut buffer, 10));
+        let (ground, rem) = rem.split_at(10);
+        for ground_trimmed in ground.splitn(1, |c| c == 0) {
+            self.ground = String::from_utf8(ground_trimmed.to_vec()).unwrap();
+        }
         // Sky texture name.
-        self.sky = cstring_read(read_n(&mut buffer, 10));
+        let (sky, rem) = rem.split_at(10);
+        for sky_trimmed in sky.splitn(1, |c| c == 0) {
+            self.sky = String::from_utf8(sky_trimmed.to_vec()).unwrap();
+        }
 
         // Polygons.
         let poly_count = (buffer.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as u16;
@@ -305,10 +319,6 @@ impl Level {
         let mut file = File::create(&filename).unwrap();
         // TODO: write stuff.
     }
-}
-
-impl Default for Level {
-    fn default() -> Level { Level::new() }
 }
 
 /// Decrypt and encrypt top10 list data. Same algorithm for both.

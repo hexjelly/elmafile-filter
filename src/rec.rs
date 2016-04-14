@@ -1,9 +1,8 @@
 //! Read and write Elasto Mania replay files.
-use std::io::{ Cursor, Read, Write };
+use std::io::{ Read, Write };
 use std::fs::File;
-use std::ffi::CString;
 use byteorder::{ ReadBytesExt, WriteBytesExt, LittleEndian };
-use super::{ cstring_read, Position, read_n };
+use super::{ Position };
 
 // Magic arbitrary number to signify end of replay file.
 const EOR: u32 = 0x00492F75;
