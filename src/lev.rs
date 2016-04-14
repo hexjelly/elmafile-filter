@@ -255,11 +255,14 @@ impl Level {
         // Pictures.
         let picture_count = (rem.read_f64::<LittleEndian>().unwrap() - 0.2345672).round() as usize;
         for _ in 0..picture_count {
-            let (name, rem) = rem.split_at(10);
+            let (name, temp_rem) = rem.split_at(10);
+            rem = temp_rem;
             let name = trim_string(name).unwrap();
-            let (texture, rem) = rem.split_at(10);
+            let (texture, temp_rem) = rem.split_at(10);
+            rem = temp_rem;
             let texture = trim_string(texture).unwrap();
-            let (mask, mut rem) = rem.split_at(10);
+            let (mask, temp_rem) = rem.split_at(10);
+            rem = temp_rem;
             let mask = trim_string(mask).unwrap();
             let x = rem.read_f64::<LittleEndian>().unwrap();
             let y = rem.read_f64::<LittleEndian>().unwrap();
