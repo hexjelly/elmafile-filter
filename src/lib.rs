@@ -8,7 +8,7 @@ pub mod lev;
 pub mod rec;
 
 /// Shared position struct.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Position<T> {
     /// X-position.
     pub x: T,

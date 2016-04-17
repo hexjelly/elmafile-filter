@@ -2,13 +2,13 @@
 use std::io::{ Read, Write };
 use std::fs::File;
 use byteorder::{ ReadBytesExt, WriteBytesExt, LittleEndian };
-use super::{ Position, trim_string };
+use super::{ Position };
 
 // Magic arbitrary number to signify end of replay file.
 const EOR: u32 = 0x00492F75;
 
 /// One frame of replay.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Frame {
     /// Bike position?
     pub bike: Position<f32>,
@@ -27,21 +27,53 @@ pub struct Frame {
     /// Throttle.
     pub throttle: bool,
     /// Right direction. True = right, False = left.
+    // TODO: consider making right field = direction and enum with right and left?
     pub right: bool,
     /// Spring sound effect volume.
     pub volume: i16
 }
 
-#[derive(Debug, PartialEq)]
+impl Frame {
+    pub fn new() -> Self {
+        Frame {
+            bike: Position { x: 0f32, y: 0f32 },
+            left_wheel: Position { x: 0, y: 0 },
+            right_wheel: Position { x: 0, y: 0 },
+            head: Position { x: 0, y: 0 },
+            rotation: 0,
+            left_wheel_rotation: 0,
+            right_wheel_rotation: 0,
+            throttle: false,
+            right: false,
+            volume: 0
+        }
+    }
+}
+
+
+#[derive(Debug, Default, PartialEq)]
 pub struct Event {
     /// Time of event.
     pub time: f64,
     /// Event type.
+    // TODO: Make enum.
     pub event_type: [u32; 2]
 }
 
-/// Rec struct
-pub struct Rec {
+impl Event {
+    pub fn new() -> Self {
+        Event {
+            time: 0f64,
+            event_type: [0, 0]
+        }
+    }
+}
+
+/// Replay struct
+#[derive(Debug, Default, PartialEq)]
+pub struct Replay {
+    /// Raw binary data.
+    raw: Vec<u8>,
     /// Number of Frames in replay.
     pub frame_count: i32,
     /// Whether replay is multi-player or not.
@@ -58,16 +90,17 @@ pub struct Rec {
     pub events: Vec<Event>
 }
 
-impl Rec {
-    /// Build a new Rec.
+impl Replay {
+    /// Build a new Replay.
     ///
     /// # Examples
     ///
     /// ```
-    /// let rec = elma::rec::Rec::new();
+    /// let rec = elma::rec::Replay::new();
     /// ```
-    pub fn new() -> Rec {
-        Rec {
+    pub fn new() -> Self {
+        Replay {
+            raw: vec![],
             frame_count: 0,
             multi: false,
             flag_tag: false,
@@ -78,18 +111,24 @@ impl Rec {
         }
     }
 
-    /// Loads a replay file and returns a Rec struct.
+    /// Loads a replay file and returns a Replay struct.
     ///
     /// # Examples
     ///
     /// ```
-    /// let rec = elma::rec::Rec::load_replay("tests/test.rec");
+    /// let rec = elma::rec::Replay::load_replay("tests/test.rec");
     /// ```
-    pub fn load_replay(_filename: &str) -> Rec {
-        Rec::new()
+    pub fn load_replay(filename: &str) -> Self {
+        let mut replay = Replay::new();
+        let mut file = File::open(filename).unwrap();
+        let mut buffer = vec![];
+        file.read_to_end(&mut buffer).unwrap();
+        replay.raw = buffer;
+        replay.parse_replay();
+        replay
     }
-}
 
-impl Default for Rec {
-    fn default() -> Rec { Rec::new() }
+    pub fn parse_replay(&mut self) {
+        // TODO: do that.
+    }
 }

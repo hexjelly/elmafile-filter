@@ -17,6 +17,10 @@ pub enum Version {
     Elma
 }
 
+impl Default for Version {
+    fn default() -> Version { Version::Elma }
+}
+
 /// Type of object.
 #[derive(Debug, PartialEq)]
 pub enum ObjectType {
@@ -26,8 +30,12 @@ pub enum ObjectType {
     Player
 }
 
+impl Default for ObjectType {
+    fn default() -> ObjectType { ObjectType::Apple }
+}
+
 /// Object struct. Every level requires one `ObjectType::Player` Object and at least one `ObjectType::Exit` Object.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Object {
     /// Position. See `Position` struct.
     pub position: Position<f64>,
@@ -56,7 +64,7 @@ pub struct Polygon {
 }
 
 impl Polygon {
-    pub fn new () -> Polygon {
+    pub fn new () -> Self {
         Polygon {
             grass: false,
             vertices: vec![]
@@ -65,7 +73,7 @@ impl Polygon {
 }
 
 /// Picture struct.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct Picture {
     /// Picture name.
     pub name: String,
@@ -87,7 +95,7 @@ pub struct Picture {
 }
 
 /// Top10 list entry struct.
-#[derive(Debug)]
+#[derive(Debug, Default, PartialEq)]
 pub struct ListEntry {
     /// Player 1 name.
     pub name_1: String,
@@ -98,6 +106,7 @@ pub struct ListEntry {
 }
 
 /// Level struct that contains all level information.
+#[derive(Debug, Default, PartialEq)]
 pub struct Level {
     /// Elma or Across level.
     pub version: Version,
@@ -127,10 +136,6 @@ pub struct Level {
     pub top10_multi: Vec<ListEntry>
 }
 
-impl Default for Level {
-    fn default() -> Level { Level::new() }
-}
-
 impl Level {
     /// Returns a new Level struct.
     ///
@@ -139,7 +144,7 @@ impl Level {
     /// ```
     /// let level = elma::lev::Level::new();
     /// ```
-    pub fn new () -> Level {
+    pub fn new () -> Self {
         Level {
             version: Version::Elma,
             raw: vec![],
@@ -164,7 +169,7 @@ impl Level {
     /// ```
     /// let level = elma::lev::Level::load_level("tests/test.lev");
     /// ```
-    pub fn load_level (filename: &str) -> Level {
+    pub fn load_level (filename: &str) -> Self {
         let mut level = Level::new();
         let mut file = File::open(filename).unwrap();
         let mut buffer = vec![];
@@ -316,7 +321,7 @@ impl Level {
     }
 
     /// Saves level as a file.
-    pub fn save_lev (self, filename: &str) {
+    pub fn save_lev (&self, _filename: &str) {
         self.update();
         // let file = File::create(&filename).unwrap();
         // TODO: write stuff.

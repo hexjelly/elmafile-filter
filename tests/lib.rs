@@ -31,7 +31,7 @@ mod tests {
     }
 
     #[test]
-    fn load_level_1 () {
+    fn load_valid_level_1 () {
         let level = lev::Level::load_level("tests/test.lev");
         assert_eq!(level.version, lev::Version::Elma);
         assert_eq!(level.link, 1524269776);
@@ -140,7 +140,7 @@ mod tests {
     // Probably redundant, but maybe some new fields are added in the future.
     // Doesn't hurt or impact anything.
     fn rec_default_values () {
-        let rec = rec::Rec::new();
+        let rec = rec::Replay::new();
         assert_eq!(rec.frame_count, 0);
         assert_eq!(rec.multi, false);
         assert_eq!(rec.flag_tag, false);
