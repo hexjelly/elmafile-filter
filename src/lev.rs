@@ -324,8 +324,9 @@ impl Level {
 }
 
 /// Decrypt and encrypt top10 list data. Same algorithm for both.
-pub fn crypt_top10 (top10: &[u8]) -> Vec<u8> {
-    let mut top10 = top10.to_vec();
+pub fn crypt_top10 (top10_data: &[u8]) -> Vec<u8> {
+    let mut top10: Vec<u8> = Vec::with_capacity(688);
+    top10.extend_from_slice(top10_data);
 
     // Some variables to match the original c/asm code?
     let mut ebp8: i16 = 0x15;
