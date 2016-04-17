@@ -1,10 +1,9 @@
 //! Read and write Elasto Mania level files.
 
-use std::io::{ Cursor, Read, Write };
+use std::io::{ Read };
 use std::fs::File;
-use std::ffi::CString;
-use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
-use super::{ cstring_read, Position, read_n };
+use byteorder::{ ByteOrder, ReadBytesExt, LittleEndian };
+use super::{ Position, trim_string };
 
 // Magic arbitrary number; signifies end-of-data. Followed by Top10 list(s).
 const EOD: i32 = 0x0067103A;
@@ -66,13 +65,14 @@ impl Polygon {
 }
 
 /// Picture struct.
+#[derive(Debug, PartialEq)]
 pub struct Picture {
     /// Picture name.
-    pub name: CString,
+    pub name: String,
     /// Texture name.
-    pub texture: CString,
+    pub texture: String,
     /// Mask name.
-    pub mask: CString,
+    pub mask: String,
     /// Position. See Position struct.
     pub position: Position<f64>,
     /// Z-distance
@@ -90,9 +90,9 @@ pub struct Picture {
 #[derive(Debug)]
 pub struct ListEntry {
     /// Player 1 name.
-    pub name_1: CString,
+    pub name_1: String,
     /// Player 2 name.
-    pub name_2: CString,
+    pub name_2: String,
     /// Time.
     pub time: i32
 }
@@ -105,16 +105,16 @@ pub struct Level {
     raw: Vec<u8>,
     /// Random number that links level file to replay files.
     pub link: i32,
-    /// Contains four integrity checks (See create_integrity()).
+    /// Contains four integrity checks (See calculate_integrity_sums()).
     pub integrity: [f64; 4],
     /// Level name.
-    pub name: CString,
+    pub name: String,
     /// LGR file name.
-    pub lgr: CString,
+    pub lgr: String,
     /// Ground texture name.
-    pub ground: CString,
+    pub ground: String,
     /// Sky texture name.
-    pub sky: CString,
+    pub sky: String,
     /// Vector with all polygons (See Polygon).
     pub polygons: Vec<Polygon>,
     /// Vector with all objects (See Object).
@@ -125,6 +125,10 @@ pub struct Level {
     pub top10_single: Vec<ListEntry>,
     /// Vector of Top10 multi-player names and times.
     pub top10_multi: Vec<ListEntry>
+}
+
+impl Default for Level {
+    fn default() -> Level { Level::new() }
 }
 
 impl Level {
@@ -141,10 +145,10 @@ impl Level {
             raw: vec![],
             link: 0,
             integrity: [0.0f64; 4],
-            name: CString::new("").unwrap(),
-            lgr: CString::new("default").unwrap(),
-            ground: CString::new("ground").unwrap(),
-            sky: CString::new("sky").unwrap(),
+            name: String::new(),
+            lgr: String::from("default"),
+            ground: String::from("ground"),
+            sky: String::from("sky"),
             polygons: vec![],
             objects: vec![],
             pictures: vec![],
@@ -172,45 +176,47 @@ impl Level {
 
     /// Parses the raw binary data into Level struct fields.
     fn parse_level (&mut self) {
-        let mut buffer = Cursor::new(&self.raw);
-        let mut _data :Vec<u8>;
+        let remaining = self.raw.as_slice();
 
-        // Elma = POT14, Across = POT06.
-        // TODO: make Across compatible in 2025.
-        let version = read_n(&mut buffer, 5);
-        self.version = match version.as_slice() {
+        // POT06 = Across, POT14 = Elma.
+        let (version, remaining) = remaining.split_at(5);
+        self.version = match version {
             [80, 79, 84, 49, 52] => Version::Elma,
             [80, 79, 84, 48, 54] => Version::Across,
             _ => panic!("Not a valid level file.")
         };
 
         // Link.
-        _data = read_n(&mut buffer, 2); // Never used
-        self.link = buffer.read_i32::<LittleEndian>().unwrap();
+        let (_, mut remaining) = remaining.split_at(2); // Never used
+        self.link = remaining.read_i32::<LittleEndian>().unwrap();
 
         // Integrity checksums.
         for i in 0..4 {
-            self.integrity[i] = buffer.read_f64::<LittleEndian>().unwrap();
+            self.integrity[i] = remaining.read_f64::<LittleEndian>().unwrap();
         }
 
         // Level name.
-        self.name = cstring_read(read_n(&mut buffer, 51));
+        let (name, remaining) = remaining.split_at(51);
+        self.name = trim_string(name).unwrap();
         // LGR name.
-        self.lgr = cstring_read(read_n(&mut buffer, 16));
+        let (lgr, remaining) = remaining.split_at(16);
+        self.lgr = trim_string(lgr).unwrap();
         // Ground texture name.
-        self.ground = cstring_read(read_n(&mut buffer, 10));
+        let (ground, remaining) = remaining.split_at(10);
+        self.ground = trim_string(ground).unwrap();
         // Sky texture name.
-        self.sky = cstring_read(read_n(&mut buffer, 10));
+        let (sky, mut remaining) = remaining.split_at(10);
+        self.sky = trim_string(sky).unwrap();
 
         // Polygons.
-        let poly_count = (buffer.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as u16;
+        let poly_count = (remaining.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as usize;
         for _ in 0..poly_count {
-            let grass = buffer.read_i32::<LittleEndian>().unwrap() > 0;
-            let vertex_count = buffer.read_i32::<LittleEndian>().unwrap();
+            let grass = remaining.read_i32::<LittleEndian>().unwrap() > 0;
+            let vertex_count = remaining.read_i32::<LittleEndian>().unwrap();
             let mut vertices: Vec<Position<f64>> = vec![];
             for _ in 0..vertex_count {
-                let x = buffer.read_f64::<LittleEndian>().unwrap();
-                let y = buffer.read_f64::<LittleEndian>().unwrap();
+                let x = remaining.read_f64::<LittleEndian>().unwrap();
+                let y = remaining.read_f64::<LittleEndian>().unwrap();
                 vertices.push(Position {
                     x: x,
                     y: y
@@ -223,20 +229,20 @@ impl Level {
         }
 
         // Objects.
-        let object_count = (buffer.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as u16;
+        let object_count = (remaining.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as usize;
         for _ in 0..object_count {
-            let x = buffer.read_f64::<LittleEndian>().unwrap();
-            let y = buffer.read_f64::<LittleEndian>().unwrap();
+            let x = remaining.read_f64::<LittleEndian>().unwrap();
+            let y = remaining.read_f64::<LittleEndian>().unwrap();
             let position = Position { x: x, y: y };
-            let object_type = match buffer.read_i32::<LittleEndian>().unwrap() {
+            let object_type = match remaining.read_i32::<LittleEndian>().unwrap() {
                 1 => ObjectType::Exit,
                 2 => ObjectType::Apple,
                 3 => ObjectType::Killer,
                 4 => ObjectType::Player,
                 _ => panic!("Not a valid object type")
             };
-            let gravity = buffer.read_i32::<LittleEndian>().unwrap();
-            let animation = buffer.read_i32::<LittleEndian>().unwrap() + 1;
+            let gravity = remaining.read_i32::<LittleEndian>().unwrap();
+            let animation = remaining.read_i32::<LittleEndian>().unwrap() + 1;
 
             self.objects.push(Object {
                 position: position,
@@ -247,15 +253,19 @@ impl Level {
         }
 
         // Pictures.
-        let picture_count = (buffer.read_f64::<LittleEndian>().unwrap() - 0.2345672).round() as u16;
+        let picture_count = (remaining.read_f64::<LittleEndian>().unwrap() - 0.2345672).round() as usize;
         for _ in 0..picture_count {
-            let name = cstring_read(read_n(&mut buffer, 10));
-            let texture = cstring_read(read_n(&mut buffer, 10));
-            let mask = cstring_read(read_n(&mut buffer, 10));
-            let x = buffer.read_f64::<LittleEndian>().unwrap();
-            let y = buffer.read_f64::<LittleEndian>().unwrap();
-            let distance = buffer.read_i32::<LittleEndian>().unwrap();
-            let clip = buffer.read_i32::<LittleEndian>().unwrap();
+            let (name, temp_remaining) = remaining.split_at(10);
+            let name = trim_string(name).unwrap();
+            let (texture, temp_remaining) = temp_remaining.split_at(10);
+            let texture = trim_string(texture).unwrap();
+            let (mask, temp_remaining) = temp_remaining.split_at(10);
+            let mask = trim_string(mask).unwrap();
+            remaining = temp_remaining;
+            let x = remaining.read_f64::<LittleEndian>().unwrap();
+            let y = remaining.read_f64::<LittleEndian>().unwrap();
+            let distance = remaining.read_i32::<LittleEndian>().unwrap();
+            let clip = remaining.read_i32::<LittleEndian>().unwrap();
 
             self.pictures.push(Picture {
                 name: name,
@@ -268,11 +278,12 @@ impl Level {
         }
 
         // EOD marker expected at this point.
-        let expected = buffer.read_i32::<LittleEndian>().unwrap();
+        let expected = remaining.read_i32::<LittleEndian>().unwrap();
         if expected != EOD { panic!("EOD marker mismatch: x0{:x} != x0{:x}", expected, EOD); }
 
         // First decrypt the top10 blocks.
-        let decrypted_top10_data = crypt_top10(read_n(&mut buffer, 688));
+        let (top10, mut remaining) = remaining.split_at(688);
+        let decrypted_top10_data = crypt_top10(top10);
 
         // Single-player list.
         let single = &decrypted_top10_data[0..344];
@@ -283,7 +294,7 @@ impl Level {
         self.top10_multi = parse_top10(multi);
 
         // EOF marker expected at this point.
-        let expected = buffer.read_i32::<LittleEndian>().unwrap();
+        let expected = remaining.read_i32::<LittleEndian>().unwrap();
         if expected != EOF { panic!("EOF marker mismatch: x0{:x} != x0{:x}", expected, EOF); }
     }
 
@@ -291,6 +302,11 @@ impl Level {
     /// and calculate integrity sums.
     fn update (&self) {
         // TODO: convert
+        self.calculate_integrity_sums();
+    }
+
+    fn calculate_integrity_sums (&self) {
+        // TODO: do that
     }
 
     /// Converts all struct fields into raw binary form and returns it.
@@ -302,18 +318,17 @@ impl Level {
     /// Saves level as a file.
     pub fn save_lev (self, filename: &str) {
         self.update();
-        let mut file = File::create(&filename).unwrap();
+        // let file = File::create(&filename).unwrap();
         // TODO: write stuff.
     }
 }
 
-impl Default for Level {
-    fn default() -> Level { Level::new() }
-}
-
 /// Decrypt and encrypt top10 list data. Same algorithm for both.
-pub fn crypt_top10 (mut top10: Vec<u8>) -> Vec<u8> {
-    // Who knows
+pub fn crypt_top10 (top10_data: &[u8]) -> Vec<u8> {
+    let mut top10: Vec<u8> = Vec::with_capacity(688);
+    top10.extend_from_slice(top10_data);
+
+    // Some variables to match the original c/asm code?
     let mut ebp8: i16 = 0x15;
     let mut ebp10: i16 = 0x2637;
 
@@ -331,21 +346,19 @@ pub fn parse_top10 (top10: &[u8]) -> Vec<ListEntry> {
     let mut list: Vec<ListEntry> = vec![];
     let times = LittleEndian::read_i32(&top10[0..4]);
     for n in 0..times {
-        let time_offset: usize = (4 + n * 4) as usize;
-        let time_end: usize = time_offset + 4;
-        let name_offset: usize = (44 + n * 15) as usize;
-        let name_end: usize = name_offset + 15;
-        let name_2_offset: usize = (194 + n * 15) as usize;
-        let name_2_end: usize = name_2_offset + 15;
+        let time_offset = (4 + n * 4) as usize;
+        let time_end = time_offset + 4;
+        let name_1_offset = (44 + n * 15) as usize;
+        let name_1_end = name_1_offset + 15;
+        let name_2_offset = (194 + n * 15) as usize;
+        let name_2_end = name_2_offset + 15;
         // All of this pains me even though I don't understand it...
-        let mut name = vec![];
-        let mut name2 = vec![];
-        name.extend_from_slice(&top10[name_offset..name_end]);
-        name2.extend_from_slice(&top10[name_2_offset..name_2_end]);
+        let name_1 = &top10[name_1_offset..name_1_end];
+        let name_2 = &top10[name_2_offset..name_2_end];
         list.push(ListEntry {
             time: LittleEndian::read_i32(&top10[time_offset..time_end]),
-            name_1: cstring_read(name),
-            name_2: cstring_read(name2)
+            name_1: trim_string(name_1).unwrap(),
+            name_2: trim_string(name_2).unwrap()
         });
     }
     list
