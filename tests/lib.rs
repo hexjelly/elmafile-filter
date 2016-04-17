@@ -5,16 +5,16 @@ mod tests {
     use elma::{ lev, rec, Position };
     use rand::random;
 
-    /*#[test]
+    #[test]
     fn test_decrypt_encrypt () {
         let mut initial: Vec<u8> = vec![];
         for _ in 0..688 {
             initial.push(random::<u8>());
         }
-        let decrypted = lev::crypt_top10(initial.clone());
-        let encrypted = lev::crypt_top10(decrypted);
+        let decrypted = lev::crypt_top10(&initial);
+        let encrypted = lev::crypt_top10(&decrypted);
         assert_eq!(initial, encrypted);
-    }*/
+    }
 
     #[test]
     // Probably redundant, but maybe some new fields are added in the future.
