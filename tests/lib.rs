@@ -134,6 +134,8 @@ mod tests {
         // TODO: test top10 list
     }
 
+    // TODO: Add more levels to test, including some corrupt ones!
+
     #[test]
     // Probably redundant, but maybe some new fields are added in the future.
     // Doesn't hurt or impact anything.
@@ -147,4 +149,6 @@ mod tests {
         assert_eq!(rec.frames, vec![]);
         assert_eq!(rec.events, vec![]);
     }
+
+    // TODO: Test actual replay files
 }
