@@ -176,10 +176,10 @@ impl Level {
 
     /// Parses the raw binary data into Level struct fields.
     fn parse_level (&mut self) {
-        let remaining = self.raw.as_mut_slice();
+        let remaining = self.raw.as_slice();
 
         // POT06 = Across, POT14 = Elma.
-        let (version, remaining) = remaining.split_at_mut(5);
+        let (version, remaining) = remaining.split_at(5);
         self.version = match version {
             [80, 79, 84, 49, 52] => Version::Elma,
             [80, 79, 84, 48, 54] => Version::Across,
@@ -187,36 +187,36 @@ impl Level {
         };
 
         // Link.
-        let (_, mut remaining) = remaining.split_at_mut(2); // Never used
-        self.link = (&*remaining).read_i32::<LittleEndian>().unwrap();
+        let (_, mut remaining) = remaining.split_at(2); // Never used
+        self.link = remaining.read_i32::<LittleEndian>().unwrap();
 
         // Integrity checksums.
         for i in 0..4 {
-            self.integrity[i] = (&*remaining).read_f64::<LittleEndian>().unwrap();
+            self.integrity[i] = remaining.read_f64::<LittleEndian>().unwrap();
         }
 
         // Level name.
-        let (name, remaining) = remaining.split_at_mut(51);
+        let (name, remaining) = remaining.split_at(51);
         self.name = trim_string(name).unwrap();
         // LGR name.
-        let (lgr, remaining) = remaining.split_at_mut(16);
+        let (lgr, remaining) = remaining.split_at(16);
         self.lgr = trim_string(lgr).unwrap();
         // Ground texture name.
-        let (ground, remaining) = remaining.split_at_mut(10);
+        let (ground, remaining) = remaining.split_at(10);
         self.ground = trim_string(ground).unwrap();
         // Sky texture name.
-        let (sky, mut remaining) = remaining.split_at_mut(10);
+        let (sky, mut remaining) = remaining.split_at(10);
         self.sky = trim_string(sky).unwrap();
 
         // Polygons.
-        let poly_count = ((&*remaining).read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as usize;
+        let poly_count = (remaining.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as usize;
         for _ in 0..poly_count {
-            let grass = (&*remaining).read_i32::<LittleEndian>().unwrap() > 0;
-            let vertex_count = (&*remaining).read_i32::<LittleEndian>().unwrap();
+            let grass = remaining.read_i32::<LittleEndian>().unwrap() > 0;
+            let vertex_count = remaining.read_i32::<LittleEndian>().unwrap();
             let mut vertices: Vec<Position<f64>> = vec![];
             for _ in 0..vertex_count {
-                let x = (&*remaining).read_f64::<LittleEndian>().unwrap();
-                let y = (&*remaining).read_f64::<LittleEndian>().unwrap();
+                let x = remaining.read_f64::<LittleEndian>().unwrap();
+                let y = remaining.read_f64::<LittleEndian>().unwrap();
                 vertices.push(Position {
                     x: x,
                     y: y
@@ -229,20 +229,20 @@ impl Level {
         }
 
         // Objects.
-        let object_count = ((&*remaining).read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as usize;
+        let object_count = (remaining.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as usize;
         for _ in 0..object_count {
-            let x = (&*remaining).read_f64::<LittleEndian>().unwrap();
-            let y = (&*remaining).read_f64::<LittleEndian>().unwrap();
+            let x = remaining.read_f64::<LittleEndian>().unwrap();
+            let y = remaining.read_f64::<LittleEndian>().unwrap();
             let position = Position { x: x, y: y };
-            let object_type = match (&*remaining).read_i32::<LittleEndian>().unwrap() {
+            let object_type = match remaining.read_i32::<LittleEndian>().unwrap() {
                 1 => ObjectType::Exit,
                 2 => ObjectType::Apple,
                 3 => ObjectType::Killer,
                 4 => ObjectType::Player,
                 _ => panic!("Not a valid object type")
             };
-            let gravity = (&*remaining).read_i32::<LittleEndian>().unwrap();
-            let animation = (&*remaining).read_i32::<LittleEndian>().unwrap() + 1;
+            let gravity = remaining.read_i32::<LittleEndian>().unwrap();
+            let animation = remaining.read_i32::<LittleEndian>().unwrap() + 1;
 
             self.objects.push(Object {
                 position: position,
@@ -253,19 +253,19 @@ impl Level {
         }
 
         // Pictures.
-        let picture_count = ((&*remaining).read_f64::<LittleEndian>().unwrap() - 0.2345672).round() as usize;
+        let picture_count = (remaining.read_f64::<LittleEndian>().unwrap() - 0.2345672).round() as usize;
         for _ in 0..picture_count {
-            let (name, temp_remaining) = remaining.split_at_mut(10);
+            let (name, temp_remaining) = remaining.split_at(10);
             let name = trim_string(name).unwrap();
-            let (texture, temp_remaining) = temp_remaining.split_at_mut(10);
+            let (texture, temp_remaining) = temp_remaining.split_at(10);
             let texture = trim_string(texture).unwrap();
-            let (mask, temp_remaining) = temp_remaining.split_at_mut(10);
-            remaining = temp_remaining;
+            let (mask, temp_remaining) = temp_remaining.split_at(10);
             let mask = trim_string(mask).unwrap();
-            let x = (&*remaining).read_f64::<LittleEndian>().unwrap();
-            let y = (&*remaining).read_f64::<LittleEndian>().unwrap();
-            let distance = (&*remaining).read_i32::<LittleEndian>().unwrap();
-            let clip = (&*remaining).read_i32::<LittleEndian>().unwrap();
+            remaining = temp_remaining;
+            let x = remaining.read_f64::<LittleEndian>().unwrap();
+            let y = remaining.read_f64::<LittleEndian>().unwrap();
+            let distance = remaining.read_i32::<LittleEndian>().unwrap();
+            let clip = remaining.read_i32::<LittleEndian>().unwrap();
 
             self.pictures.push(Picture {
                 name: name,
@@ -278,11 +278,11 @@ impl Level {
         }
 
         // EOD marker expected at this point.
-        let expected = (&*remaining).read_i32::<LittleEndian>().unwrap();
+        let expected = remaining.read_i32::<LittleEndian>().unwrap();
         if expected != EOD { panic!("EOD marker mismatch: x0{:x} != x0{:x}", expected, EOD); }
 
         // First decrypt the top10 blocks.
-        let (top10, remaining) = remaining.split_at_mut(688);
+        let (top10, mut remaining) = remaining.split_at(688);
         let decrypted_top10_data = crypt_top10(top10);
 
         // Single-player list.
@@ -294,7 +294,7 @@ impl Level {
         self.top10_multi = parse_top10(multi);
 
         // EOF marker expected at this point.
-        let expected = (&*remaining).read_i32::<LittleEndian>().unwrap();
+        let expected = remaining.read_i32::<LittleEndian>().unwrap();
         if expected != EOF { panic!("EOF marker mismatch: x0{:x} != x0{:x}", expected, EOF); }
     }
 
@@ -324,8 +324,10 @@ impl Level {
 }
 
 /// Decrypt and encrypt top10 list data. Same algorithm for both.
-pub fn crypt_top10 (top10: &mut [u8]) -> &[u8] {
-    // Who knows
+pub fn crypt_top10 (top10: &[u8]) -> Vec<u8> {
+    let mut top10 = top10.to_vec();
+
+    // Some variables to match the original c/asm code?
     let mut ebp8: i16 = 0x15;
     let mut ebp10: i16 = 0x2637;
 
