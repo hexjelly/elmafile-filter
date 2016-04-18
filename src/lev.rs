@@ -24,14 +24,28 @@ impl Default for Version {
 /// Type of object.
 #[derive(Debug, PartialEq)]
 pub enum ObjectType {
-    Apple,
+    Apple { gravity: Direction, animation: u8 },
     Exit,
     Killer,
     Player
 }
 
 impl Default for ObjectType {
-    fn default() -> ObjectType { ObjectType::Apple }
+    fn default() -> ObjectType { ObjectType::Apple { gravity: Direction::default(), animation: 1 } }
+}
+
+/// Apple direction object.
+#[derive(Debug, PartialEq)]
+pub enum Direction {
+    Normal,
+    Up,
+    Down,
+    Left,
+    Right
+}
+
+impl Default for Direction {
+    fn default() -> Direction { Direction::Normal }
 }
 
 /// Object struct. Every level requires one `ObjectType::Player` Object and at least one `ObjectType::Exit` Object.
@@ -40,18 +54,7 @@ pub struct Object {
     /// Position. See `Position` struct.
     pub position: Position<f64>,
     /// Type of Object, see `ObjectType`.
-    pub object_type: ObjectType,
-    /// Applies to `ObjectType::Apple` only.
-    ///
-    /// 0 = normal
-    /// 1 = gravity up
-    /// 2 = gravity down
-    /// 3 = gravity left
-    /// 4 = gravity right
-    // TODO: enum with gravity
-    pub gravity: i32,
-    /// Applies to `ObjectType::Apple` only. Valid values are 1 to 9.
-    pub animation: i32
+    pub object_type: ObjectType
 }
 
 /// Polygon struct.
@@ -72,6 +75,18 @@ impl Polygon {
     }
 }
 
+/// Picture clipping.
+#[derive(Debug, PartialEq)]
+pub enum Clip {
+    Unclipped,
+    Ground,
+    Sky
+}
+
+impl Default for Clip {
+    fn default() -> Clip { Clip::Ground }
+}
+
 /// Picture struct.
 #[derive(Debug, Default, PartialEq)]
 pub struct Picture {
@@ -86,12 +101,7 @@ pub struct Picture {
     /// Z-distance
     pub distance: i32,
     /// Clipping.
-    ///
-    /// 0 = unclipped
-    /// 1 = ground
-    /// 2 = sky
-    // TODO: make enum
-    pub clip: i32
+    pub clip: Clip
 }
 
 /// Top10 list entry struct.
@@ -137,7 +147,7 @@ pub struct Level {
 }
 
 impl Default for Level {
-    fn default() -> Level { Level::new() }		
+    fn default() -> Level { Level::new() }
 }
 
 impl Level {
@@ -171,7 +181,7 @@ impl Level {
     /// # Examples
     ///
     /// ```
-    /// let level = elma::lev::Level::load_level("tests/test.lev");
+    /// let level = elma::lev::Level::load_level("tests/test_1.lev");
     /// ```
     pub fn load_level (filename: &str) -> Self {
         let mut level = Level::new();
@@ -243,21 +253,28 @@ impl Level {
             let x = remaining.read_f64::<LittleEndian>().unwrap();
             let y = remaining.read_f64::<LittleEndian>().unwrap();
             let position = Position { x: x, y: y };
-            let object_type = match remaining.read_i32::<LittleEndian>().unwrap() {
+            let object_type = remaining.read_i32::<LittleEndian>().unwrap();
+            let gravity = remaining.read_i32::<LittleEndian>().unwrap();
+            let gravity_direction = match gravity {
+                0 => Direction::Normal,
+                1 => Direction::Up,
+                2 => Direction::Down,
+                3 => Direction::Left,
+                4 => Direction::Right,
+                _ => panic!("Not a valid gravity direction: {:?}", gravity)
+            };
+            let animation = (remaining.read_i32::<LittleEndian>().unwrap() + 1) as u8;
+            let object = match object_type {
                 1 => ObjectType::Exit,
-                2 => ObjectType::Apple,
+                2 => ObjectType::Apple { gravity: gravity_direction, animation: animation },
                 3 => ObjectType::Killer,
                 4 => ObjectType::Player,
-                _ => panic!("Not a valid object type")
+                _ => panic!("Not a valid object type: {:?}", object_type)
             };
-            let gravity = remaining.read_i32::<LittleEndian>().unwrap();
-            let animation = remaining.read_i32::<LittleEndian>().unwrap() + 1;
 
             self.objects.push(Object {
                 position: position,
-                object_type: object_type,
-                gravity: gravity,
-                animation: animation
+                object_type: object
             });
         }
 
@@ -274,7 +291,13 @@ impl Level {
             let x = remaining.read_f64::<LittleEndian>().unwrap();
             let y = remaining.read_f64::<LittleEndian>().unwrap();
             let distance = remaining.read_i32::<LittleEndian>().unwrap();
-            let clip = remaining.read_i32::<LittleEndian>().unwrap();
+            let clipping = remaining.read_i32::<LittleEndian>().unwrap();
+            let clip = match clipping {
+                0 => Clip::Unclipped,
+                1 => Clip::Ground,
+                2 => Clip::Sky,
+                _ => panic!("Not valid clipping data: {:?}", clipping)
+            };
 
             self.pictures.push(Picture {
                 name: name,
