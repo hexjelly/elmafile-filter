@@ -157,9 +157,52 @@ impl Replay {
 
         // Frames.
         for _ in 0..frame_count {
-            // TODO: parse this
-            let (_, temp_remaining) = remaining.split_at(27);
-            remaining = temp_remaining;
+            // Bike X and Y.
+            let x = remaining.read_f32::<LittleEndian>().unwrap();
+            let y = remaining.read_f32::<LittleEndian>().unwrap();
+            let bike = Position { x: x, y: y };
+
+            // Left wheel X and Y.
+            let x = remaining.read_i16::<LittleEndian>().unwrap();
+            let y = remaining.read_i16::<LittleEndian>().unwrap();
+            let left_wheel = Position { x: x, y: y };
+
+            // Left wheel X and Y.
+            let x = remaining.read_i16::<LittleEndian>().unwrap();
+            let y = remaining.read_i16::<LittleEndian>().unwrap();
+            let right_wheel = Position { x: x, y: y };
+
+            // Head X and Y.
+            let x = remaining.read_i16::<LittleEndian>().unwrap();
+            let y = remaining.read_i16::<LittleEndian>().unwrap();
+            let head = Position { x: x, y: y };
+
+            // Rotations.
+            let rotation = remaining.read_i16::<LittleEndian>().unwrap();
+            let left_wheel_rotation = remaining.read_u8().unwrap();
+            let right_wheel_rotation = remaining.read_u8().unwrap();
+
+            // Throttle and turn right.
+            let data = remaining.read_u8().unwrap();
+            // TODO: figure out how to get these values.
+            let throttle = false;
+            let right = false;
+
+            // Sound effect volume.
+            let volume = remaining.read_i16::<LittleEndian>().unwrap();
+
+            self.frames.push(Frame {
+                bike: bike,
+                left_wheel: left_wheel,
+                right_wheel: right_wheel,
+                head: head,
+                rotation: rotation,
+                left_wheel_rotation: left_wheel_rotation,
+                right_wheel_rotation: right_wheel_rotation,
+                throttle: throttle,
+                right: right,
+                volume: volume
+            });
         }
 
         // Events.
