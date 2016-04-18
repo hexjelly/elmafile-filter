@@ -106,12 +106,12 @@ pub struct ListEntry {
 }
 
 /// Level struct that contains all level information.
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Level {
-    /// Elma or Across level.
-    pub version: Version,
     /// Raw binary data of a loaded or finalized constructed level.
     raw: Vec<u8>,
+    /// Elma or Across level.
+    pub version: Version,
     /// Random number that links level file to replay files.
     pub link: i32,
     /// Contains four integrity checks (See calculate_integrity_sums()).
@@ -136,6 +136,10 @@ pub struct Level {
     pub top10_multi: Vec<ListEntry>
 }
 
+impl Default for Level {
+    fn default() -> Level { Level::new() }		
+}
+
 impl Level {
     /// Returns a new Level struct.
     ///
@@ -146,10 +150,10 @@ impl Level {
     /// ```
     pub fn new () -> Self {
         Level {
-            version: Version::Elma,
             raw: vec![],
+            version: Version::Elma,
             link: 0,
-            integrity: [0.0f64; 4],
+            integrity: [0f64; 4],
             name: String::new(),
             lgr: String::from("default"),
             ground: String::from("ground"),
