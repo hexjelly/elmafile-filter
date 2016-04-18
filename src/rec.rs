@@ -34,6 +34,13 @@ pub struct Frame {
 }
 
 impl Frame {
+    /// Returns a new Frame struct with zero values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let frame = elma::rec::Frame::new();
+    /// ```
     pub fn new() -> Self {
         Frame {
             bike: Position { x: 0f32, y: 0f32 },
@@ -52,19 +59,34 @@ impl Frame {
 
 
 #[derive(Debug, Default, PartialEq)]
+/// Replay events.
 pub struct Event {
     /// Time of event.
     pub time: f64,
     /// Event type.
-    // TODO: Make enum.
-    pub event_type: [u32; 2]
+    pub event_type: u8
+}
+
+#[derive(Debug, PartialEq)]
+/// Type of event.
+pub enum EventType {
+    /// Apple or flower touch, with index of object.
+    Touch { index: usize },
+    Turn,
+    Volt { right: bool },
+    /// Ground touch, for sound effects. Two types; if alternative is true, uses the second type.
+    Ground { alternative: bool }
+}
+
+impl Default for EventType {
+    fn default() -> EventType { EventType::Touch { index: 0 } }
 }
 
 impl Event {
     pub fn new() -> Self {
         Event {
             time: 0f64,
-            event_type: [0, 0]
+            event_type: 0
         }
     }
 }
@@ -208,9 +230,21 @@ impl Replay {
         // Events.
         let event_count = remaining.read_i32::<LittleEndian>().unwrap();
         for _ in 0..event_count {
-            // TODO: parse this
-            let (_, temp_remaining) = remaining.split_at(16);
-            remaining = temp_remaining;
+            // Event time
+            let time = remaining.read_f64::<LittleEndian>().unwrap();
+
+            // Event details
+            let info = remaining.read_i16::<LittleEndian>().unwrap();
+            let event_type = remaining.read_u8().unwrap();
+
+            // Unknown
+            let _ = remaining.read_u8().unwrap();
+            let _ = remaining.read_f32::<LittleEndian>().unwrap();
+
+            self.events.push(Event {
+                time: time,
+                event_type: event_type
+            });
         }
 
         let expected = remaining.read_i32::<LittleEndian>().unwrap();
