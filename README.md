@@ -19,3 +19,7 @@ Elasto Mania file handler crate for Rust. Very much still a work in progress.
 -   [ ] Parse replay information
 -   [x] Edit replays (by direct access to structure)
 -   [ ] Save replays/data
+
+### State.dat
+
+Might be added, maybe out of scope or redunant for this library.
