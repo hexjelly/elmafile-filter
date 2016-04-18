@@ -70,7 +70,7 @@ impl Event {
 }
 
 /// Replay struct
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Replay {
     /// Raw binary data.
     raw: Vec<u8>,
@@ -88,6 +88,10 @@ pub struct Replay {
     pub frames: Vec<Frame>,
     /// Events.
     pub events: Vec<Event>
+}
+
+impl Default for Replay {
+    fn default() -> Replay { Replay::new() }		
 }
 
 impl Replay {
