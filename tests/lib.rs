@@ -141,7 +141,6 @@ mod tests {
     // Doesn't hurt or impact anything.
     fn rec_default_values () {
         let rec = rec::Replay::new();
-        assert_eq!(rec.frame_count, 0);
         assert_eq!(rec.multi, false);
         assert_eq!(rec.flag_tag, false);
         assert_eq!(rec.link, 0);

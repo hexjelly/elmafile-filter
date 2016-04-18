@@ -2,10 +2,10 @@
 use std::io::{ Read, Write };
 use std::fs::File;
 use byteorder::{ ReadBytesExt, WriteBytesExt, LittleEndian };
-use super::{ Position };
+use super::{ Position, trim_string };
 
 // Magic arbitrary number to signify end of replay file.
-const EOR: u32 = 0x00492F75;
+const EOR: i32 = 0x00492F75;
 
 /// One frame of replay.
 #[derive(Debug, Default, PartialEq)]
@@ -74,8 +74,6 @@ impl Event {
 pub struct Replay {
     /// Raw binary data.
     raw: Vec<u8>,
-    /// Number of Frames in replay.
-    pub frame_count: i32,
     /// Whether replay is multi-player or not.
     pub multi: bool,
     /// Whether replay is flag-tag or not.
@@ -91,7 +89,7 @@ pub struct Replay {
 }
 
 impl Default for Replay {
-    fn default() -> Replay { Replay::new() }		
+    fn default() -> Replay { Replay::new() }
 }
 
 impl Replay {
@@ -105,7 +103,6 @@ impl Replay {
     pub fn new() -> Self {
         Replay {
             raw: vec![],
-            frame_count: 0,
             multi: false,
             flag_tag: false,
             link: 0,
@@ -134,5 +131,48 @@ impl Replay {
 
     pub fn parse_replay(&mut self) {
         // TODO: do that.
+        let mut remaining = self.raw.as_slice();
+
+        // Frame count.
+        let frame_count = remaining.read_i32::<LittleEndian>().unwrap();
+
+        // Some unused value, always 0x83.
+        let (_, mut remaining) = remaining.split_at(4);
+
+        // Multi-player replay.
+        self.multi = remaining.read_i32::<LittleEndian>().unwrap() > 0;
+
+        // Flag-tag replay.
+        self.flag_tag = remaining.read_i32::<LittleEndian>().unwrap() > 0;
+
+        // Level link.
+        self.link = remaining.read_u32::<LittleEndian>().unwrap();
+
+        // Level file name, including extension.
+        let (level, remaining) = remaining.split_at(12);
+        self.level = trim_string(level).unwrap();
+
+        // Unknown, unused.
+        let (_, mut remaining) = remaining.split_at(4);
+
+        // Frames.
+        for _ in 0..frame_count {
+            // TODO: parse this
+            let (_, temp_remaining) = remaining.split_at(27);
+            remaining = temp_remaining;
+        }
+
+        // Events.
+        let event_count = remaining.read_i32::<LittleEndian>().unwrap();
+        for _ in 0..event_count {
+            // TODO: parse this
+            let (_, temp_remaining) = remaining.split_at(16);
+            remaining = temp_remaining;
+        }
+
+        let expected = remaining.read_i32::<LittleEndian>().unwrap();
+        if expected != EOR { panic!("EOR marker mismatch: x0{:x} != x0{:x}", expected, EOR); }
+
+        // TODO: Add multi-player replay parsing.
     }
 }
