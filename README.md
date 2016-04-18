@@ -10,12 +10,12 @@ Elasto Mania file handler crate for Rust. Very much still a work in progress.
 
 ### Levels
 
-    [x] Parse level information
-    [x] Edit levels (by direct access to structure)
-    [ ] Save levels/data
+-   [x] Parse level information
+-   [x] Edit levels (by direct access to structure)
+-   [ ] Save levels/data
 
 ### Replays
 
-    [ ] Parse replay information
-    [x] Edit replays (by direct access to structure)
-    [ ] Save replays/data
+-   [ ] Parse replay information
+-   [x] Edit replays (by direct access to structure)
+-   [ ] Save replays/data
