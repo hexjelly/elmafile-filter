@@ -28,11 +28,16 @@ mod tests {
         assert_eq!(level.lgr, String::from("default"));
         assert_eq!(level.ground, String::from("ground"));
         assert_eq!(level.sky, String::from("sky"));
+        assert_eq!(level.polygons, vec![]);
+        assert_eq!(level.objects, vec![]);
+        assert_eq!(level.pictures, vec![]);
+        assert_eq!(level.top10_single, vec![]);
+        assert_eq!(level.top10_multi, vec![]);
     }
 
     #[test]
     fn load_valid_level_1 () {
-        let level = lev::Level::load_level("tests/test.lev");
+        let level = lev::Level::load_level("tests/test_1.lev");
         assert_eq!(level.version, lev::Version::Elma);
         assert_eq!(level.link, 1524269776);
         assert_eq!(level.integrity, [-1148375.210607791,
@@ -65,51 +70,35 @@ mod tests {
         assert_eq!(level.objects.len(), 8);
         assert_eq!(level.objects, vec![lev::Object {
                                             position: Position { x: -23.221818747499896, y: -1.3204453531268072 },
-                                            object_type: lev::ObjectType::Killer,
-                                            gravity: 0,
-                                            animation: 1
+                                            object_type: lev::ObjectType::Killer
                                         },
                                         lev::Object {
                                             position: Position { x: -20.37252715482359, y: -0.3124543521844827 },
-                                            object_type: lev::ObjectType::Apple,
-                                            gravity: 0,
-                                            animation: 9
+                                            object_type: lev::ObjectType::Apple { gravity: lev::Direction::Normal, animation: 9 }
                                         },
                                         lev::Object {
                                             position: Position { x: -20.3914786548306, y: 0.5277288147929609 },
-                                            object_type: lev::ObjectType::Apple,
-                                            gravity: 1,
-                                            animation: 1
+                                            object_type: lev::ObjectType::Apple { gravity: lev::Direction::Up, animation: 1 }
                                         },
                                         lev::Object {
                                             position: Position { x: -19.526026821177144, y: 0.36348248139887396 },
-                                            object_type: lev::ObjectType::Apple,
-                                            gravity: 4,
-                                            animation: 5
+                                            object_type: lev::ObjectType::Apple { gravity: lev::Direction::Right, animation: 5 }
                                         },
                                         lev::Object {
                                             position: Position { x: -21.269564821822065, y: 0.38243398140588436 },
-                                            object_type: lev::ObjectType::Apple,
-                                            gravity: 3,
-                                            animation: 1
+                                            object_type: lev::ObjectType::Apple { gravity: lev::Direction::Left, animation: 1 }
                                         },
                                         lev::Object {
                                             position: Position { x: -19.55761265452216, y: -0.4387976855645497 },
-                                            object_type: lev::ObjectType::Apple,
-                                            gravity: 1,
-                                            animation: 1
+                                            object_type: lev::ObjectType::Apple { gravity: lev::Direction::Up, animation: 1 }
                                         },
                                         lev::Object {
                                             position: Position { x: -20.075620321380434, y: -1.2473950191969765 },
-                                            object_type: lev::ObjectType::Exit,
-                                            gravity: 0,
-                                            animation: 1
+                                            object_type: lev::ObjectType::Exit
                                         },
                                         lev::Object {
                                             position: Position { x: -22.94993115577695, y: 1.5068896484884773 },
-                                            object_type: lev::ObjectType::Player,
-                                            gravity: 0,
-                                            animation: 1
+                                            object_type: lev::ObjectType::Player
                                         }]);
 
         // Picture tests.
@@ -120,7 +109,7 @@ mod tests {
                                             mask: String::new(),
                                             position: Position { x: -19.37674118849727, y: 0.895119783101471 },
                                             distance: 380,
-                                            clip: 2
+                                            clip: lev::Clip::Sky
                                         },
                                         lev::Picture {
                                             name: String::new(),
@@ -128,7 +117,7 @@ mod tests {
                                             mask: String::from("maskbig"),
                                             position: Position { x: -24.465394017511894, y: -3.964829547979911 },
                                             distance: 750,
-                                            clip: 2
+                                            clip: lev::Clip::Sky
                                         }]);
 
         // TODO: test top10 list
