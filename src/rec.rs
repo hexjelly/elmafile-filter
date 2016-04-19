@@ -64,16 +64,17 @@ pub struct Event {
     /// Time of event.
     pub time: f64,
     /// Event type.
-    pub event_type: u8
+    pub event_type: EventType
 }
 
 #[derive(Debug, PartialEq)]
 /// Type of event.
 pub enum EventType {
     /// Apple or flower touch, with index of object.
-    Touch { index: usize },
+    Touch { index: i16 },
     Turn,
-    Volt { right: bool },
+    VoltRight,
+    VoltLeft,
     /// Ground touch, for sound effects. Two types; if alternative is true, uses the second type.
     Ground { alternative: bool }
 }
@@ -86,7 +87,7 @@ impl Event {
     pub fn new() -> Self {
         Event {
             time: 0f64,
-            event_type: 0
+            event_type: EventType::default()
         }
     }
 }
@@ -139,7 +140,7 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let rec = elma::rec::Replay::load_replay("tests/test.rec");
+    /// let rec = elma::rec::Replay::load_replay("tests/test_2.rec");
     /// ```
     pub fn load_replay(filename: &str) -> Self {
         let mut replay = Replay::new();
@@ -152,7 +153,6 @@ impl Replay {
     }
 
     pub fn parse_replay(&mut self) {
-        // TODO: do that.
         let mut remaining = self.raw.as_slice();
 
         // Frame count.
@@ -178,6 +178,7 @@ impl Replay {
         let (_, mut remaining) = remaining.split_at(4);
 
         // Frames.
+        // TODO: REWRITE ALL THIS SINCE IT'S WRONG DURR!
         for _ in 0..frame_count {
             // Bike X and Y.
             let x = remaining.read_f32::<LittleEndian>().unwrap();
@@ -206,9 +207,8 @@ impl Replay {
 
             // Throttle and turn right.
             let data = remaining.read_u8().unwrap();
-            // TODO: figure out how to get these values.
-            let throttle = false;
-            let right = false;
+            let throttle = data & (1 << 0) != 0;
+            let right = data & (1 << 1) != 0;
 
             // Sound effect volume.
             let volume = remaining.read_i16::<LittleEndian>().unwrap();
@@ -235,11 +235,19 @@ impl Replay {
 
             // Event details
             let info = remaining.read_i16::<LittleEndian>().unwrap();
-            let event_type = remaining.read_u8().unwrap();
-
-            // Unknown
+            let event = remaining.read_u8().unwrap();
+            // Unknown values
             let _ = remaining.read_u8().unwrap();
-            let _ = remaining.read_f32::<LittleEndian>().unwrap();
+            let _ = remaining.read_u32::<LittleEndian>().unwrap();
+            let event_type = match event {
+                0 => EventType::Touch { index: info },
+                1 => EventType::Ground { alternative: false },
+                5 => EventType::Turn,
+                4 => EventType::Ground { alternative: true },
+                6 => EventType::VoltRight,
+                7 => EventType::VoltLeft,
+                _ => panic!("Unknown event type: {:?}", event)
+            };
 
             self.events.push(Event {
                 time: time,
