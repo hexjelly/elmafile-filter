@@ -140,7 +140,7 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let rec = elma::rec::Replay::load_replay("tests/test_2.rec");
+    /// let rec = elma::rec::Replay::load_replay("tests/test_1.rec");
     /// ```
     pub fn load_replay(filename: &str) -> Self {
         let mut replay = Replay::new();
