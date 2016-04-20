@@ -139,4 +139,8 @@ mod tests {
     }
 
     // TODO: Test actual replay files
+    fn load_valid_replay_1 () {
+        let replay = rec::Replay::load_replay("tests/test_1.rec");
+        
+    }
 }

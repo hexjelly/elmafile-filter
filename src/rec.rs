@@ -155,6 +155,8 @@ impl Replay {
     pub fn parse_replay(&mut self) {
         let mut remaining = self.raw.as_slice();
 
+        // TODO: read bytes 8-12 first to see if multi-player replay, then parse it twice.
+
         // Frame count.
         let frame_count = remaining.read_i32::<LittleEndian>().unwrap();
 
@@ -175,43 +177,61 @@ impl Replay {
         self.level = trim_string(level).unwrap();
 
         // Unknown, unused.
-        let (_, mut remaining) = remaining.split_at(4);
+        let (_, remaining) = remaining.split_at(4);
 
         // Frames.
-        // TODO: REWRITE ALL THIS SINCE IT'S WRONG DURR!
+        let (mut bike_x, remaining) = remaining.split_at((frame_count*4) as usize);
+        let (mut bike_y, remaining) = remaining.split_at((frame_count*4) as usize);
+        let (mut left_x, remaining) = remaining.split_at((frame_count*2) as usize);
+        let (mut left_y, remaining) = remaining.split_at((frame_count*2) as usize);
+        let (mut right_x, remaining) = remaining.split_at((frame_count*2) as usize);
+        let (mut right_y, remaining) = remaining.split_at((frame_count*2) as usize);
+        let (mut head_x, remaining) = remaining.split_at((frame_count*2) as usize);
+        let (mut head_y, remaining) = remaining.split_at((frame_count*2) as usize);
+        let (mut rotation, remaining) = remaining.split_at((frame_count*2) as usize);
+        let (mut left_rotation, remaining) = remaining.split_at((frame_count) as usize);
+        let (mut right_rotation, remaining) = remaining.split_at((frame_count) as usize);
+        let (mut data, remaining) = remaining.split_at((frame_count) as usize);
+        let (mut volume, mut remaining) = remaining.split_at((frame_count*2) as usize);
+
+        // // For testing TODO: REMOVE
+        // let mut test: Vec<[u8; 2]> = vec![];
         for _ in 0..frame_count {
             // Bike X and Y.
-            let x = remaining.read_f32::<LittleEndian>().unwrap();
-            let y = remaining.read_f32::<LittleEndian>().unwrap();
+            let x = bike_x.read_f32::<LittleEndian>().unwrap();
+            let y = bike_y.read_f32::<LittleEndian>().unwrap();
             let bike = Position { x: x, y: y };
 
             // Left wheel X and Y.
-            let x = remaining.read_i16::<LittleEndian>().unwrap();
-            let y = remaining.read_i16::<LittleEndian>().unwrap();
+            let x = left_x.read_i16::<LittleEndian>().unwrap();
+            let y = left_y.read_i16::<LittleEndian>().unwrap();
             let left_wheel = Position { x: x, y: y };
 
             // Left wheel X and Y.
-            let x = remaining.read_i16::<LittleEndian>().unwrap();
-            let y = remaining.read_i16::<LittleEndian>().unwrap();
+            let x = right_x.read_i16::<LittleEndian>().unwrap();
+            let y = right_y.read_i16::<LittleEndian>().unwrap();
             let right_wheel = Position { x: x, y: y };
 
             // Head X and Y.
-            let x = remaining.read_i16::<LittleEndian>().unwrap();
-            let y = remaining.read_i16::<LittleEndian>().unwrap();
+            let x = head_x.read_i16::<LittleEndian>().unwrap();
+            let y = head_y.read_i16::<LittleEndian>().unwrap();
             let head = Position { x: x, y: y };
 
             // Rotations.
-            let rotation = remaining.read_i16::<LittleEndian>().unwrap();
-            let left_wheel_rotation = remaining.read_u8().unwrap();
-            let right_wheel_rotation = remaining.read_u8().unwrap();
+            let rotation = rotation.read_i16::<LittleEndian>().unwrap();
+            let left_wheel_rotation = left_rotation.read_u8().unwrap();
+            let right_wheel_rotation = right_rotation.read_u8().unwrap();
 
             // Throttle and turn right.
-            let data = remaining.read_u8().unwrap();
-            let throttle = data & (1 << 0) != 0;
+            let data = data.read_u8().unwrap();
+            let throttle = data & 1 != 0;
             let right = data & (1 << 1) != 0;
 
             // Sound effect volume.
-            let volume = remaining.read_i16::<LittleEndian>().unwrap();
+            let volume = volume.read_i16::<LittleEndian>().unwrap();
+
+            // For testing TODO: REMOVE
+            // test.push([left_wheel_rotation, right_wheel_rotation]);
 
             self.frames.push(Frame {
                 bike: bike,
@@ -227,9 +247,12 @@ impl Replay {
             });
         }
 
+        // // For testing TODO: REMOVE
+        // panic!("{:?}", test);
+
         // Events.
         let event_count = remaining.read_i32::<LittleEndian>().unwrap();
-        for _ in 0..event_count {
+        for n in 0..event_count {
             // Event time
             let time = remaining.read_f64::<LittleEndian>().unwrap();
 
@@ -246,7 +269,7 @@ impl Replay {
                 4 => EventType::Ground { alternative: true },
                 6 => EventType::VoltRight,
                 7 => EventType::VoltLeft,
-                _ => panic!("Unknown event type: {:?}", event)
+                _ => panic!("Unknown event type: {:?}\nin event number: {:?}", event, n)
             };
 
             self.events.push(Event {
