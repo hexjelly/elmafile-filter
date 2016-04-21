@@ -10,7 +10,7 @@ const EOR: i32 = 0x00492F75;
 /// One frame of replay.
 #[derive(Debug, Default, PartialEq)]
 pub struct Frame {
-    /// Bike position?
+    /// Bike position.
     pub bike: Position<f32>,
     /// Left wheel position.
     pub left_wheel: Position<i16>,
@@ -43,7 +43,7 @@ impl Frame {
     /// ```
     pub fn new() -> Self {
         Frame {
-            bike: Position { x: 0f32, y: 0f32 },
+            bike: Position { x: 0_f32, y: 0_f32 },
             left_wheel: Position { x: 0, y: 0 },
             right_wheel: Position { x: 0, y: 0 },
             head: Position { x: 0, y: 0 },
@@ -86,7 +86,7 @@ impl Default for EventType {
 impl Event {
     pub fn new() -> Self {
         Event {
-            time: 0f64,
+            time: 0_f64,
             event_type: EventType::default()
         }
     }
@@ -194,8 +194,6 @@ impl Replay {
         let (mut data, remaining) = remaining.split_at((frame_count) as usize);
         let (mut volume, mut remaining) = remaining.split_at((frame_count*2) as usize);
 
-        // // For testing TODO: REMOVE
-        // let mut test: Vec<[u8; 2]> = vec![];
         for _ in 0..frame_count {
             // Bike X and Y.
             let x = bike_x.read_f32::<LittleEndian>().unwrap();
@@ -230,9 +228,6 @@ impl Replay {
             // Sound effect volume.
             let volume = volume.read_i16::<LittleEndian>().unwrap();
 
-            // For testing TODO: REMOVE
-            // test.push([left_wheel_rotation, right_wheel_rotation]);
-
             self.frames.push(Frame {
                 bike: bike,
                 left_wheel: left_wheel,
@@ -247,9 +242,6 @@ impl Replay {
             });
         }
 
-        // // For testing TODO: REMOVE
-        // panic!("{:?}", test);
-
         // Events.
         let event_count = remaining.read_i32::<LittleEndian>().unwrap();
         for n in 0..event_count {
@@ -261,7 +253,7 @@ impl Replay {
             let event = remaining.read_u8().unwrap();
             // Unknown values
             let _ = remaining.read_u8().unwrap();
-            let _ = remaining.read_u32::<LittleEndian>().unwrap();
+            let _ = remaining.read_f32::<LittleEndian>().unwrap();
             let event_type = match event {
                 0 => EventType::Touch { index: info },
                 1 => EventType::Ground { alternative: false },
