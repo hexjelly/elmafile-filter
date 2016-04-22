@@ -28,3 +28,9 @@ pub fn trim_string (data: &[u8]) -> Result<String, std::string::FromUtf8Error> {
 
     String::from_utf8(bytes)
 }
+
+/// Converts times to various formats
+pub fn time_format (time: i32) -> String {
+    // TODO: figure out what to return etc.
+    time.to_string()
+}

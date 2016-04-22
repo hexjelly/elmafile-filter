@@ -122,7 +122,22 @@ mod tests {
             clip: lev::Clip::Sky
         }]);
 
-        // TODO: test top10 list
+        // Top10 tests.
+        assert_eq!(level.top10_single[0], lev::ListEntry {
+            name_1: String::from("Rust"),
+            name_2: String::from("Cargo"),
+            time: 201
+        });
+        assert_eq!(level.top10_single[2], lev::ListEntry {
+            name_1: String::from("Cargo"),
+            name_2: String::from("Rust"),
+            time: 206
+        });
+        assert_eq!(level.top10_single[9], lev::ListEntry {
+            name_1: String::from("Rust"),
+            name_2: String::from("Cargo"),
+            time: 308
+        });
     }
 
     // TODO: Add more levels to test, including some corrupt ones!
