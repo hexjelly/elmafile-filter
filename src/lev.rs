@@ -384,11 +384,12 @@ pub fn parse_top10 (top10: &[u8]) -> Vec<ListEntry> {
         let name_1_end = name_1_offset + 15;
         let name_2_offset = (194 + n * 15) as usize;
         let name_2_end = name_2_offset + 15;
-        // All of this pains me even though I don't understand it...
+
         let name_1 = &top10[name_1_offset..name_1_end];
         let name_2 = &top10[name_2_offset..name_2_end];
+        let time = &top10[time_offset..time_end];
         list.push(ListEntry {
-            time: LittleEndian::read_i32(&top10[time_offset..time_end]),
+            time: LittleEndian::read_i32(time),
             name_1: trim_string(name_1).unwrap(),
             name_2: trim_string(name_2).unwrap()
         });
