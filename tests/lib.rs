@@ -40,10 +40,10 @@ mod tests {
         let level = lev::Level::load_level("tests/test_1.lev");
         assert_eq!(level.version, lev::Version::Elma);
         assert_eq!(level.link, 1524269776);
-        assert_eq!(level.integrity, [-1148375.210607791,
-                                      1164056.210607791,
-                                      1162467.210607791,
-                                      1162283.210607791]);
+        assert_eq!(level.integrity, [-1148375.210607791_f64,
+                                      1164056.210607791_f64,
+                                      1162467.210607791_f64,
+                                      1162283.210607791_f64]);
         assert_eq!(level.name, "Rust test");
         assert_eq!(level.lgr, "default");
         assert_eq!(level.ground, "ground");
@@ -53,52 +53,52 @@ mod tests {
         assert_eq!(level.polygons.len(), 2);
         assert_eq!(level.polygons, vec![lev::Polygon {
                 grass: false, vertices: vec![
-                    Position { x: -23.993693053024586, y: -3.135779367971911 },
-                    Position { x: -15.989070625361132, y: -3.135779367971911 },
-                    Position { x: -15.989070625361132, y: 1.995755366905195 },
+                    Position { x: -23.993693053024586_f64, y: -3.135779367971911_f64 },
+                    Position { x: -15.989070625361132_f64, y: -3.135779367971911_f64 },
+                    Position { x: -15.989070625361132_f64, y: 1.995755366905195_f64 },
                     Position { x: -24f64, y: 2f64 }]
             },
             lev::Polygon {
                 grass: true, vertices: vec![
-                    Position { x: -23.83645939819548, y: 2.310222676563402 },
-                    Position { x: -17.60428907951465, y: 2.2816347393217473 },
-                    Position { x: -17.53281923641051, y: 1.8956975865594021 },
-                    Position { x: -23.96510511578293, y: 1.924285523801057 }]
+                    Position { x: -23.83645939819548_f64, y: 2.310222676563402_f64 },
+                    Position { x: -17.60428907951465_f64, y: 2.2816347393217473_f64 },
+                    Position { x: -17.53281923641051_f64, y: 1.8956975865594021_f64 },
+                    Position { x: -23.96510511578293_f64, y: 1.924285523801057_f64 }]
             }
         ]);
 
         // Object tests.
         assert_eq!(level.objects.len(), 8);
         assert_eq!(level.objects, vec![lev::Object {
-                position: Position { x: -23.221818747499896, y: -1.3204453531268072 },
+                position: Position { x: -23.221818747499896_f64, y: -1.3204453531268072_f64 },
                 object_type: lev::ObjectType::Killer
             },
             lev::Object {
-                position: Position { x: -20.37252715482359, y: -0.3124543521844827 },
+                position: Position { x: -20.37252715482359_f64, y: -0.3124543521844827_f64 },
                 object_type: lev::ObjectType::Apple { gravity: lev::Direction::Normal, animation: 9 }
             },
             lev::Object {
-                position: Position { x: -20.3914786548306, y: 0.5277288147929609 },
+                position: Position { x: -20.3914786548306_f64, y: 0.5277288147929609_f64 },
                 object_type: lev::ObjectType::Apple { gravity: lev::Direction::Up, animation: 1 }
             },
             lev::Object {
-                position: Position { x: -19.526026821177144, y: 0.36348248139887396 },
+                position: Position { x: -19.526026821177144_f64, y: 0.36348248139887396_f64 },
                 object_type: lev::ObjectType::Apple { gravity: lev::Direction::Right, animation: 5 }
             },
             lev::Object {
-                position: Position { x: -21.269564821822065, y: 0.38243398140588436 },
+                position: Position { x: -21.269564821822065_f64, y: 0.38243398140588436_f64 },
                 object_type: lev::ObjectType::Apple { gravity: lev::Direction::Left, animation: 1 }
             },
             lev::Object {
-                position: Position { x: -19.55761265452216, y: -0.4387976855645497 },
+                position: Position { x: -19.55761265452216_f64, y: -0.4387976855645497_f64 },
                 object_type: lev::ObjectType::Apple { gravity: lev::Direction::Up, animation: 1 }
             },
             lev::Object {
-                position: Position { x: -20.075620321380434, y: -1.2473950191969765 },
+                position: Position { x: -20.075620321380434_f64, y: -1.2473950191969765_f64 },
                 object_type: lev::ObjectType::Exit
             },
             lev::Object {
-                position: Position { x: -22.94993115577695, y: 1.5068896484884773 },
+                position: Position { x: -22.94993115577695_f64, y: 1.5068896484884773_f64 },
                 object_type: lev::ObjectType::Player
             }
         ]);
@@ -109,7 +109,7 @@ mod tests {
             name: String::from("barrel"),
             texture: String::new(),
             mask: String::new(),
-            position: Position { x: -19.37674118849727, y: 0.895119783101471 },
+            position: Position { x: -19.37674118849727_f64, y: 0.895119783101471_f64 },
             distance: 380,
             clip: lev::Clip::Sky
         },
@@ -117,7 +117,7 @@ mod tests {
             name: String::new(),
             texture: String::from("stone1"),
             mask: String::from("maskbig"),
-            position: Position { x: -24.465394017511894, y: -3.964829547979911 },
+            position: Position { x: -24.465394017511894_f64, y: -3.964829547979911_f64 },
             distance: 750,
             clip: lev::Clip::Sky
         }]);
@@ -151,7 +151,7 @@ mod tests {
         // Frames tests.
         assert_eq!(replay.frames.len(), 440);
         assert_eq!(replay.frames[0], rec::Frame {
-            bike: Position { x: 34.30250, y: -1.1253119 },
+            bike: Position { x: 34.30250_f32, y: -1.1253119_f32 },
             left_wheel: Position { x: -850, y: -524 },
             right_wheel: Position { x: 849 , y: -524 },
             head: Position { x: 0, y: 439 },
@@ -161,6 +161,42 @@ mod tests {
             throttle: true,
             right: false,
             volume: 5120
+        });
+        assert_eq!(replay.frames[100], rec::Frame {
+            bike: Position { x: 27.142517089844_f32, y: -1.1152113676071_f32 },
+            left_wheel: Position { x: -903, y: -514 },
+            right_wheel: Position { x: 586, y: -534 },
+            head: Position { x: 74, y: 397 },
+            rotation: 9826,
+            left_wheel_rotation: 248,
+            right_wheel_rotation: 238,
+            throttle: true,
+            right: false,
+            volume: -5398
+        });
+        assert_eq!(replay.frames[201], rec::Frame {
+            bike: Position { x: 11.07129573822_f32, y: 2.8753623962402_f32 },
+            left_wheel: Position { x: -511, y: 917 },
+            right_wheel: Position { x: -692, y: -789 },
+            head: Position { x: 471, y: 10 },
+            rotation: 7325,
+            left_wheel_rotation: 25,
+            right_wheel_rotation: 23,
+            throttle: true,
+            right: false,
+            volume: -5398
+        });
+        assert_eq!(replay.frames[439], rec::Frame {
+            bike: Position { x: -34.779712677002_f32, y: 11.526465415955_f32 },
+            left_wheel: Position { x: -1050, y: -33 },
+            right_wheel: Position { x: 286, y: -757 },
+            head: Position { x: 226, y: 376 },
+            rotation: 9047,
+            left_wheel_rotation: 73,
+            right_wheel_rotation: 163,
+            throttle: true,
+            right: false,
+            volume: 5652
         });
 
         // Event tests.
