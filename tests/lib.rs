@@ -2,9 +2,10 @@ extern crate elma;
 extern crate rand;
 #[cfg(test)]
 mod tests {
-    use elma::{ lev, rec, Position };
+    use elma::{ lev, rec, Position, time_format };
     use rand::random;
 
+    // Helper functions.
     #[test]
     fn test_decrypt_encrypt () {
         let mut initial: Vec<u8> = vec![];
@@ -15,6 +16,16 @@ mod tests {
         let encrypted = lev::crypt_top10(&decrypted);
         assert_eq!(initial, encrypted);
     }
+
+    #[test]
+    fn test_time_format () {
+        assert_eq!("11:48,01", time_format(114801));
+        assert_eq!("01:00,21", time_format(10021));
+        assert_eq!("00:10,00", time_format(1000));
+        assert_eq!("10:00,00", time_format(100000));
+        assert_eq!("00:00,00", time_format(0));
+    }
+
 
     #[test]
     // Probably redundant, but maybe some new fields are added in the future.
