@@ -29,8 +29,20 @@ pub fn trim_string (data: &[u8]) -> Result<String, std::string::FromUtf8Error> {
     String::from_utf8(bytes)
 }
 
-/// Converts times to various formats
+/// Converts times to various formats.
 pub fn time_format (time: i32) -> String {
-    // TODO: figure out what to return etc.
-    time.to_string()
+    let time = time.to_string().into_bytes();
+    let mut formatted = String::from("00:00,00").into_bytes();
+
+    let mut n = 7;
+    for byte in time.iter().rev() {
+        formatted[n] = *byte;
+        if n == 6 || n == 3 {
+            n -= 2;
+        } else if n > 0 {
+            n -= 1;
+        }
+    }
+
+    String::from_utf8(formatted).unwrap()
 }
