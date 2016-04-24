@@ -116,7 +116,7 @@ impl Default for Replay {
 }
 
 impl Replay {
-    /// Build a new Replay.
+    /// Return a new Replay struct.
     ///
     /// # Examples
     ///
