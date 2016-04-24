@@ -62,7 +62,7 @@ pub struct Object {
 pub struct Polygon {
     /// Grass polygon.
     pub grass: bool,
-    /// Vector with all vertices, see Position struct.
+    /// Vector with all vertices, see `Position` struct.
     pub vertices: Vec<Position<f64>>
 }
 
@@ -96,7 +96,7 @@ pub struct Picture {
     pub texture: String,
     /// Mask name.
     pub mask: String,
-    /// Position. See Position struct.
+    /// Position. See `Position` struct.
     pub position: Position<f64>,
     /// Z-distance
     pub distance: i32,
@@ -124,7 +124,7 @@ pub struct Level {
     pub version: Version,
     /// Random number that links level file to replay files.
     pub link: i32,
-    /// Contains four integrity checks (See calculate_integrity_sums()).
+    /// Contains four integrity checks.
     pub integrity: [f64; 4],
     /// Level name.
     pub name: String,
@@ -134,11 +134,11 @@ pub struct Level {
     pub ground: String,
     /// Sky texture name.
     pub sky: String,
-    /// Vector with all polygons (See Polygon).
+    /// Vector with all polygons (See `Polygon`).
     pub polygons: Vec<Polygon>,
-    /// Vector with all objects (See Object).
+    /// Vector with all objects (See `Object`).
     pub objects: Vec<Object>,
-    /// Vector with all pictures (See Picture).
+    /// Vector with all pictures (See `Picture`).
     pub pictures: Vec<Picture>,
     /// Vector of Top10 single-player names and times.
     pub top10_single: Vec<ListEntry>,
@@ -151,7 +151,7 @@ impl Default for Level {
 }
 
 impl Level {
-    /// Returns a new Level struct.
+    /// Returns a new `Level` struct.
     ///
     /// # Examples
     ///
@@ -176,7 +176,7 @@ impl Level {
         }
     }
 
-    /// Loads a level file and returns a Level struct.
+    /// Loads a level file and returns a `Level` struct.
     ///
     /// # Examples
     ///
@@ -193,7 +193,7 @@ impl Level {
         level
     }
 
-    /// Parses the raw binary data into Level struct fields.
+    /// Parses the raw binary data into `Level` struct fields.
     fn parse_level (&mut self) {
         let remaining = self.raw.as_slice();
 
@@ -330,7 +330,7 @@ impl Level {
         if expected != EOF { panic!("EOF marker mismatch: x0{:x} != x0{:x}", expected, EOF); }
     }
 
-    /// Combines the Level struct fields to generate the raw binary data,
+    /// Combines the `Level` struct fields to generate the raw binary data,
     /// and calculate integrity sums.
     fn update (&self) {
         self.calculate_integrity_sums();
@@ -338,6 +338,12 @@ impl Level {
     }
 
     fn calculate_integrity_sums (&self) {
+        unimplemented!();
+    }
+
+    /// Check topology of level.
+    // TODO: make this return a Result with problematic polygons/vertices.
+    pub fn topology_check (&self) -> bool {
         unimplemented!();
     }
 
