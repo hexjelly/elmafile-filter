@@ -10,7 +10,12 @@ extern crate byteorder;
 pub mod lev;
 pub mod rec;
 
-/// Shared position struct.
+/// Shared position struct used in both sub-modules.
+///
+/// # Examples
+/// ```
+/// let vertex = elma::Position { x: 23.1928_f64, y: -199.200019_f64 };
+/// ```
 #[derive(Debug, Default, PartialEq)]
 pub struct Position<T> {
     /// X-position.
@@ -29,7 +34,18 @@ pub fn trim_string (data: &[u8]) -> Result<String, std::string::FromUtf8Error> {
     String::from_utf8(bytes)
 }
 
-/// Converts times to various formats.
+/// Converts the string-as-i32 times in top10 list to strings.
+///
+/// # Examples
+/// Thanks to the genious data structure in Elma files, the best times in a level are represented
+/// visually as a string, but stored as a i32. This function will convert the i32 time to a string
+/// formatted as "00:00,00".
+///
+/// ```
+/// let time: i32 = 2039;
+/// let formatted = elma::time_format(time);
+/// assert_eq!("00:20,39", formatted);
+/// ```
 pub fn time_format (time: i32) -> String {
     let time = time.to_string().into_bytes();
     let mut formatted = String::from("00:00,00").into_bytes();
