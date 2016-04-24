@@ -333,12 +333,12 @@ impl Level {
     /// Combines the Level struct fields to generate the raw binary data,
     /// and calculate integrity sums.
     fn update (&self) {
-        // TODO: convert
         self.calculate_integrity_sums();
+        unimplemented!();
     }
 
     fn calculate_integrity_sums (&self) {
-        // TODO: do that
+        unimplemented!();
     }
 
     /// Converts all struct fields into raw binary form and returns it.
@@ -351,13 +351,13 @@ impl Level {
     pub fn save (&self, _filename: &str) {
         self.update();
         // let file = File::create(&filename).unwrap();
-        // TODO: write stuff.
+        unimplemented!();
     }
 
     /// Saves level as a file, without emptying Top10 lists.
     pub fn save_with_top10 (&self, _filename: &str) {
         self.update();
-        // TODO: write it.
+        unimplemented!();
     }
 }
 

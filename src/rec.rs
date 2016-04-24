@@ -279,6 +279,6 @@ impl Replay {
 
     /// Save replay as a file.
     pub fn save (&self, _filename: &str) {
-        // TODO: save it.
+        unimplemented!();
     }
 }
