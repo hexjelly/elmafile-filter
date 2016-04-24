@@ -5,7 +5,7 @@ use std::fs::File;
 use byteorder::{ ByteOrder, ReadBytesExt, LittleEndian };
 use super::{ Position, trim_string };
 
-// Magic arbitrary number; signifies end-of-data. Followed by Top10 list(s).
+// Magic arbitrary number; signifies end-of-data. Followed by Top10 lists.
 const EOD: i32 = 0x0067103A;
 // Magic arbitrary number; signifies end-of-file.
 const EOF: i32 = 0x00845D52;
@@ -347,11 +347,17 @@ impl Level {
         self.raw
     }
 
-    /// Saves level as a file.
-    pub fn save_lev (&self, _filename: &str) {
+    /// Saves level as a file. This will write new empty Top10 lists.
+    pub fn save (&self, _filename: &str) {
         self.update();
         // let file = File::create(&filename).unwrap();
         // TODO: write stuff.
+    }
+
+    /// Saves level as a file, without emptying Top10 lists.
+    pub fn save_with_top10 (&self, _filename: &str) {
+        self.update();
+        // TODO: write it.
     }
 }
 

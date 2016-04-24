@@ -1,7 +1,7 @@
 //! Read and write Elasto Mania replay files.
-use std::io::{ Read, Write };
+use std::io::{ Read };
 use std::fs::File;
-use byteorder::{ ReadBytesExt, WriteBytesExt, LittleEndian };
+use byteorder::{ ReadBytesExt, LittleEndian };
 use super::{ Position, trim_string };
 
 // Magic arbitrary number to signify end of replay file.
@@ -34,7 +34,7 @@ pub struct Frame {
 }
 
 impl Frame {
-    /// Returns a new Frame struct with zero values.
+    /// Returns a new Frame struct with zero-filled values.
     ///
     /// # Examples
     ///
@@ -140,9 +140,9 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let rec = elma::rec::Replay::load_replay("tests/test_1.rec");
+    /// let rec = elma::rec::Replay::load("tests/test_1.rec");
     /// ```
-    pub fn load_replay(filename: &str) -> Self {
+    pub fn load(filename: &str) -> Self {
         let mut replay = Replay::new();
         let mut file = File::open(filename).unwrap();
         let mut buffer = vec![];
@@ -152,7 +152,8 @@ impl Replay {
         replay
     }
 
-    pub fn parse_replay(&mut self) {
+    /// Parses the raw binary data into Replay struct fields.
+    fn parse_replay(&mut self) {
         let mut remaining = self.raw.as_slice();
 
         // TODO: read bytes 8-12 first to see if multi-player replay, then parse it twice.
@@ -274,5 +275,10 @@ impl Replay {
         if expected != EOR { panic!("EOR marker mismatch: x0{:x} != x0{:x}", expected, EOR); }
 
         // TODO: Add multi-player replay parsing.
+    }
+
+    /// Save replay as a file.
+    pub fn save (&self, _filename: &str) {
+        // TODO: save it.
     }
 }

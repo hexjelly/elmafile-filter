@@ -168,7 +168,7 @@ mod tests {
 
     #[test]
     fn load_valid_replay_1 () {
-        let replay = rec::Replay::load_replay("tests/test_1.rec");
+        let replay = rec::Replay::load("tests/test_1.rec");
         assert_eq!(replay.multi, false);
         assert_eq!(replay.flag_tag, false);
         assert_eq!(replay.link, 2549082363);
