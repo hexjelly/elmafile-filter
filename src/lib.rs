@@ -2,8 +2,8 @@
 
 #![doc(html_root_url = "https://hexjelly.github.io/elma-rust/")]
 #![feature(slice_patterns)]
-#![feature(plugin)]
-#![plugin(clippy)]
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
 
 extern crate byteorder;
 
