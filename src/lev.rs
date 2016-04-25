@@ -181,9 +181,9 @@ impl Level {
     /// # Examples
     ///
     /// ```
-    /// let level = elma::lev::Level::load_level("tests/test_1.lev");
+    /// let level = elma::lev::Level::load("tests/test_1.lev");
     /// ```
-    pub fn load_level (filename: &str) -> Self {
+    pub fn load (filename: &str) -> Self {
         let mut level = Level::new();
         let mut file = File::open(filename).unwrap();
         let mut buffer = vec![];

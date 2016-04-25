@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn load_valid_level_1 () {
-        let level = lev::Level::load_level("tests/test_1.lev");
+        let level = lev::Level::load("tests/test_1.lev");
         assert_eq!(level.version, lev::Version::Elma);
         assert_eq!(level.link, 1524269776);
         assert_eq!(level.integrity, [-1148375.210607791_f64,
