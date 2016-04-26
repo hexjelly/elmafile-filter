@@ -105,10 +105,14 @@ pub struct Replay {
     pub link: u32,
     /// Full level filename.
     pub level: String,
-    /// Vector with Frame structs.
+    /// Player one frames.
     pub frames: Vec<Frame>,
-    /// Events.
-    pub events: Vec<Event>
+    /// Player one events.
+    pub events: Vec<Event>,
+    /// Player two frames.
+    pub frames_2: Vec<Frame>,
+    /// Player two events.
+    pub events_2: Vec<Event>
 }
 
 impl Default for Replay {
@@ -131,7 +135,9 @@ impl Replay {
             link: 0,
             level: String::new(),
             frames: vec![],
-            events: vec![]
+            events: vec![],
+            frames_2: vec![],
+            events_2: vec![]
         }
     }
 

@@ -263,4 +263,11 @@ mod tests {
             event_type: rec::EventType::Touch { index: 3 }
          });
     }
+
+    #[test]
+    fn load_valid_multi_replay_1 () {
+        let replay = rec::Replay::load("tests/test_2.rec");
+        assert_eq!(replay.multi, true);
+        assert_eq!(replay.flag_tag, false);
+    }
 }
