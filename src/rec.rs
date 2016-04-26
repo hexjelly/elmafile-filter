@@ -127,7 +127,7 @@ impl Replay {
     /// ```
     /// let rec = elma::rec::Replay::new();
     /// ```
-    pub fn new() -> Replay {
+    pub fn new() -> Self {
         Replay {
             raw: vec![],
             multi: false,
@@ -148,7 +148,7 @@ impl Replay {
     /// ```
     /// let rec = elma::rec::Replay::load("tests/test_1.rec");
     /// ```
-    pub fn load(filename: &str) -> Replay {
+    pub fn load(filename: &str) -> Self {
         let mut replay = Replay::new();
         let mut file = File::open(filename).unwrap();
         let mut buffer = vec![];
