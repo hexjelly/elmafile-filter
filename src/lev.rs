@@ -67,7 +67,7 @@ pub struct Polygon {
 }
 
 impl Polygon {
-    pub fn new () -> Self {
+    pub fn new () -> Polygon {
         Polygon {
             grass: false,
             vertices: vec![]
@@ -158,7 +158,7 @@ impl Level {
     /// ```
     /// let level = elma::lev::Level::new();
     /// ```
-    pub fn new () -> Self {
+    pub fn new () -> Level {
         Level {
             raw: vec![],
             version: Version::Elma,
@@ -183,7 +183,7 @@ impl Level {
     /// ```
     /// let level = elma::lev::Level::load("tests/test_1.lev");
     /// ```
-    pub fn load (filename: &str) -> Self {
+    pub fn load (filename: &str) -> Level {
         let mut level = Level::new();
         let mut file = File::open(filename).unwrap();
         let mut buffer = vec![];
