@@ -134,6 +134,7 @@ mod tests {
         }]);
 
         // Top10 tests.
+        assert_eq!(level.top10_single.len(), 10);
         assert_eq!(level.top10_single[0], lev::ListEntry {
             name_1: String::from("Rust"),
             name_2: String::from("Cargo"),
@@ -149,6 +150,24 @@ mod tests {
             name_2: String::from("Cargo"),
             time: 308
         });
+    }
+
+    #[test]
+    fn load_valid_level_2 () {
+        let level = lev::Level::load("tests/test_2.lev");
+        assert_eq!(level.version, lev::Version::Elma);
+        assert_eq!(level.link, 1505288190);
+        assert_eq!(level.name, "");
+        assert_eq!(level.ground, "brick");
+        assert_eq!(level.sky, "ground");
+        assert_eq!(level.polygons.len(), 5);
+        assert_eq!(level.polygons[0].grass, false);
+        assert_eq!(level.polygons[0].vertices.len(), 4);
+        assert_eq!(level.polygons[0].vertices[0].x, 18.507991950076164);
+        assert_eq!(level.polygons[0].vertices[1].y, 17.978810742022475);
+        assert_eq!(level.objects.len(), 17);
+        assert_eq!(level.pictures.len(), 3);
+        assert_eq!(level.top10_single.len(), 0);
     }
 
     // TODO: Add more levels to test, including some corrupt ones!
