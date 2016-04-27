@@ -187,67 +187,8 @@ impl Replay {
         let (_, remaining) = remaining.split_at(4);
 
         // Frames.
-        let (mut bike_x, remaining) = remaining.split_at((frame_count*4) as usize);
-        let (mut bike_y, remaining) = remaining.split_at((frame_count*4) as usize);
-        let (mut left_x, remaining) = remaining.split_at((frame_count*2) as usize);
-        let (mut left_y, remaining) = remaining.split_at((frame_count*2) as usize);
-        let (mut right_x, remaining) = remaining.split_at((frame_count*2) as usize);
-        let (mut right_y, remaining) = remaining.split_at((frame_count*2) as usize);
-        let (mut head_x, remaining) = remaining.split_at((frame_count*2) as usize);
-        let (mut head_y, remaining) = remaining.split_at((frame_count*2) as usize);
-        let (mut rotation, remaining) = remaining.split_at((frame_count*2) as usize);
-        let (mut left_rotation, remaining) = remaining.split_at((frame_count) as usize);
-        let (mut right_rotation, remaining) = remaining.split_at((frame_count) as usize);
-        let (mut data, remaining) = remaining.split_at((frame_count) as usize);
-        let (mut volume, mut remaining) = remaining.split_at((frame_count*2) as usize);
-
-        for _ in 0..frame_count {
-            // Bike X and Y.
-            let x = bike_x.read_f32::<LittleEndian>().unwrap();
-            let y = bike_y.read_f32::<LittleEndian>().unwrap();
-            let bike = Position { x: x, y: y };
-
-            // Left wheel X and Y.
-            let x = left_x.read_i16::<LittleEndian>().unwrap();
-            let y = left_y.read_i16::<LittleEndian>().unwrap();
-            let left_wheel = Position { x: x, y: y };
-
-            // Left wheel X and Y.
-            let x = right_x.read_i16::<LittleEndian>().unwrap();
-            let y = right_y.read_i16::<LittleEndian>().unwrap();
-            let right_wheel = Position { x: x, y: y };
-
-            // Head X and Y.
-            let x = head_x.read_i16::<LittleEndian>().unwrap();
-            let y = head_y.read_i16::<LittleEndian>().unwrap();
-            let head = Position { x: x, y: y };
-
-            // Rotations.
-            let rotation = rotation.read_i16::<LittleEndian>().unwrap();
-            let left_wheel_rotation = left_rotation.read_u8().unwrap();
-            let right_wheel_rotation = right_rotation.read_u8().unwrap();
-
-            // Throttle and turn right.
-            let data = data.read_u8().unwrap();
-            let throttle = data & 1 != 0;
-            let right = data & (1 << 1) != 0;
-
-            // Sound effect volume.
-            let volume = volume.read_i16::<LittleEndian>().unwrap();
-
-            self.frames.push(Frame {
-                bike: bike,
-                left_wheel: left_wheel,
-                right_wheel: right_wheel,
-                head: head,
-                rotation: rotation,
-                left_wheel_rotation: left_wheel_rotation,
-                right_wheel_rotation: right_wheel_rotation,
-                throttle: throttle,
-                right: right,
-                volume: volume
-            });
-        }
+        self.frames = parse_frames(remaining, frame_count);
+        let (_, mut remaining) = remaining.split_at(27*frame_count as usize);
 
         // Events.
         let event_count = remaining.read_i32::<LittleEndian>().unwrap();
@@ -287,4 +228,72 @@ impl Replay {
     pub fn save (&self, _filename: &str) {
         unimplemented!();
     }
+}
+
+fn parse_frames (frame_data: &[u8], frame_count: i32) -> Vec<Frame> {
+    let mut frames: Vec<Frame> = vec![];
+
+    let (mut bike_x, remaining) = frame_data.split_at((frame_count*4) as usize);
+    let (mut bike_y, remaining) = remaining.split_at((frame_count*4) as usize);
+    let (mut left_x, remaining) = remaining.split_at((frame_count*2) as usize);
+    let (mut left_y, remaining) = remaining.split_at((frame_count*2) as usize);
+    let (mut right_x, remaining) = remaining.split_at((frame_count*2) as usize);
+    let (mut right_y, remaining) = remaining.split_at((frame_count*2) as usize);
+    let (mut head_x, remaining) = remaining.split_at((frame_count*2) as usize);
+    let (mut head_y, remaining) = remaining.split_at((frame_count*2) as usize);
+    let (mut rotation, remaining) = remaining.split_at((frame_count*2) as usize);
+    let (mut left_rotation, remaining) = remaining.split_at((frame_count) as usize);
+    let (mut right_rotation, remaining) = remaining.split_at((frame_count) as usize);
+    let (mut data, remaining) = remaining.split_at((frame_count) as usize);
+    let (mut volume, _) = remaining.split_at((frame_count*2) as usize);
+
+    for _ in 0..frame_count {
+        // Bike X and Y.
+        let x = bike_x.read_f32::<LittleEndian>().unwrap();
+        let y = bike_y.read_f32::<LittleEndian>().unwrap();
+        let bike = Position { x: x, y: y };
+
+        // Left wheel X and Y.
+        let x = left_x.read_i16::<LittleEndian>().unwrap();
+        let y = left_y.read_i16::<LittleEndian>().unwrap();
+        let left_wheel = Position { x: x, y: y };
+
+        // Left wheel X and Y.
+        let x = right_x.read_i16::<LittleEndian>().unwrap();
+        let y = right_y.read_i16::<LittleEndian>().unwrap();
+        let right_wheel = Position { x: x, y: y };
+
+        // Head X and Y.
+        let x = head_x.read_i16::<LittleEndian>().unwrap();
+        let y = head_y.read_i16::<LittleEndian>().unwrap();
+        let head = Position { x: x, y: y };
+
+        // Rotations.
+        let rotation = rotation.read_i16::<LittleEndian>().unwrap();
+        let left_wheel_rotation = left_rotation.read_u8().unwrap();
+        let right_wheel_rotation = right_rotation.read_u8().unwrap();
+
+        // Throttle and turn right.
+        let data = data.read_u8().unwrap();
+        let throttle = data & 1 != 0;
+        let right = data & (1 << 1) != 0;
+
+        // Sound effect volume.
+        let volume = volume.read_i16::<LittleEndian>().unwrap();
+
+        frames.push(Frame {
+            bike: bike,
+            left_wheel: left_wheel,
+            right_wheel: right_wheel,
+            head: head,
+            rotation: rotation,
+            left_wheel_rotation: left_wheel_rotation,
+            right_wheel_rotation: right_wheel_rotation,
+            throttle: throttle,
+            right: right,
+            volume: volume
+        });
+    }
+
+    frames
 }
