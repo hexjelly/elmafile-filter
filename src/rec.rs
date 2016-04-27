@@ -166,58 +166,27 @@ impl Replay {
 
         // Frame count.
         let frame_count = remaining.read_i32::<LittleEndian>().unwrap();
-
         // Some unused value, always 0x83.
         let (_, mut remaining) = remaining.split_at(4);
-
         // Multi-player replay.
         self.multi = remaining.read_i32::<LittleEndian>().unwrap() > 0;
-
         // Flag-tag replay.
         self.flag_tag = remaining.read_i32::<LittleEndian>().unwrap() > 0;
-
         // Level link.
         self.link = remaining.read_u32::<LittleEndian>().unwrap();
-
         // Level file name, including extension.
         let (level, remaining) = remaining.split_at(12);
         self.level = trim_string(level).unwrap();
-
         // Unknown, unused.
         let (_, remaining) = remaining.split_at(4);
-
         // Frames.
         self.frames = parse_frames(remaining, frame_count);
         let (_, mut remaining) = remaining.split_at(27*frame_count as usize);
-
         // Events.
         let event_count = remaining.read_i32::<LittleEndian>().unwrap();
-        for n in 0..event_count {
-            // Event time
-            let time = remaining.read_f64::<LittleEndian>().unwrap();
-
-            // Event details
-            let info = remaining.read_i16::<LittleEndian>().unwrap();
-            let event = remaining.read_u8().unwrap();
-            // Unknown values
-            let _ = remaining.read_u8().unwrap();
-            let _ = remaining.read_f32::<LittleEndian>().unwrap();
-            let event_type = match event {
-                0 => EventType::Touch { index: info },
-                1 => EventType::Ground { alternative: false },
-                5 => EventType::Turn,
-                4 => EventType::Ground { alternative: true },
-                6 => EventType::VoltRight,
-                7 => EventType::VoltLeft,
-                _ => panic!("Unknown event type: {:?}\nin event number: {:?}", event, n)
-            };
-
-            self.events.push(Event {
-                time: time,
-                event_type: event_type
-            });
-        }
-
+        self.events = parse_events(remaining, event_count);
+        let (_, mut remaining) = remaining.split_at(16*event_count as usize);
+        // End of replay marker.
         let expected = remaining.read_i32::<LittleEndian>().unwrap();
         if expected != EOR { panic!("EOR marker mismatch: x0{:x} != x0{:x}", expected, EOR); }
 
@@ -230,6 +199,7 @@ impl Replay {
     }
 }
 
+/// Function for parsing frame data from either single-player or multi-player replays.
 fn parse_frames (frame_data: &[u8], frame_count: i32) -> Vec<Frame> {
     let mut frames: Vec<Frame> = vec![];
 
@@ -252,32 +222,26 @@ fn parse_frames (frame_data: &[u8], frame_count: i32) -> Vec<Frame> {
         let x = bike_x.read_f32::<LittleEndian>().unwrap();
         let y = bike_y.read_f32::<LittleEndian>().unwrap();
         let bike = Position { x: x, y: y };
-
         // Left wheel X and Y.
         let x = left_x.read_i16::<LittleEndian>().unwrap();
         let y = left_y.read_i16::<LittleEndian>().unwrap();
         let left_wheel = Position { x: x, y: y };
-
         // Left wheel X and Y.
         let x = right_x.read_i16::<LittleEndian>().unwrap();
         let y = right_y.read_i16::<LittleEndian>().unwrap();
         let right_wheel = Position { x: x, y: y };
-
         // Head X and Y.
         let x = head_x.read_i16::<LittleEndian>().unwrap();
         let y = head_y.read_i16::<LittleEndian>().unwrap();
         let head = Position { x: x, y: y };
-
         // Rotations.
         let rotation = rotation.read_i16::<LittleEndian>().unwrap();
         let left_wheel_rotation = left_rotation.read_u8().unwrap();
         let right_wheel_rotation = right_rotation.read_u8().unwrap();
-
         // Throttle and turn right.
         let data = data.read_u8().unwrap();
         let throttle = data & 1 != 0;
         let right = data & (1 << 1) != 0;
-
         // Sound effect volume.
         let volume = volume.read_i16::<LittleEndian>().unwrap();
 
@@ -296,4 +260,36 @@ fn parse_frames (frame_data: &[u8], frame_count: i32) -> Vec<Frame> {
     }
 
     frames
+}
+
+/// Function for parsing event data from either single-player or multi-player replays.
+fn parse_events (mut event_data: &[u8], event_count: i32) -> Vec<Event> {
+    let mut events: Vec<Event> = vec![];
+
+    for n in 0..event_count {
+        // Event time
+        let time = event_data.read_f64::<LittleEndian>().unwrap();
+        // Event details
+        let info = event_data.read_i16::<LittleEndian>().unwrap();
+        let event = event_data.read_u8().unwrap();
+        // Unknown values
+        let _ = event_data.read_u8().unwrap();
+        let _ = event_data.read_f32::<LittleEndian>().unwrap();
+        let event_type = match event {
+            0 => EventType::Touch { index: info },
+            1 => EventType::Ground { alternative: false },
+            5 => EventType::Turn,
+            4 => EventType::Ground { alternative: true },
+            6 => EventType::VoltRight,
+            7 => EventType::VoltLeft,
+            _ => panic!("Unknown event type: {:?}\nin event number: {:?}", event, n)
+        };
+
+        events.push(Event {
+            time: time,
+            event_type: event_type
+        });
+    }
+
+    events
 }
