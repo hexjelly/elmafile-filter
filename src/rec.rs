@@ -96,7 +96,7 @@ impl Event {
 #[derive(Debug, PartialEq)]
 pub struct Replay {
     /// Raw binary data.
-    raw: Vec<u8>,
+    pub raw: Vec<u8>,
     /// Whether replay is multi-player or not.
     pub multi: bool,
     /// Whether replay is flag-tag or not.

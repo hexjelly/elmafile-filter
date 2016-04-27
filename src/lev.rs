@@ -119,7 +119,7 @@ pub struct ListEntry {
 #[derive(Debug, PartialEq)]
 pub struct Level {
     /// Raw binary data of a loaded or finalized constructed level.
-    raw: Vec<u8>,
+    pub raw: Vec<u8>,
     /// Elma or Across level.
     pub version: Version,
     /// Random number that links level file to replay files.

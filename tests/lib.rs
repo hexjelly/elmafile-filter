@@ -32,18 +32,21 @@ mod tests {
     // Doesn't hurt or impact anything.
     fn level_default_values () {
         let level = lev::Level::new();
-        assert_eq!(level.version, lev::Version::Elma);
-        assert_eq!(level.link, 0);
-        assert_eq!(level.integrity, [0_f64; 4]);
-        assert_eq!(level.name, "");
-        assert_eq!(level.lgr, "default");
-        assert_eq!(level.ground, "ground");
-        assert_eq!(level.sky, "sky");
-        assert_eq!(level.polygons, vec![]);
-        assert_eq!(level.objects, vec![]);
-        assert_eq!(level.pictures, vec![]);
-        assert_eq!(level.top10_single, vec![]);
-        assert_eq!(level.top10_multi, vec![]);
+        assert_eq!(level, lev::Level {
+            raw: vec![],
+            version: lev::Version::Elma,
+            link: 0,
+            integrity: [0f64; 4],
+            name: String::new(),
+            lgr: String::from("default"),
+            ground: String::from("ground"),
+            sky: String::from("sky"),
+            polygons: vec![],
+            objects: vec![],
+            pictures: vec![],
+            top10_single: vec![],
+            top10_multi: vec![]
+        });
     }
 
     #[test]
@@ -177,12 +180,17 @@ mod tests {
     // Doesn't hurt or impact anything.
     fn rec_default_values () {
         let replay = rec::Replay::new();
-        assert_eq!(replay.multi, false);
-        assert_eq!(replay.flag_tag, false);
-        assert_eq!(replay.link, 0);
-        assert_eq!(replay.level, "");
-        assert_eq!(replay.frames, vec![]);
-        assert_eq!(replay.events, vec![]);
+        assert_eq!(replay, rec::Replay {
+            raw: vec![],
+            multi: false,
+            flag_tag: false,
+            link: 0,
+            level: String::new(),
+            frames: vec![],
+            events: vec![],
+            frames_2: vec![],
+            events_2: vec![]
+        });
     }
 
     #[test]
