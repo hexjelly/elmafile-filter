@@ -162,8 +162,6 @@ impl Replay {
     fn parse_replay(&mut self) {
         let mut remaining = self.raw.as_slice();
 
-        // TODO: read bytes 8-12 first to see if multi-player replay, then parse it twice.
-
         // Frame count.
         let frame_count = remaining.read_i32::<LittleEndian>().unwrap();
         // Some unused value, always 0x83.
@@ -190,7 +188,23 @@ impl Replay {
         let expected = remaining.read_i32::<LittleEndian>().unwrap();
         if expected != EOR { panic!("EOR marker mismatch: x0{:x} != x0{:x}", expected, EOR); }
 
-        // TODO: Add multi-player replay parsing.
+        // If multi-rec, parse frame and events, while skipping other fields?
+        if self.multi {
+            // Frame count.
+            let frame_count = remaining.read_i32::<LittleEndian>().unwrap();
+            // Skip other fields.
+            let (_, remaining) = remaining.split_at(32);
+            // Frames.
+            self.frames_2 = parse_frames(remaining, frame_count);
+            let (_, mut remaining) = remaining.split_at(27*frame_count as usize);
+            // Events.
+            let event_count = remaining.read_i32::<LittleEndian>().unwrap();
+            self.events_2 = parse_events(remaining, event_count);
+            let (_, mut remaining) = remaining.split_at(16*event_count as usize);
+            // End of replay marker.
+            let expected = remaining.read_i32::<LittleEndian>().unwrap();
+            if expected != EOR { panic!("EOR marker mismatch: x0{:x} != x0{:x}", expected, EOR); }
+        }
     }
 
     /// Save replay as a file.

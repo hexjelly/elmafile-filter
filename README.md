@@ -19,8 +19,8 @@ Elasto Mania file handler crate for Rust. Very much still a work in progress.
 
 -   [x] Parse single-player replay information
 -   [x] Edit single-player replays (by direct access to structure)
--   [ ] Parse multi-player replay information
--   [ ] Edit multi-player replays (by direct access to structure)
+-   [x] Parse multi-player replay information
+-   [x] Edit multi-player replays (by direct access to structure)
 -   [ ] Save replays/data
 -   [ ] Across support
 

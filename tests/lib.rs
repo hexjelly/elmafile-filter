@@ -277,5 +277,25 @@ mod tests {
         let replay = rec::Replay::load("tests/test_2.rec");
         assert_eq!(replay.multi, true);
         assert_eq!(replay.flag_tag, false);
+        assert_eq!(replay.link, 2549082363);
+        assert_eq!(replay.level, "tutor14.lev");
+        assert_eq!(replay.frames.len(), 440);
+        assert_eq!(replay.frames[439], rec::Frame {
+            bike: Position { x: -34.779712677002_f32, y: 11.526465415955_f32 },
+            left_wheel: Position { x: -1050, y: -33 },
+            right_wheel: Position { x: 286, y: -757 },
+            head: Position { x: 226, y: 376 },
+            rotation: 9047,
+            left_wheel_rotation: 73,
+            right_wheel_rotation: 163,
+            throttle: true,
+            right: false,
+            volume: 5652
+        });
+        assert_eq!(replay.events.len(), 24);
+        assert_eq!(replay.frames_2.len(), 441);
+        assert_eq!(replay.frames_2[100].bike.x, 27.138593673706_f32);
+        assert_eq!(replay.frames_2[0].bike.y, -1.1253118515015_f32);
+        assert_eq!(replay.events_2.len(), 23);
     }
 }
