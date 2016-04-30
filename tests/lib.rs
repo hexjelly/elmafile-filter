@@ -173,6 +173,12 @@ mod tests {
         assert_eq!(level.top10_single.len(), 0);
     }
 
+    #[test]
+    fn load_valid_level_1_and_update () {
+        let mut level = lev::Level::load("tests/test_1.lev");
+        level.update();
+    }
+    
     // TODO: Add more levels to test, including some corrupt ones!
 
     #[test]

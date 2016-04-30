@@ -6,6 +6,7 @@
 #![cfg_attr(feature="clippy", plugin(clippy))]
 
 extern crate byteorder;
+extern crate rand;
 
 pub mod lev;
 pub mod rec;

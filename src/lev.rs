@@ -3,6 +3,7 @@
 use std::io::{ Read };
 use std::fs::File;
 use byteorder::{ ByteOrder, ReadBytesExt, LittleEndian };
+use rand::random;
 use super::{ Position, trim_string };
 
 // Magic arbitrary number; signifies end-of-data. Followed by Top10 lists.
@@ -332,13 +333,14 @@ impl Level {
 
     /// Combines the `Level` struct fields to generate the raw binary data,
     /// and calculate integrity sums.
-    fn update (&self) {
-        self.calculate_integrity_sums();
-        unimplemented!();
-    }
-
-    fn calculate_integrity_sums (&self) {
-        unimplemented!();
+    /// # Examples
+    ///
+    /// ```
+    /// let mut level = elma::lev::Level::load("tests/test_1.lev");
+    /// level.update();
+    /// ```
+    pub fn update (&mut self) {
+        self.calculate_integrity_sums(true);
     }
 
     /// Check topology of level.
@@ -347,21 +349,58 @@ impl Level {
         unimplemented!();
     }
 
+    /// Calculate integrity sums for level.
+    fn calculate_integrity_sums (&mut self, valid_topology: bool) {
+        let mut pol_sum = 0_f64;
+        let mut obj_sum = 0_f64;
+        let mut pic_sum = 0_f64;
+
+        for poly in &self.polygons {
+            for vertex in &poly.vertices {
+                pol_sum += vertex.x + vertex.y;
+            }
+        }
+
+        for obj in &self.objects {
+            let obj_type = match obj.object_type {
+                ObjectType::Exit => 1,
+                ObjectType::Apple { gravity: _, animation: _ } => 2,
+                ObjectType::Killer => 3,
+                ObjectType::Player => 4
+            };
+            obj_sum += obj.position.x + obj.position.y + (obj_type as f64);
+        }
+
+        for pic in &self.pictures {
+            pic_sum += pic.position.x + pic.position.y;
+        }
+
+        let sum = (pol_sum + obj_sum + pic_sum) * 3247.764325643;
+        self.integrity[0] = sum;
+        self.integrity[1] = (random::<u32>() % 5871) as f64 + 11877. - sum;
+        if valid_topology {
+            self.integrity[2] = (random::<u32>() % 5871) as f64 + 11877. - sum;
+        } else {
+            self.integrity[2] = (random::<u32>() % 4982) as f64 + 20961. - sum;
+        }
+        self.integrity[3] = (random::<u32>() % 6102) as f64 + 12112. - sum;
+    }
+
     /// Converts all struct fields into raw binary form and returns it.
-    pub fn get_raw (self) -> Vec<u8> {
+    pub fn get_raw (&mut self) -> Vec<u8> {
         self.update();
-        self.raw
+        self.raw.clone()
     }
 
     /// Saves level as a file. This will write new empty Top10 lists.
-    pub fn save (&self, _filename: &str) {
+    pub fn save (&mut self, _filename: &str) {
         self.update();
         // let file = File::create(&filename).unwrap();
         unimplemented!();
     }
 
     /// Saves level as a file, without emptying Top10 lists.
-    pub fn save_with_top10 (&self, _filename: &str) {
+    pub fn save_with_top10 (&mut self, _filename: &str) {
         self.update();
         unimplemented!();
     }
