@@ -63,3 +63,14 @@ pub fn time_format (time: i32) -> String {
 
     String::from_utf8(formatted).unwrap()
 }
+
+/// Pads a string with null bytes.
+fn string_null_pad (name: &String, pad: usize) -> Vec<u8> {
+    let mut bytes = vec![0u8; pad];
+    let mut n = 0;
+    for char in name.as_bytes() {
+        bytes[n] = *char;
+        n += 1;
+    }
+    bytes
+}

@@ -2,9 +2,9 @@
 
 use std::io::{ Read };
 use std::fs::File;
-use byteorder::{ ByteOrder, ReadBytesExt, LittleEndian };
+use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
-use super::{ Position, trim_string };
+use super::{ Position, trim_string, string_null_pad };
 
 // Magic arbitrary number; signifies end-of-data. Followed by Top10 lists.
 const EOD: i32 = 0x0067103A;
@@ -340,7 +340,35 @@ impl Level {
     /// level.update();
     /// ```
     pub fn update (&mut self) {
+        let mut bytes: Vec<u8> = vec![];
+        // Level version.
+        match self.version {
+            Version::Elma => bytes.extend_from_slice(&[80, 79, 84, 49, 52]),
+            Version::Across => panic!("Across levels are not supported.")
+        };
+        // Lower short of link.
+        bytes.write_i16::<LittleEndian>((self.link & 0xFFFF) as i16).unwrap();
+        // Link.
+        bytes.write_i32::<LittleEndian>(self.link).unwrap();
+        // integrity sums.
         self.calculate_integrity_sums(true);
+        for sum in self.integrity.into_iter() {
+            bytes.write_f64::<LittleEndian>(*sum).unwrap();
+        }
+        // Level name.
+        bytes.extend_from_slice(&string_null_pad(&self.name, 51));
+        // LGR name.
+        bytes.extend_from_slice(&string_null_pad(&self.lgr, 16));
+        // Ground name.
+        bytes.extend_from_slice(&string_null_pad(&self.ground, 10));
+        // Sky name.
+        bytes.extend_from_slice(&string_null_pad(&self.sky, 10));
+        // Number of polygons.
+        bytes.write_f64::<LittleEndian>(self.polygons.len() as f64 + 0.4643643_f64).unwrap();
+
+        // TODO: Remove, for testing result.
+        //panic!("{:?}", bytes);
+
     }
 
     /// Check topology of level.
