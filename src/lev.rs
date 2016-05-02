@@ -4,12 +4,7 @@ use std::io::{ Read };
 use std::fs::File;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
-use super::{ Position, trim_string, string_null_pad };
-
-// Magic arbitrary number signifying end-of-data. Followed by Top10 lists.
-const EOD: i32 = 0x0067103A;
-// Magic arbitrary number signifying end-of-file.
-const EOF: i32 = 0x00845D52;
+use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10 };
 
 /// Game version.
 #[derive(Debug, PartialEq)]
@@ -337,9 +332,9 @@ impl Level {
     ///
     /// ```
     /// let mut level = elma::lev::Level::load("tests/test_1.lev");
-    /// level.update();
+    /// level.update(false);
     /// ```
-    pub fn update (&mut self) {
+    pub fn update (&mut self, top_10: bool) {
         let mut bytes: Vec<u8> = vec![];
 
         // Level version.
@@ -415,6 +410,40 @@ impl Level {
             }).unwrap();
         }
 
+        // Pictures.
+        for pic in &self.pictures {
+            // Picture name.
+            bytes.extend_from_slice(&string_null_pad(&pic.name, 10));
+            // Texture name.
+            bytes.extend_from_slice(&string_null_pad(&pic.texture, 10));
+            // Mask name.
+            bytes.extend_from_slice(&string_null_pad(&pic.mask, 10));
+            // Position.
+            bytes.write_f64::<LittleEndian>(pic.position.x).unwrap();
+            bytes.write_f64::<LittleEndian>(pic.position.y).unwrap();
+            // Z-distance.
+            bytes.write_i32::<LittleEndian>(pic.distance).unwrap();
+            // Clipping.
+            bytes.write_i32::<LittleEndian>(match pic.clip {
+                Clip::Unclipped => 0,
+                Clip::Ground => 1,
+                Clip::Sky => 2
+            }).unwrap();
+        }
+
+        // EOD marker.
+        bytes.write_i32::<LittleEndian>(EOD).unwrap();
+
+        // Top10 lists.
+        if top_10 {
+            bytes.extend_from_slice(&EMPTY_TOP10);
+        } else {
+            // TODO: parse top10 lists.
+        }
+
+        // EOF marker.
+        bytes.write_i32::<LittleEndian>(EOF).unwrap();
+
         // TODO: Remove, for testing result.
         //panic!("{:?}", bytes);
 
@@ -469,22 +498,28 @@ impl Level {
         self.integrity[3] = (random::<u32>() % 6102) as f64 + 12112. - sum;
     }
 
-    /// Converts all struct fields into raw binary form and returns it.
+    /// Converts all struct fields with empty top10 list into raw binary form and returns it.
     pub fn get_raw (&mut self) -> Vec<u8> {
-        self.update();
+        self.update(false);
+        self.raw.clone()
+    }
+
+    /// Converts all struct fields without emptying top10 list into raw binary form and returns it.
+    pub fn get_raw_with_top_10 (&mut self) -> Vec<u8> {
+        self.update(true);
         self.raw.clone()
     }
 
     /// Saves level as a file. This will write new empty Top10 lists.
     pub fn save (&mut self, _filename: &str) {
-        self.update();
+        self.update(false);
         // let file = File::create(&filename).unwrap();
         unimplemented!();
     }
 
     /// Saves level as a file, without emptying Top10 lists.
-    pub fn save_with_top10 (&mut self, _filename: &str) {
-        self.update();
+    pub fn save_with_top_10 (&mut self, _filename: &str) {
+        self.update(true);
         unimplemented!();
     }
 }

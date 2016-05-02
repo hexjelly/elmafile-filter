@@ -176,7 +176,7 @@ mod tests {
     #[test]
     fn load_valid_level_1_and_update () {
         let mut level = lev::Level::load("tests/test_1.lev");
-        level.update();
+        level.update(false);
         // TODO: see if can sort this precision discrepancy
         //assert_eq!(level.integrity[0], -1148375.210607791_f64);
     }

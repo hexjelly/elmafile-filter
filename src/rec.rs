@@ -2,10 +2,7 @@
 use std::io::{ Read };
 use std::fs::File;
 use byteorder::{ ReadBytesExt, LittleEndian };
-use super::{ Position, trim_string };
-
-// Magic arbitrary number to signify end of replay file.
-const EOR: i32 = 0x00492F75;
+use super::{ Position, trim_string, EOR };
 
 /// One frame of replay.
 #[derive(Debug, Default, PartialEq)]
