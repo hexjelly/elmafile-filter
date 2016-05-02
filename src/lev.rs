@@ -6,9 +6,9 @@ use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
 use super::{ Position, trim_string, string_null_pad };
 
-// Magic arbitrary number; signifies end-of-data. Followed by Top10 lists.
+// Magic arbitrary number signifying end-of-data. Followed by Top10 lists.
 const EOD: i32 = 0x0067103A;
-// Magic arbitrary number; signifies end-of-file.
+// Magic arbitrary number signifying end-of-file.
 const EOF: i32 = 0x00845D52;
 
 /// Game version.
@@ -341,20 +341,24 @@ impl Level {
     /// ```
     pub fn update (&mut self) {
         let mut bytes: Vec<u8> = vec![];
+
         // Level version.
         match self.version {
             Version::Elma => bytes.extend_from_slice(&[80, 79, 84, 49, 52]),
             Version::Across => panic!("Across levels are not supported.")
         };
+
         // Lower short of link.
         bytes.write_i16::<LittleEndian>((self.link & 0xFFFF) as i16).unwrap();
         // Link.
+
         bytes.write_i32::<LittleEndian>(self.link).unwrap();
-        // integrity sums.
+        // Integrity checksums.
         self.calculate_integrity_sums(true);
         for sum in self.integrity.into_iter() {
             bytes.write_f64::<LittleEndian>(*sum).unwrap();
         }
+
         // Level name.
         bytes.extend_from_slice(&string_null_pad(&self.name, 51));
         // LGR name.
@@ -363,8 +367,53 @@ impl Level {
         bytes.extend_from_slice(&string_null_pad(&self.ground, 10));
         // Sky name.
         bytes.extend_from_slice(&string_null_pad(&self.sky, 10));
+
         // Number of polygons.
         bytes.write_f64::<LittleEndian>(self.polygons.len() as f64 + 0.4643643_f64).unwrap();
+        // Polygons.
+        for poly in &self.polygons {
+            // Grass poly.
+            bytes.write_i32::<LittleEndian>(match poly.grass {
+                false => 0,
+                true => 1
+            }).unwrap();
+            // Number of vertices.
+            bytes.write_i32::<LittleEndian>(poly.vertices.len() as i32).unwrap();
+            // Vertices.
+            for vertex in &poly.vertices {
+                bytes.write_f64::<LittleEndian>(vertex.x).unwrap();
+                bytes.write_f64::<LittleEndian>(vertex.y).unwrap();
+            }
+        }
+
+        // Number of objects.
+        bytes.write_f64::<LittleEndian>(self.objects.len() as f64 + 0.4643643_f64).unwrap();
+        // Objects.
+        for obj in &self.objects {
+            // Position.
+            bytes.write_f64::<LittleEndian>(obj.position.x).unwrap();
+            bytes.write_f64::<LittleEndian>(obj.position.y).unwrap();
+            // Object type.
+            bytes.write_i32::<LittleEndian>(match obj.object_type {
+                ObjectType::Exit => 1,
+                ObjectType::Apple { gravity: _, animation: _ } => 2,
+                ObjectType::Killer => 3,
+                ObjectType::Player => 4
+            }).unwrap();
+            // Apple gravity.
+            bytes.write_i32::<LittleEndian>(match obj.object_type {
+                ObjectType::Apple { gravity: Direction::Up, animation: _ } => 1,
+                ObjectType::Apple { gravity: Direction::Down, animation: _ } => 2,
+                ObjectType::Apple { gravity: Direction::Left, animation: _ } => 3,
+                ObjectType::Apple { gravity: Direction::Right, animation: _ } => 4,
+                _ => 0
+            }).unwrap();
+            // Apple animation.
+            bytes.write_i32::<LittleEndian>(match obj.object_type {
+                ObjectType::Apple { gravity: _, animation: n } => (n - 1) as i32,
+                _ => 0
+            }).unwrap();
+        }
 
         // TODO: Remove, for testing result.
         //panic!("{:?}", bytes);
@@ -374,6 +423,12 @@ impl Level {
     /// Check topology of level.
     // TODO: make this return a Result with problematic polygons/vertices.
     pub fn topology_check (&self) -> bool {
+        // TODO: check max polygons
+        // TODO: check max objects
+        // TODO: check max pictures
+        // TODO: check line segment overlaps
+        // TODO: check if player and at least one exit object
+        // TODO: check if head inside ground
         unimplemented!();
     }
 
@@ -439,7 +494,7 @@ pub fn crypt_top10 (top10_data: &[u8]) -> Vec<u8> {
     let mut top10: Vec<u8> = Vec::with_capacity(688);
     top10.extend_from_slice(top10_data);
 
-    // Some variables to match the original c/asm code?
+    // Some variable names to match the original c/asm code?
     let mut ebp8: i16 = 0x15;
     let mut ebp10: i16 = 0x2637;
 

@@ -36,7 +36,7 @@ mod tests {
             raw: vec![],
             version: lev::Version::Elma,
             link: 0,
-            integrity: [0f64; 4],
+            integrity: [0_f64; 4],
             name: String::new(),
             lgr: String::from("default"),
             ground: String::from("ground"),
@@ -70,7 +70,7 @@ mod tests {
                     Position { x: -23.993693053024586_f64, y: -3.135779367971911_f64 },
                     Position { x: -15.989070625361132_f64, y: -3.135779367971911_f64 },
                     Position { x: -15.989070625361132_f64, y: 1.995755366905195_f64 },
-                    Position { x: -24f64, y: 2f64 }]
+                    Position { x: -24_f64, y: 2_f64 }]
             },
             lev::Polygon {
                 grass: true, vertices: vec![
