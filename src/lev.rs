@@ -436,9 +436,9 @@ impl Level {
 
         // Top10 lists.
         if top_10 {
-            bytes.extend_from_slice(&EMPTY_TOP10);
-        } else {
             // TODO: parse top10 lists.
+        } else {
+            bytes.extend_from_slice(&EMPTY_TOP10);
         }
 
         // EOF marker.

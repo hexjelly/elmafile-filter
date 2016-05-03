@@ -26,6 +26,16 @@ pub struct Position<T> {
 }
 
 /// Trims trailing bytes after and including null byte.
+///
+/// # Examples
+/// As all strings in Elma files are C-strings with padded null-bytes, you can use this function
+/// to remove null-bytes and any potential garbage data follwing it and return a String.
+///
+/// ```
+/// let cstring: [u8; 10] = [0x45, 0x6C, 0x6D, 0x61, 0x00, 0x00, 0x00, 0x7E, 0x7E, 0x7E];
+/// let trimmed = elma::trim_string(&cstring).unwrap();
+/// assert_eq!(trimmed, "Elma");
+/// ```
 pub fn trim_string (data: &[u8]) -> Result<String, std::string::FromUtf8Error> {
     let bytes: Vec<u8> = data.into_iter()
                              .take_while(|&&d| d != 0)
