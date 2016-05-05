@@ -1,9 +1,11 @@
 //! Library for reading and writing Elasto Mania files.
 
 #![doc(html_root_url = "https://hexjelly.github.io/elma-rust/")]
+
 #![feature(slice_patterns)]
-#![cfg_attr(feature="clippy", feature(plugin))]
-#![cfg_attr(feature="clippy", plugin(clippy))]
+#![feature(plugin)]
+
+#![plugin(clippy)]
 
 extern crate byteorder;
 extern crate rand;
@@ -75,12 +77,10 @@ pub fn time_format (time: i32) -> String {
 }
 
 /// Pads a string with null bytes.
-fn string_null_pad (name: &String, pad: usize) -> Vec<u8> {
+fn string_null_pad (name: &str, pad: usize) -> Vec<u8> {
     let mut bytes = vec![0u8; pad];
-    let mut n = 0;
-    for char in name.as_bytes() {
+    for (n, char) in name.as_bytes().iter().enumerate() {
         bytes[n] = *char;
-        n += 1;
     }
     bytes
 }

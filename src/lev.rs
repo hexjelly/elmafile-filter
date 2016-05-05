@@ -368,10 +368,7 @@ impl Level {
         // Polygons.
         for poly in &self.polygons {
             // Grass poly.
-            bytes.write_i32::<LittleEndian>(match poly.grass {
-                false => 0,
-                true => 1
-            }).unwrap();
+            bytes.write_i32::<LittleEndian>(if poly.grass { 1 } else { 0 }).unwrap();
             // Number of vertices.
             bytes.write_i32::<LittleEndian>(poly.vertices.len() as i32).unwrap();
             // Vertices.
@@ -391,21 +388,21 @@ impl Level {
             // Object type.
             bytes.write_i32::<LittleEndian>(match obj.object_type {
                 ObjectType::Exit => 1,
-                ObjectType::Apple { gravity: _, animation: _ } => 2,
+                ObjectType::Apple { .. } => 2,
                 ObjectType::Killer => 3,
                 ObjectType::Player => 4
             }).unwrap();
             // Apple gravity.
             bytes.write_i32::<LittleEndian>(match obj.object_type {
-                ObjectType::Apple { gravity: Direction::Up, animation: _ } => 1,
-                ObjectType::Apple { gravity: Direction::Down, animation: _ } => 2,
-                ObjectType::Apple { gravity: Direction::Left, animation: _ } => 3,
-                ObjectType::Apple { gravity: Direction::Right, animation: _ } => 4,
+                ObjectType::Apple { gravity: Direction::Up, .. } => 1,
+                ObjectType::Apple { gravity: Direction::Down, .. } => 2,
+                ObjectType::Apple { gravity: Direction::Left, .. } => 3,
+                ObjectType::Apple { gravity: Direction::Right, .. } => 4,
                 _ => 0
             }).unwrap();
             // Apple animation.
             bytes.write_i32::<LittleEndian>(match obj.object_type {
-                ObjectType::Apple { gravity: _, animation: n } => (n - 1) as i32,
+                ObjectType::Apple { animation: n, .. } => (n - 1) as i32,
                 _ => 0
             }).unwrap();
         }
@@ -476,7 +473,7 @@ impl Level {
         for obj in &self.objects {
             let obj_type = match obj.object_type {
                 ObjectType::Exit => 1,
-                ObjectType::Apple { gravity: _, animation: _ } => 2,
+                ObjectType::Apple { .. } => 2,
                 ObjectType::Killer => 3,
                 ObjectType::Player => 4
             };

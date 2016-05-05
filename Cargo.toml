@@ -13,7 +13,7 @@ license = "MIT"
 [dependencies]
 byteorder = "0.5.0"
 rand = "*"
-clippy = { version = "*", optional = true }
+clippy = { version = "*" }
 
 [features]
 default=[]
