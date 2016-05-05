@@ -77,7 +77,18 @@ pub fn time_format (time: i32) -> String {
 }
 
 /// Pads a string with null bytes.
-fn string_null_pad (name: &str, pad: usize) -> Vec<u8> {
+///
+/// # Examples
+/// When converting strings to bytes for use in an Elma file, you need to pad it to a certain
+/// length depending on the field. This function creates a new zero-filled vector to `pad` size,
+/// then fills in the string.
+///
+/// ```
+/// let string = String::from("Elma");
+/// let padded = elma::string_null_pad(&string, 10);
+/// assert_eq!(&padded, &[0x45, 0x6C, 0x6D, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+/// ```
+pub fn string_null_pad (name: &str, pad: usize) -> Vec<u8> {
     let mut bytes = vec![0u8; pad];
     for (n, char) in name.as_bytes().iter().enumerate() {
         bytes[n] = *char;
