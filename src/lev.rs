@@ -326,8 +326,11 @@ impl Level {
         if expected != EOF { panic!("EOF marker mismatch: x0{:x} != x0{:x}", expected, EOF); }
     }
 
-    /// Combines the `Level` struct fields to generate the raw binary data,
-    /// and calculate integrity sums.
+    /// Combines the `Level` struct fields to generate the raw binary data, and calculates
+    /// integrity sums. Called automatically when using `get_raw`, `get_raw_with_top_10`, `save` or
+    /// `save_with_top_10` methods, and is provided mainly for convinience if you need to use it
+    /// manually.
+    ///
     /// # Examples
     ///
     /// ```
