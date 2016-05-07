@@ -1,6 +1,6 @@
 //! Read and write Elasto Mania level files.
 
-use std::io::{ Read };
+use std::io::{ Read, Write };
 use std::fs::File;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
@@ -410,6 +410,8 @@ impl Level {
             }).unwrap();
         }
 
+        // Number of pictures.
+        bytes.write_f64::<LittleEndian>(self.pictures.len() as f64 + 0.2345672_f64).unwrap();
         // Pictures.
         for pic in &self.pictures {
             // Picture name.
@@ -435,8 +437,67 @@ impl Level {
         bytes.write_i32::<LittleEndian>(EOD).unwrap();
 
         // Top10 lists.
+        // TODO: figure out how to write this to be less idiotic.
         if top_10 {
-            // TODO: parse top10 lists.
+            let mut top10_bytes: Vec<u8> = vec![];
+
+            // Single-player times.
+            top10_bytes.write_i32::<LittleEndian>(self.top10_single.len() as i32).unwrap();
+            let mut times = [0_i32;10];
+            let mut names_1: Vec<u8> = vec![];
+            let mut names_2: Vec<u8> = vec![];
+            for (n, entry) in self.top10_single.iter().enumerate() {
+                times[n] = entry.time;
+                names_1.extend_from_slice(&string_null_pad(&entry.name_1, 15));
+                names_2.extend_from_slice(&string_null_pad(&entry.name_2, 15));
+            }
+            // Pad with null bytes if less than 10 entries.
+            for _ in 0..10 - self.top10_single.len() {
+                names_1.extend_from_slice(&[0u8;15]);
+                names_2.extend_from_slice(&[0u8;15]);
+            }
+
+            for time in &times {
+                top10_bytes.write_i32::<LittleEndian>(*time).unwrap();
+            }
+
+            for _ in 0..10 - times.len() {
+                top10_bytes.write_i32::<LittleEndian>(0).unwrap();
+            }
+
+            top10_bytes.extend_from_slice(&names_1);
+            top10_bytes.extend_from_slice(&names_2);
+
+            // Multi-player times.
+            top10_bytes.write_i32::<LittleEndian>(self.top10_multi.len() as i32).unwrap();
+            let mut times = [0_i32;10];
+            let mut names_1: Vec<u8> = vec![];
+            let mut names_2: Vec<u8> = vec![];
+            for (n, entry) in self.top10_multi.iter().enumerate() {
+                times[n] = entry.time;
+                names_1.extend_from_slice(&string_null_pad(&entry.name_1, 15));
+                names_2.extend_from_slice(&string_null_pad(&entry.name_2, 15));
+            }
+            // Pad with null bytes if less than 10 entries.
+            for _ in 0..10 - self.top10_multi.len() {
+                names_1.extend_from_slice(&[0u8;15]);
+                names_2.extend_from_slice(&[0u8;15]);
+            }
+
+            for time in &times {
+                top10_bytes.write_i32::<LittleEndian>(*time).unwrap();
+            }
+
+            for _ in 0..10 - times.len() {
+                top10_bytes.write_i32::<LittleEndian>(0).unwrap();
+            }
+
+            top10_bytes.extend_from_slice(&names_1);
+            top10_bytes.extend_from_slice(&names_2);
+
+            // Encrypt the data before writing.
+            bytes.extend_from_slice(&crypt_top10(&top10_bytes));
+
         } else {
             bytes.extend_from_slice(&EMPTY_TOP10);
         }
@@ -445,8 +506,7 @@ impl Level {
         bytes.write_i32::<LittleEndian>(EOF).unwrap();
 
         // TODO: Remove, for testing result.
-        //panic!("{:?}", bytes);
-
+        self.raw = bytes;
     }
 
     /// Check topology of level.
@@ -510,17 +570,18 @@ impl Level {
         self.raw.clone()
     }
 
-    /// Saves level as a file. This will write new empty Top10 lists.
-    pub fn save (&mut self, _filename: &str) {
+    /// Saves level as a file. This will write new empty top10 lists.
+    pub fn save (&mut self, filename: &str) {
         self.update(false);
-        // let file = File::create(&filename).unwrap();
-        unimplemented!();
+        let mut file = File::create(filename).unwrap();
+        file.write_all(&self.raw).unwrap();
     }
 
-    /// Saves level as a file, without emptying Top10 lists.
-    pub fn save_with_top_10 (&mut self, _filename: &str) {
+    /// Saves level as a file, without emptying top10 lists.
+    pub fn save_with_top_10 (&mut self, filename: &str) {
         self.update(true);
-        unimplemented!();
+        let mut file = File::create(filename).unwrap();
+        file.write_all(&self.raw).unwrap();
     }
 }
 
