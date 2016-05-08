@@ -2,6 +2,7 @@
 
 use std::io::{ Read, Write };
 use std::fs::File;
+use std::path::Path;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
 use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10 };
@@ -180,8 +181,9 @@ impl Level {
     /// let level = elma::lev::Level::load("tests/test_1.lev");
     /// ```
     pub fn load (filename: &str) -> Self {
+        let path = Path::new(&filename);
         let mut level = Level::new();
-        let mut file = File::open(filename).unwrap();
+        let mut file = File::open(path).unwrap();
         let mut buffer = vec![];
         file.read_to_end(&mut buffer).unwrap();
         level.raw = buffer;
@@ -505,7 +507,6 @@ impl Level {
         // EOF marker.
         bytes.write_i32::<LittleEndian>(EOF).unwrap();
 
-        // TODO: Remove, for testing result.
         self.raw = bytes;
     }
 
@@ -558,29 +559,17 @@ impl Level {
         self.integrity[3] = (random::<u32>() % 6102) as f64 + 12112. - sum;
     }
 
-    /// Converts all struct fields with empty top10 list into raw binary form and returns it.
-    pub fn get_raw (&mut self) -> Vec<u8> {
-        self.update(false);
+    /// Converts all struct fields into raw binary form and returns the raw data.
+    pub fn get_raw (&mut self, top10: bool) -> Vec<u8> {
+        self.update(top10);
         self.raw.clone()
     }
 
-    /// Converts all struct fields without emptying top10 list into raw binary form and returns it.
-    pub fn get_raw_with_top_10 (&mut self) -> Vec<u8> {
-        self.update(true);
-        self.raw.clone()
-    }
-
-    /// Saves level as a file. This will write new empty top10 lists.
-    pub fn save (&mut self, filename: &str) {
-        self.update(false);
-        let mut file = File::create(filename).unwrap();
-        file.write_all(&self.raw).unwrap();
-    }
-
-    /// Saves level as a file, without emptying top10 lists.
-    pub fn save_with_top_10 (&mut self, filename: &str) {
-        self.update(true);
-        let mut file = File::create(filename).unwrap();
+    /// Saves level as a file.
+    pub fn save (&mut self, filename: &str, top10: bool) {
+        let path = Path::new(&filename);
+        self.update(top10);
+        let mut file = File::create(path).unwrap();
         file.write_all(&self.raw).unwrap();
     }
 }

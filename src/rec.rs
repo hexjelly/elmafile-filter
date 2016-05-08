@@ -1,6 +1,7 @@
 //! Read and write Elasto Mania replay files.
 use std::io::{ Read };
 use std::fs::File;
+use std::path::Path;
 use byteorder::{ ReadBytesExt, LittleEndian };
 use super::{ Position, trim_string, EOR };
 
@@ -146,8 +147,9 @@ impl Replay {
     /// let rec = elma::rec::Replay::load("tests/test_1.rec");
     /// ```
     pub fn load(filename: &str) -> Self {
+        let path = Path::new(&filename);
         let mut replay = Replay::new();
-        let mut file = File::open(filename).unwrap();
+        let mut file = File::open(path).unwrap();
         let mut buffer = vec![];
         file.read_to_end(&mut buffer).unwrap();
         replay.raw = buffer;

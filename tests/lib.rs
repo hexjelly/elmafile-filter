@@ -174,15 +174,15 @@ mod tests {
     }
 
     #[test]
-    fn load_valid_level_1_and_update () {
+    fn load_valid_level_1_and_save_with_top10 () {
         let mut level = lev::Level::load("tests/test_1.lev");
-        level.update(true);
+        level.save("tests/save_level_1_wtop10.lev", true);
     }
 
     #[test]
-    fn load_valid_level_1_and_save_with_top10 () {
+    fn load_valid_level_1_and_save_without_top10 () {
         let mut level = lev::Level::load("tests/test_1.lev");
-        level.save_with_top_10("tests/save_test_1.lev");
+        level.save("tests/save_level_1_notop10.lev", false);
     }
 
     // TODO: Add more levels to test, including some corrupt ones!
@@ -213,7 +213,7 @@ mod tests {
         assert_eq!(replay.link, 2549082363);
         assert_eq!(replay.level, "tutor14.lev");
 
-        // Frames tests.
+        // Some random frames.
         assert_eq!(replay.frames.len(), 440);
         assert_eq!(replay.frames[0], rec::Frame {
             bike: Position { x: 34.30250_f32, y: -1.1253119_f32 },
@@ -264,7 +264,7 @@ mod tests {
             volume: 5652
         });
 
-        // Event tests.
+        // Some random event.
         assert_eq!(replay.events.len(), 24);
         assert_eq!(replay.events[0], rec::Event {
             time: 1.57728480001688_f64,
