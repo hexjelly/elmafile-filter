@@ -177,12 +177,32 @@ mod tests {
     fn load_valid_level_1_and_save_with_top10 () {
         let mut level = lev::Level::load("tests/test_1.lev");
         level.save("tests/save_level_1_wtop10.lev", true);
+        let level_saved = lev::Level::load("tests/save_level_1_wtop10.lev");
+        assert_eq!(level.name, level_saved.name);
+        assert_eq!(level.ground, level_saved.ground);
+        assert_eq!(level.sky, level_saved.sky);
+        assert_eq!(level.polygons, level_saved.polygons);
+        assert_eq!(level.objects, level_saved.objects);
+        assert_eq!(level.pictures, level_saved.pictures);
+        assert_eq!(level.top10_single, level_saved.top10_single);
+        assert_eq!(level.top10_multi, level_saved.top10_multi);
     }
 
     #[test]
     fn load_valid_level_1_and_save_without_top10 () {
         let mut level = lev::Level::load("tests/test_1.lev");
         level.save("tests/save_level_1_notop10.lev", false);
+        let level_saved = lev::Level::load("tests/save_level_1_notop10.lev");
+        assert_eq!(level.name, level_saved.name);
+        assert_eq!(level.ground, level_saved.ground);
+        assert_eq!(level.sky, level_saved.sky);
+        assert_eq!(level.polygons, level_saved.polygons);
+        assert_eq!(level.objects, level_saved.objects);
+        assert_eq!(level.pictures, level_saved.pictures);
+        assert!(level.top10_single != level_saved.top10_single);
+        assert!(level.top10_multi != level_saved.top10_multi);
+        assert_eq!(level_saved.top10_single.len(), 0);
+        assert_eq!(level_saved.top10_multi.len(), 0);
     }
 
     // TODO: Add more levels to test, including some corrupt ones!
