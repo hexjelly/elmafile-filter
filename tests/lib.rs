@@ -205,6 +205,11 @@ mod tests {
         assert_eq!(level_saved.top10_multi.len(), 0);
     }
 
+    #[test]
+    #[should_panic]
+    fn load_invalid_level_1 () {
+        let _ = lev::Level::load("tests/invalid_1.lev");
+    }
     // TODO: Add more levels to test, including some corrupt ones!
 
     #[test]
