@@ -1,11 +1,39 @@
 //! Read and write Elasto Mania level files.
 
-use std::io::{ Read, Write };
+use std::io;
+use std::io::prelude::*;
+use std::string;
 use std::fs::File;
 use std::path::Path;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
 use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10 };
+
+/// Errors.
+#[derive(Debug)]
+pub enum LevelError {
+    AcrossUnsupported,
+    InvalidLevelFile,
+    InvalidGravity,
+    InvalidObject,
+    InvalidClipping,
+    EODMismatch,
+    EOFMismatch,
+    Io(io::Error),
+    StringFromUtf8(string::FromUtf8Error)
+}
+
+impl From<io::Error> for LevelError {
+    fn from(err: io::Error) -> LevelError {
+        LevelError::Io(err)
+    }
+}
+
+impl From<string::FromUtf8Error> for LevelError {
+    fn from(err: string::FromUtf8Error) -> LevelError {
+        LevelError::StringFromUtf8(err)
+    }
+}
 
 /// Game version.
 #[derive(Debug, PartialEq)]
@@ -178,62 +206,62 @@ impl Level {
     /// # Examples
     ///
     /// ```
-    /// let level = elma::lev::Level::load("tests/test_1.lev");
+    /// let level = elma::lev::Level::load("tests/test_1.lev").unwrap();
     /// ```
-    pub fn load (filename: &str) -> Self {
+    pub fn load (filename: &str) -> Result<Self, LevelError> {
         let path = Path::new(&filename);
         let mut level = Level::new();
-        let mut file = File::open(path).unwrap();
+        let mut file = try!(File::open(path));
         let mut buffer = vec![];
-        file.read_to_end(&mut buffer).unwrap();
+        try!(file.read_to_end(&mut buffer));
         level.raw = buffer;
-        level.parse_level();
-        level
+        try!(level.parse_level());
+        Ok(level)
     }
 
     /// Parses the raw binary data into `Level` struct fields.
-    fn parse_level (&mut self) {
+    fn parse_level (&mut self) -> Result<(), LevelError> {
         let remaining = self.raw.as_slice();
 
         // POT06 = Across, POT14 = Elma.
         let (version, remaining) = remaining.split_at(5);
         self.version = match version {
             [80, 79, 84, 49, 52] => Version::Elma,
-            [80, 79, 84, 48, 54] => Version::Across,
-            _ => panic!("Not a valid level file.")
+            [80, 79, 84, 48, 54] => return Err(LevelError::AcrossUnsupported),
+            _ => return Err(LevelError::InvalidLevelFile)
         };
 
         // Link.
         let (_, mut remaining) = remaining.split_at(2); // Never used
-        self.link = remaining.read_i32::<LittleEndian>().unwrap();
+        self.link = try!(remaining.read_i32::<LittleEndian>());
 
         // Integrity checksums.
         for i in 0..4 {
-            self.integrity[i] = remaining.read_f64::<LittleEndian>().unwrap();
+            self.integrity[i] = try!(remaining.read_f64::<LittleEndian>());
         }
 
         // Level name.
         let (name, remaining) = remaining.split_at(51);
-        self.name = trim_string(name).unwrap();
+        self.name = try!(trim_string(name));
         // LGR name.
         let (lgr, remaining) = remaining.split_at(16);
-        self.lgr = trim_string(lgr).unwrap();
+        self.lgr = try!(trim_string(lgr));
         // Ground texture name.
         let (ground, remaining) = remaining.split_at(10);
-        self.ground = trim_string(ground).unwrap();
+        self.ground = try!(trim_string(ground));
         // Sky texture name.
         let (sky, mut remaining) = remaining.split_at(10);
-        self.sky = trim_string(sky).unwrap();
+        self.sky = try!(trim_string(sky));
 
         // Polygons.
-        let poly_count = (remaining.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as usize;
+        let poly_count = (try!(remaining.read_f64::<LittleEndian>()) - 0.4643643).round() as usize;
         for _ in 0..poly_count {
-            let grass = remaining.read_i32::<LittleEndian>().unwrap() > 0;
-            let vertex_count = remaining.read_i32::<LittleEndian>().unwrap();
+            let grass = try!(remaining.read_i32::<LittleEndian>()) > 0;
+            let vertex_count = try!(remaining.read_i32::<LittleEndian>());
             let mut vertices: Vec<Position<f64>> = vec![];
             for _ in 0..vertex_count {
-                let x = remaining.read_f64::<LittleEndian>().unwrap();
-                let y = remaining.read_f64::<LittleEndian>().unwrap();
+                let x = try!(remaining.read_f64::<LittleEndian>());
+                let y = try!(remaining.read_f64::<LittleEndian>());
                 vertices.push(Position {
                     x: x,
                     y: y
@@ -246,28 +274,28 @@ impl Level {
         }
 
         // Objects.
-        let object_count = (remaining.read_f64::<LittleEndian>().unwrap() - 0.4643643).round() as usize;
+        let object_count = (try!(remaining.read_f64::<LittleEndian>()) - 0.4643643).round() as usize;
         for _ in 0..object_count {
-            let x = remaining.read_f64::<LittleEndian>().unwrap();
-            let y = remaining.read_f64::<LittleEndian>().unwrap();
+            let x = try!(remaining.read_f64::<LittleEndian>());
+            let y = try!(remaining.read_f64::<LittleEndian>());
             let position = Position { x: x, y: y };
-            let object_type = remaining.read_i32::<LittleEndian>().unwrap();
-            let gravity = remaining.read_i32::<LittleEndian>().unwrap();
+            let object_type = try!(remaining.read_i32::<LittleEndian>());
+            let gravity = try!(remaining.read_i32::<LittleEndian>());
             let gravity_direction = match gravity {
                 0 => Direction::Normal,
                 1 => Direction::Up,
                 2 => Direction::Down,
                 3 => Direction::Left,
                 4 => Direction::Right,
-                _ => panic!("Not a valid gravity direction: {:?}", gravity)
+                _ => return Err(LevelError::InvalidGravity)
             };
-            let animation = (remaining.read_i32::<LittleEndian>().unwrap() + 1) as u8;
+            let animation = (try!(remaining.read_i32::<LittleEndian>()) + 1) as u8;
             let object = match object_type {
                 1 => ObjectType::Exit,
                 2 => ObjectType::Apple { gravity: gravity_direction, animation: animation },
                 3 => ObjectType::Killer,
                 4 => ObjectType::Player,
-                _ => panic!("Not a valid object type: {:?}", object_type)
+                _ => return Err(LevelError::InvalidObject)
             };
 
             self.objects.push(Object {
@@ -277,24 +305,24 @@ impl Level {
         }
 
         // Pictures.
-        let picture_count = (remaining.read_f64::<LittleEndian>().unwrap() - 0.2345672).round() as usize;
+        let picture_count = (try!(remaining.read_f64::<LittleEndian>()) - 0.2345672).round() as usize;
         for _ in 0..picture_count {
             let (name, temp_remaining) = remaining.split_at(10);
-            let name = trim_string(name).unwrap();
+            let name = try!(trim_string(name));
             let (texture, temp_remaining) = temp_remaining.split_at(10);
-            let texture = trim_string(texture).unwrap();
+            let texture = try!(trim_string(texture));
             let (mask, temp_remaining) = temp_remaining.split_at(10);
-            let mask = trim_string(mask).unwrap();
+            let mask = try!(trim_string(mask));
             remaining = temp_remaining;
-            let x = remaining.read_f64::<LittleEndian>().unwrap();
-            let y = remaining.read_f64::<LittleEndian>().unwrap();
-            let distance = remaining.read_i32::<LittleEndian>().unwrap();
-            let clipping = remaining.read_i32::<LittleEndian>().unwrap();
+            let x = try!(remaining.read_f64::<LittleEndian>());
+            let y = try!(remaining.read_f64::<LittleEndian>());
+            let distance = try!(remaining.read_i32::<LittleEndian>());
+            let clipping = try!(remaining.read_i32::<LittleEndian>());
             let clip = match clipping {
                 0 => Clip::Unclipped,
                 1 => Clip::Ground,
                 2 => Clip::Sky,
-                _ => panic!("Not valid clipping data: {:?}", clipping)
+                _ => return Err(LevelError::InvalidClipping)
             };
 
             self.pictures.push(Picture {
@@ -308,8 +336,8 @@ impl Level {
         }
 
         // EOD marker expected at this point.
-        let expected = remaining.read_i32::<LittleEndian>().unwrap();
-        if expected != EOD { panic!("EOD marker mismatch: x0{:x} != x0{:x}", expected, EOD); }
+        let expected = try!(remaining.read_i32::<LittleEndian>());
+        if expected != EOD { return Err(LevelError::EODMismatch) }
 
         // First decrypt the top10 blocks.
         let (top10, mut remaining) = remaining.split_at(688);
@@ -324,8 +352,10 @@ impl Level {
         self.top10_multi = parse_top10(multi);
 
         // EOF marker expected at this point.
-        let expected = remaining.read_i32::<LittleEndian>().unwrap();
-        if expected != EOF { panic!("EOF marker mismatch: x0{:x} != x0{:x}", expected, EOF); }
+        let expected = try!(remaining.read_i32::<LittleEndian>());
+        if expected != EOF { return Err(LevelError::EOFMismatch) }
+
+        Ok(())
     }
 
     /// Combines the `Level` struct fields to generate the raw binary data, and calculates
@@ -336,7 +366,7 @@ impl Level {
     /// # Examples
     ///
     /// ```
-    /// let mut level = elma::lev::Level::load("tests/test_1.lev");
+    /// let mut level = elma::lev::Level::load("tests/test_1.lev").unwrap();
     /// level.update(false);
     /// ```
     pub fn update (&mut self, top_10: bool) {

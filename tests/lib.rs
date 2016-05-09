@@ -51,7 +51,7 @@ mod tests {
 
     #[test]
     fn load_valid_level_1 () {
-        let level = lev::Level::load("tests/test_1.lev");
+        let level = lev::Level::load("tests/test_1.lev").unwrap();
         assert_eq!(level.version, lev::Version::Elma);
         assert_eq!(level.link, 1524269776);
         assert_eq!(level.integrity, [-1148375.210607791_f64,
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn load_valid_level_2 () {
-        let level = lev::Level::load("tests/test_2.lev");
+        let level = lev::Level::load("tests/test_2.lev").unwrap();
         assert_eq!(level.version, lev::Version::Elma);
         assert_eq!(level.link, 1505288190);
         assert_eq!(level.name, "");
@@ -175,9 +175,9 @@ mod tests {
 
     #[test]
     fn load_valid_level_1_and_save_with_top10 () {
-        let mut level = lev::Level::load("tests/test_1.lev");
+        let mut level = lev::Level::load("tests/test_1.lev").unwrap();
         level.save("tests/save_level_1_wtop10.lev", true);
-        let level_saved = lev::Level::load("tests/save_level_1_wtop10.lev");
+        let level_saved = lev::Level::load("tests/save_level_1_wtop10.lev").unwrap();
         assert_eq!(level.name, level_saved.name);
         assert_eq!(level.ground, level_saved.ground);
         assert_eq!(level.sky, level_saved.sky);
@@ -190,9 +190,9 @@ mod tests {
 
     #[test]
     fn load_valid_level_1_and_save_without_top10 () {
-        let mut level = lev::Level::load("tests/test_1.lev");
+        let mut level = lev::Level::load("tests/test_1.lev").unwrap();
         level.save("tests/save_level_1_notop10.lev", false);
-        let level_saved = lev::Level::load("tests/save_level_1_notop10.lev");
+        let level_saved = lev::Level::load("tests/save_level_1_notop10.lev").unwrap();
         assert_eq!(level.name, level_saved.name);
         assert_eq!(level.ground, level_saved.ground);
         assert_eq!(level.sky, level_saved.sky);
@@ -208,7 +208,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn load_invalid_level_1 () {
-        let _ = lev::Level::load("tests/invalid_1.lev");
+        let _ = lev::Level::load("tests/invalid_1.lev").unwrap();
     }
     // TODO: Add more levels to test, including some corrupt ones!
 
