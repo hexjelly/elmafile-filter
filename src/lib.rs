@@ -10,8 +10,39 @@
 extern crate byteorder;
 extern crate rand;
 
+use std::io;
+use std::string;
+
 pub mod lev;
 pub mod rec;
+
+// Errors.
+#[derive(Debug)]
+pub enum ElmaError {
+    AcrossUnsupported,
+    InvalidLevelFile,
+    InvalidGravity,
+    InvalidObject,
+    InvalidClipping,
+    EODMismatch,
+    EOFMismatch,
+    InvalidEvent(i32),
+    EORMismatch,
+    Io(io::Error),
+    StringFromUtf8(string::FromUtf8Error)
+}
+
+impl From<io::Error> for ElmaError {
+    fn from(err: io::Error) -> ElmaError {
+        ElmaError::Io(err)
+    }
+}
+
+impl From<string::FromUtf8Error> for ElmaError {
+    fn from(err: string::FromUtf8Error) -> ElmaError {
+        ElmaError::StringFromUtf8(err)
+    }
+}
 
 /// Shared position struct used in both sub-modules.
 ///

@@ -232,7 +232,7 @@ mod tests {
 
     #[test]
     fn load_valid_replay_1 () {
-        let replay = rec::Replay::load("tests/test_1.rec");
+        let replay = rec::Replay::load("tests/test_1.rec").unwrap();
         assert_eq!(replay.multi, false);
         assert_eq!(replay.flag_tag, false);
         assert_eq!(replay.link, 2549082363);
@@ -311,7 +311,7 @@ mod tests {
 
     #[test]
     fn load_valid_multi_replay_1 () {
-        let replay = rec::Replay::load("tests/test_2.rec");
+        let replay = rec::Replay::load("tests/test_2.rec").unwrap();
         assert_eq!(replay.multi, true);
         assert_eq!(replay.flag_tag, false);
         assert_eq!(replay.link, 2549082363);

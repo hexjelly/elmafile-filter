@@ -1,9 +1,9 @@
 //! Read and write Elasto Mania replay files.
-use std::io::{ Read };
+use std::io::prelude::*;
 use std::fs::File;
 use std::path::Path;
 use byteorder::{ ReadBytesExt, LittleEndian };
-use super::{ Position, trim_string, EOR };
+use super::{ Position, trim_string, EOR, ElmaError };
 
 /// One frame of replay.
 #[derive(Debug, Default, PartialEq)]
@@ -144,66 +144,67 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let rec = elma::rec::Replay::load("tests/test_1.rec");
+    /// let rec = elma::rec::Replay::load("tests/test_1.rec").unwrap();
     /// ```
-    pub fn load(filename: &str) -> Self {
+    pub fn load(filename: &str) -> Result<Self, ElmaError> {
         let path = Path::new(&filename);
         let mut replay = Replay::new();
-        let mut file = File::open(path).unwrap();
+        let mut file = try!(File::open(path));
         let mut buffer = vec![];
-        file.read_to_end(&mut buffer).unwrap();
+        try!(file.read_to_end(&mut buffer));
         replay.raw = buffer;
-        replay.parse_replay();
-        replay
+        try!(replay.parse_replay());
+        Ok(replay)
     }
 
     /// Parses the raw binary data into Replay struct fields.
-    fn parse_replay(&mut self) {
+    fn parse_replay(&mut self) -> Result<(), ElmaError> {
         let mut remaining = self.raw.as_slice();
 
         // Frame count.
-        let frame_count = remaining.read_i32::<LittleEndian>().unwrap();
+        let frame_count = try!(remaining.read_i32::<LittleEndian>());
         // Some unused value, always 0x83.
         let (_, mut remaining) = remaining.split_at(4);
         // Multi-player replay.
-        self.multi = remaining.read_i32::<LittleEndian>().unwrap() > 0;
+        self.multi = try!(remaining.read_i32::<LittleEndian>()) > 0;
         // Flag-tag replay.
-        self.flag_tag = remaining.read_i32::<LittleEndian>().unwrap() > 0;
+        self.flag_tag = try!(remaining.read_i32::<LittleEndian>()) > 0;
         // Level link.
-        self.link = remaining.read_u32::<LittleEndian>().unwrap();
+        self.link = try!(remaining.read_u32::<LittleEndian>());
         // Level file name, including extension.
         let (level, remaining) = remaining.split_at(12);
-        self.level = trim_string(level).unwrap();
+        self.level = try!(trim_string(level));
         // Unknown, unused.
         let (_, remaining) = remaining.split_at(4);
         // Frames.
-        self.frames = parse_frames(remaining, frame_count);
+        self.frames = try!(parse_frames(remaining, frame_count));
         let (_, mut remaining) = remaining.split_at(27*frame_count as usize);
         // Events.
-        let event_count = remaining.read_i32::<LittleEndian>().unwrap();
-        self.events = parse_events(remaining, event_count);
+        let event_count = try!(remaining.read_i32::<LittleEndian>());
+        self.events = try!(parse_events(remaining, event_count));
         let (_, mut remaining) = remaining.split_at(16*event_count as usize);
         // End of replay marker.
-        let expected = remaining.read_i32::<LittleEndian>().unwrap();
-        if expected != EOR { panic!("EOR marker mismatch: x0{:x} != x0{:x}", expected, EOR); }
+        let expected = try!(remaining.read_i32::<LittleEndian>());
+        if expected != EOR { return Err(ElmaError::EORMismatch); }
 
         // If multi-rec, parse frame and events, while skipping other fields?
         if self.multi {
             // Frame count.
-            let frame_count = remaining.read_i32::<LittleEndian>().unwrap();
+            let frame_count = try!(remaining.read_i32::<LittleEndian>());
             // Skip other fields.
             let (_, remaining) = remaining.split_at(32);
             // Frames.
-            self.frames_2 = parse_frames(remaining, frame_count);
+            self.frames_2 = try!(parse_frames(remaining, frame_count));
             let (_, mut remaining) = remaining.split_at(27*frame_count as usize);
             // Events.
-            let event_count = remaining.read_i32::<LittleEndian>().unwrap();
-            self.events_2 = parse_events(remaining, event_count);
+            let event_count = try!(remaining.read_i32::<LittleEndian>());
+            self.events_2 = try!(parse_events(remaining, event_count));
             let (_, mut remaining) = remaining.split_at(16*event_count as usize);
             // End of replay marker.
-            let expected = remaining.read_i32::<LittleEndian>().unwrap();
-            if expected != EOR { panic!("EOR marker mismatch: x0{:x} != x0{:x}", expected, EOR); }
+            let expected = try!(remaining.read_i32::<LittleEndian>());
+            if expected != EOR { return Err(ElmaError::EORMismatch); }
         }
+        Ok(())
     }
 
     /// Save replay as a file.
@@ -213,7 +214,7 @@ impl Replay {
 }
 
 /// Function for parsing frame data from either single-player or multi-player replays.
-fn parse_frames (frame_data: &[u8], frame_count: i32) -> Vec<Frame> {
+fn parse_frames (frame_data: &[u8], frame_count: i32) -> Result<Vec<Frame>, ElmaError> {
     let mut frames: Vec<Frame> = vec![];
 
     let (mut bike_x, remaining) = frame_data.split_at((frame_count*4) as usize);
@@ -232,31 +233,31 @@ fn parse_frames (frame_data: &[u8], frame_count: i32) -> Vec<Frame> {
 
     for _ in 0..frame_count {
         // Bike X and Y.
-        let x = bike_x.read_f32::<LittleEndian>().unwrap();
-        let y = bike_y.read_f32::<LittleEndian>().unwrap();
+        let x = try!(bike_x.read_f32::<LittleEndian>());
+        let y = try!(bike_y.read_f32::<LittleEndian>());
         let bike = Position { x: x, y: y };
         // Left wheel X and Y.
-        let x = left_x.read_i16::<LittleEndian>().unwrap();
-        let y = left_y.read_i16::<LittleEndian>().unwrap();
+        let x = try!(left_x.read_i16::<LittleEndian>());
+        let y = try!(left_y.read_i16::<LittleEndian>());
         let left_wheel = Position { x: x, y: y };
         // Left wheel X and Y.
-        let x = right_x.read_i16::<LittleEndian>().unwrap();
-        let y = right_y.read_i16::<LittleEndian>().unwrap();
+        let x = try!(right_x.read_i16::<LittleEndian>());
+        let y = try!(right_y.read_i16::<LittleEndian>());
         let right_wheel = Position { x: x, y: y };
         // Head X and Y.
-        let x = head_x.read_i16::<LittleEndian>().unwrap();
-        let y = head_y.read_i16::<LittleEndian>().unwrap();
+        let x = try!(head_x.read_i16::<LittleEndian>());
+        let y = try!(head_y.read_i16::<LittleEndian>());
         let head = Position { x: x, y: y };
         // Rotations.
-        let rotation = rotation.read_i16::<LittleEndian>().unwrap();
-        let left_wheel_rotation = left_rotation.read_u8().unwrap();
-        let right_wheel_rotation = right_rotation.read_u8().unwrap();
+        let rotation = try!(rotation.read_i16::<LittleEndian>());
+        let left_wheel_rotation = try!(left_rotation.read_u8());
+        let right_wheel_rotation = try!(right_rotation.read_u8());
         // Throttle and turn right.
-        let data = data.read_u8().unwrap();
+        let data = try!(data.read_u8());
         let throttle = data & 1 != 0;
         let right = data & (1 << 1) != 0;
         // Sound effect volume.
-        let volume = volume.read_i16::<LittleEndian>().unwrap();
+        let volume = try!(volume.read_i16::<LittleEndian>());
 
         frames.push(Frame {
             bike: bike,
@@ -272,22 +273,22 @@ fn parse_frames (frame_data: &[u8], frame_count: i32) -> Vec<Frame> {
         });
     }
 
-    frames
+    Ok(frames)
 }
 
 /// Function for parsing event data from either single-player or multi-player replays.
-fn parse_events (mut event_data: &[u8], event_count: i32) -> Vec<Event> {
+fn parse_events (mut event_data: &[u8], event_count: i32) -> Result<Vec<Event>, ElmaError> {
     let mut events: Vec<Event> = vec![];
 
     for n in 0..event_count {
         // Event time
-        let time = event_data.read_f64::<LittleEndian>().unwrap();
+        let time = try!(event_data.read_f64::<LittleEndian>());
         // Event details
-        let info = event_data.read_i16::<LittleEndian>().unwrap();
-        let event = event_data.read_u8().unwrap();
+        let info = try!(event_data.read_i16::<LittleEndian>());
+        let event = try!(event_data.read_u8());
         // Unknown values
-        let _ = event_data.read_u8().unwrap();
-        let _ = event_data.read_f32::<LittleEndian>().unwrap();
+        let _ = try!(event_data.read_u8());
+        let _ = try!(event_data.read_f32::<LittleEndian>());
         let event_type = match event {
             0 => EventType::Touch { index: info },
             1 => EventType::Ground { alternative: false },
@@ -295,7 +296,7 @@ fn parse_events (mut event_data: &[u8], event_count: i32) -> Vec<Event> {
             4 => EventType::Ground { alternative: true },
             6 => EventType::VoltRight,
             7 => EventType::VoltLeft,
-            _ => panic!("Unknown event type: {:?}\nin event number: {:?}", event, n)
+            _ => return Err(ElmaError::InvalidEvent(n))
         };
 
         events.push(Event {
@@ -304,5 +305,5 @@ fn parse_events (mut event_data: &[u8], event_count: i32) -> Vec<Event> {
         });
     }
 
-    events
+    Ok(events)
 }

@@ -1,39 +1,11 @@
 //! Read and write Elasto Mania level files.
 
-use std::io;
 use std::io::prelude::*;
-use std::string;
 use std::fs::File;
 use std::path::Path;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
-use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10 };
-
-/// Errors.
-#[derive(Debug)]
-pub enum LevelError {
-    AcrossUnsupported,
-    InvalidLevelFile,
-    InvalidGravity,
-    InvalidObject,
-    InvalidClipping,
-    EODMismatch,
-    EOFMismatch,
-    Io(io::Error),
-    StringFromUtf8(string::FromUtf8Error)
-}
-
-impl From<io::Error> for LevelError {
-    fn from(err: io::Error) -> LevelError {
-        LevelError::Io(err)
-    }
-}
-
-impl From<string::FromUtf8Error> for LevelError {
-    fn from(err: string::FromUtf8Error) -> LevelError {
-        LevelError::StringFromUtf8(err)
-    }
-}
+use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, ElmaError };
 
 /// Game version.
 #[derive(Debug, PartialEq)]
@@ -208,7 +180,7 @@ impl Level {
     /// ```
     /// let level = elma::lev::Level::load("tests/test_1.lev").unwrap();
     /// ```
-    pub fn load (filename: &str) -> Result<Self, LevelError> {
+    pub fn load (filename: &str) -> Result<Self, ElmaError> {
         let path = Path::new(&filename);
         let mut level = Level::new();
         let mut file = try!(File::open(path));
@@ -220,15 +192,15 @@ impl Level {
     }
 
     /// Parses the raw binary data into `Level` struct fields.
-    fn parse_level (&mut self) -> Result<(), LevelError> {
+    fn parse_level (&mut self) -> Result<(), ElmaError> {
         let remaining = self.raw.as_slice();
 
         // POT06 = Across, POT14 = Elma.
         let (version, remaining) = remaining.split_at(5);
         self.version = match version {
             [80, 79, 84, 49, 52] => Version::Elma,
-            [80, 79, 84, 48, 54] => return Err(LevelError::AcrossUnsupported),
-            _ => return Err(LevelError::InvalidLevelFile)
+            [80, 79, 84, 48, 54] => return Err(ElmaError::AcrossUnsupported),
+            _ => return Err(ElmaError::InvalidLevelFile)
         };
 
         // Link.
@@ -271,7 +243,7 @@ impl Level {
 
         // EOD marker expected at this point.
         let expected = try!(remaining.read_i32::<LittleEndian>());
-        if expected != EOD { return Err(LevelError::EODMismatch) }
+        if expected != EOD { return Err(ElmaError::EODMismatch) }
 
         // First decrypt the top10 blocks.
         let (top10, mut remaining) = remaining.split_at(688);
@@ -287,12 +259,12 @@ impl Level {
 
         // EOF marker expected at this point.
         let expected = try!(remaining.read_i32::<LittleEndian>());
-        if expected != EOF { return Err(LevelError::EOFMismatch) }
+        if expected != EOF { return Err(ElmaError::EOFMismatch) }
 
         Ok(())
     }
 
-    fn parse_polygons (&self, mut buffer: &[u8], n: usize) -> Result<(Vec<Polygon>, usize), LevelError> {
+    fn parse_polygons (&self, mut buffer: &[u8], n: usize) -> Result<(Vec<Polygon>, usize), ElmaError> {
         let mut polygons = vec![];
         let mut read_bytes = 0;
         for _ in 0..n {
@@ -317,7 +289,7 @@ impl Level {
         Ok((polygons, read_bytes))
     }
 
-    fn parse_objects (&self, mut buffer: &[u8], n: usize) -> Result<Vec<Object>, LevelError> {
+    fn parse_objects (&self, mut buffer: &[u8], n: usize) -> Result<Vec<Object>, ElmaError> {
         let mut objects = vec![];
         for _ in 0..n {
             let x = try!(buffer.read_f64::<LittleEndian>());
@@ -331,7 +303,7 @@ impl Level {
                 2 => Direction::Down,
                 3 => Direction::Left,
                 4 => Direction::Right,
-                _ => return Err(LevelError::InvalidGravity)
+                _ => return Err(ElmaError::InvalidGravity)
             };
             let animation = (try!(buffer.read_i32::<LittleEndian>()) + 1) as u8;
             let object = match object_type {
@@ -339,7 +311,7 @@ impl Level {
                 2 => ObjectType::Apple { gravity: gravity_direction, animation: animation },
                 3 => ObjectType::Killer,
                 4 => ObjectType::Player,
-                _ => return Err(LevelError::InvalidObject)
+                _ => return Err(ElmaError::InvalidObject)
             };
 
             objects.push(Object {
@@ -350,7 +322,7 @@ impl Level {
         Ok(objects)
     }
 
-    fn parse_pictures (&self, mut buffer: &[u8], n: usize) -> Result<Vec<Picture>, LevelError> {
+    fn parse_pictures (&self, mut buffer: &[u8], n: usize) -> Result<Vec<Picture>, ElmaError> {
         let mut pictures = vec![];
         for _ in 0..n {
             let (name, temp_remaining) = buffer.split_at(10);
@@ -368,7 +340,7 @@ impl Level {
                 0 => Clip::Unclipped,
                 1 => Clip::Ground,
                 2 => Clip::Sky,
-                _ => return Err(LevelError::InvalidClipping)
+                _ => return Err(ElmaError::InvalidClipping)
             };
 
             pictures.push(Picture {
@@ -394,13 +366,13 @@ impl Level {
     /// let mut level = elma::lev::Level::load("tests/test_1.lev").unwrap();
     /// level.update(false);
     /// ```
-    pub fn update (&mut self, top_10: bool) -> Result<(), LevelError> {
+    pub fn update (&mut self, top_10: bool) -> Result<(), ElmaError> {
         let mut bytes = vec![];
 
         // Level version.
         match self.version {
             Version::Elma => bytes.extend_from_slice(&[80, 79, 84, 49, 52]),
-            Version::Across => return Err(LevelError::AcrossUnsupported)
+            Version::Across => return Err(ElmaError::AcrossUnsupported)
         };
 
         // Lower short of link.
@@ -455,7 +427,7 @@ impl Level {
         Ok(())
     }
 
-    fn write_polygons (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, LevelError> {
+    fn write_polygons (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
         for poly in &self.polygons {
             // Grass poly.
             try!(bytes.write_i32::<LittleEndian>(if poly.grass { 1 } else { 0 }));
@@ -470,7 +442,7 @@ impl Level {
         Ok(bytes)
     }
 
-    fn write_objects (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, LevelError> {
+    fn write_objects (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
         for obj in &self.objects {
             // Position.
             try!(bytes.write_f64::<LittleEndian>(obj.position.x));
@@ -499,7 +471,7 @@ impl Level {
         Ok(bytes)
     }
 
-    fn write_pictures (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, LevelError> {
+    fn write_pictures (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
         for pic in &self.pictures {
             // Picture name.
             bytes.extend_from_slice(&string_null_pad(&pic.name, 10));
@@ -522,7 +494,7 @@ impl Level {
         Ok(bytes)
     }
 
-    fn write_top10 (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, LevelError> {
+    fn write_top10 (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
         let mut top10_bytes: Vec<u8> = vec![];
 
         // Single-player times.
@@ -634,13 +606,13 @@ impl Level {
     }
 
     /// Converts all struct fields into raw binary form and returns the raw data.
-    pub fn get_raw (&mut self, top10: bool) -> Result<Vec<u8>, LevelError> {
+    pub fn get_raw (&mut self, top10: bool) -> Result<Vec<u8>, ElmaError> {
         try!(self.update(top10));
         Ok(self.raw.clone())
     }
 
     /// Saves level as a file.
-    pub fn save (&mut self, filename: &str, top10: bool) -> Result<(), LevelError> {
+    pub fn save (&mut self, filename: &str, top10: bool) -> Result<(), ElmaError> {
         let path = Path::new(&filename);
         try!(self.update(top10));
         let mut file = try!(File::create(path));
@@ -668,7 +640,7 @@ pub fn crypt_top10 (top10_data: &[u8]) -> Vec<u8> {
 }
 
 /// Parse top10 lists and return a vector of `ListEntry`s
-pub fn parse_top10 (top10: &[u8]) -> Result<Vec<ListEntry>, LevelError> {
+pub fn parse_top10 (top10: &[u8]) -> Result<Vec<ListEntry>, ElmaError> {
     let mut list: Vec<ListEntry> = vec![];
     let times = LittleEndian::read_i32(&top10[0..4]);
     for n in 0..times {
