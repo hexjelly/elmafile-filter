@@ -269,7 +269,6 @@ impl Level {
         let (picture_data, mut remaining) = remaining.split_at(picture_count*54);
         self.pictures = try!(self.parse_pictures(picture_data, picture_count));
 
-
         // EOD marker expected at this point.
         let expected = try!(remaining.read_i32::<LittleEndian>());
         if expected != EOD { return Err(LevelError::EODMismatch) }
@@ -280,11 +279,11 @@ impl Level {
 
         // Single-player list.
         let single = &decrypted_top10_data[0..344];
-        self.top10_single = parse_top10(single);
+        self.top10_single = try!(parse_top10(single));
 
         // Multi-player list.
         let multi = &decrypted_top10_data[344..688];
-        self.top10_multi = parse_top10(multi);
+        self.top10_multi = try!(parse_top10(multi));
 
         // EOF marker expected at this point.
         let expected = try!(remaining.read_i32::<LittleEndian>());
@@ -395,24 +394,23 @@ impl Level {
     /// let mut level = elma::lev::Level::load("tests/test_1.lev").unwrap();
     /// level.update(false);
     /// ```
-    pub fn update (&mut self, top_10: bool) {
-        let mut bytes: Vec<u8> = vec![];
+    pub fn update (&mut self, top_10: bool) -> Result<(), LevelError> {
+        let mut bytes = vec![];
 
         // Level version.
         match self.version {
             Version::Elma => bytes.extend_from_slice(&[80, 79, 84, 49, 52]),
-            Version::Across => panic!("Across levels are not supported.")
+            Version::Across => return Err(LevelError::AcrossUnsupported)
         };
 
         // Lower short of link.
-        bytes.write_i16::<LittleEndian>((self.link & 0xFFFF) as i16).unwrap();
+        try!(bytes.write_i16::<LittleEndian>((self.link & 0xFFFF) as i16));
         // Link.
-
-        bytes.write_i32::<LittleEndian>(self.link).unwrap();
+        try!(bytes.write_i32::<LittleEndian>(self.link));
         // Integrity checksums.
         self.calculate_integrity_sums(true);
         for sum in self.integrity.into_iter() {
-            bytes.write_f64::<LittleEndian>(*sum).unwrap();
+            try!(bytes.write_f64::<LittleEndian>(*sum));
         }
 
         // Level name.
@@ -425,52 +423,83 @@ impl Level {
         bytes.extend_from_slice(&string_null_pad(&self.sky, 10));
 
         // Number of polygons.
-        bytes.write_f64::<LittleEndian>(self.polygons.len() as f64 + 0.4643643_f64).unwrap();
+        try!(bytes.write_f64::<LittleEndian>(self.polygons.len() as f64 + 0.4643643_f64));
         // Polygons.
-        for poly in &self.polygons {
-            // Grass poly.
-            bytes.write_i32::<LittleEndian>(if poly.grass { 1 } else { 0 }).unwrap();
-            // Number of vertices.
-            bytes.write_i32::<LittleEndian>(poly.vertices.len() as i32).unwrap();
-            // Vertices.
-            for vertex in &poly.vertices {
-                bytes.write_f64::<LittleEndian>(vertex.x).unwrap();
-                bytes.write_f64::<LittleEndian>(vertex.y).unwrap();
-            }
-        }
+        bytes = try!(self.write_polygons(bytes));
 
         // Number of objects.
-        bytes.write_f64::<LittleEndian>(self.objects.len() as f64 + 0.4643643_f64).unwrap();
+        try!(bytes.write_f64::<LittleEndian>(self.objects.len() as f64 + 0.4643643_f64));
         // Objects.
+        bytes = try!(self.write_objects(bytes));
+
+        // Number of pictures.
+        try!(bytes.write_f64::<LittleEndian>(self.pictures.len() as f64 + 0.2345672_f64));
+        // Pictures.
+        bytes = try!(self.write_pictures(bytes));
+
+        // EOD marker.
+        try!(bytes.write_i32::<LittleEndian>(EOD));
+
+        // Top10 lists.
+        // TODO: figure out how to write this to be less idiotic.
+        if top_10 {
+            bytes = try!(self.write_top10(bytes));
+        } else {
+            bytes.extend_from_slice(&EMPTY_TOP10);
+        }
+
+        // EOF marker.
+        try!(bytes.write_i32::<LittleEndian>(EOF));
+
+        self.raw = bytes;
+        Ok(())
+    }
+
+    fn write_polygons (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, LevelError> {
+        for poly in &self.polygons {
+            // Grass poly.
+            try!(bytes.write_i32::<LittleEndian>(if poly.grass { 1 } else { 0 }));
+            // Number of vertices.
+            try!(bytes.write_i32::<LittleEndian>(poly.vertices.len() as i32));
+            // Vertices.
+            for vertex in &poly.vertices {
+                try!(bytes.write_f64::<LittleEndian>(vertex.x));
+                try!(bytes.write_f64::<LittleEndian>(vertex.y));
+            }
+        }
+        Ok(bytes)
+    }
+
+    fn write_objects (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, LevelError> {
         for obj in &self.objects {
             // Position.
-            bytes.write_f64::<LittleEndian>(obj.position.x).unwrap();
-            bytes.write_f64::<LittleEndian>(obj.position.y).unwrap();
+            try!(bytes.write_f64::<LittleEndian>(obj.position.x));
+            try!(bytes.write_f64::<LittleEndian>(obj.position.y));
             // Object type.
-            bytes.write_i32::<LittleEndian>(match obj.object_type {
+            try!(bytes.write_i32::<LittleEndian>(match obj.object_type {
                 ObjectType::Exit => 1,
                 ObjectType::Apple { .. } => 2,
                 ObjectType::Killer => 3,
                 ObjectType::Player => 4
-            }).unwrap();
+            }));
             // Apple gravity.
-            bytes.write_i32::<LittleEndian>(match obj.object_type {
+            try!(bytes.write_i32::<LittleEndian>(match obj.object_type {
                 ObjectType::Apple { gravity: Direction::Up, .. } => 1,
                 ObjectType::Apple { gravity: Direction::Down, .. } => 2,
                 ObjectType::Apple { gravity: Direction::Left, .. } => 3,
                 ObjectType::Apple { gravity: Direction::Right, .. } => 4,
                 _ => 0
-            }).unwrap();
+            }));
             // Apple animation.
-            bytes.write_i32::<LittleEndian>(match obj.object_type {
+            try!(bytes.write_i32::<LittleEndian>(match obj.object_type {
                 ObjectType::Apple { animation: n, .. } => (n - 1) as i32,
                 _ => 0
-            }).unwrap();
+            }));
         }
+        Ok(bytes)
+    }
 
-        // Number of pictures.
-        bytes.write_f64::<LittleEndian>(self.pictures.len() as f64 + 0.2345672_f64).unwrap();
-        // Pictures.
+    fn write_pictures (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, LevelError> {
         for pic in &self.pictures {
             // Picture name.
             bytes.extend_from_slice(&string_null_pad(&pic.name, 10));
@@ -479,91 +508,80 @@ impl Level {
             // Mask name.
             bytes.extend_from_slice(&string_null_pad(&pic.mask, 10));
             // Position.
-            bytes.write_f64::<LittleEndian>(pic.position.x).unwrap();
-            bytes.write_f64::<LittleEndian>(pic.position.y).unwrap();
+            try!(bytes.write_f64::<LittleEndian>(pic.position.x));
+            try!(bytes.write_f64::<LittleEndian>(pic.position.y));
             // Z-distance.
-            bytes.write_i32::<LittleEndian>(pic.distance).unwrap();
+            try!(bytes.write_i32::<LittleEndian>(pic.distance));
             // Clipping.
-            bytes.write_i32::<LittleEndian>(match pic.clip {
+            try!(bytes.write_i32::<LittleEndian>(match pic.clip {
                 Clip::Unclipped => 0,
                 Clip::Ground => 1,
                 Clip::Sky => 2
-            }).unwrap();
+            }));
+        }
+        Ok(bytes)
+    }
+
+    fn write_top10 (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, LevelError> {
+        let mut top10_bytes: Vec<u8> = vec![];
+
+        // Single-player times.
+        try!(top10_bytes.write_i32::<LittleEndian>(self.top10_single.len() as i32));
+        let mut times = [0_i32;10];
+        let mut names_1: Vec<u8> = vec![];
+        let mut names_2: Vec<u8> = vec![];
+        for (n, entry) in self.top10_single.iter().enumerate() {
+            times[n] = entry.time;
+            names_1.extend_from_slice(&string_null_pad(&entry.name_1, 15));
+            names_2.extend_from_slice(&string_null_pad(&entry.name_2, 15));
+        }
+        // Pad with null bytes if less than 10 entries.
+        for _ in 0..10 - self.top10_single.len() {
+            names_1.extend_from_slice(&[0u8;15]);
+            names_2.extend_from_slice(&[0u8;15]);
         }
 
-        // EOD marker.
-        bytes.write_i32::<LittleEndian>(EOD).unwrap();
-
-        // Top10 lists.
-        // TODO: figure out how to write this to be less idiotic.
-        if top_10 {
-            let mut top10_bytes: Vec<u8> = vec![];
-
-            // Single-player times.
-            top10_bytes.write_i32::<LittleEndian>(self.top10_single.len() as i32).unwrap();
-            let mut times = [0_i32;10];
-            let mut names_1: Vec<u8> = vec![];
-            let mut names_2: Vec<u8> = vec![];
-            for (n, entry) in self.top10_single.iter().enumerate() {
-                times[n] = entry.time;
-                names_1.extend_from_slice(&string_null_pad(&entry.name_1, 15));
-                names_2.extend_from_slice(&string_null_pad(&entry.name_2, 15));
-            }
-            // Pad with null bytes if less than 10 entries.
-            for _ in 0..10 - self.top10_single.len() {
-                names_1.extend_from_slice(&[0u8;15]);
-                names_2.extend_from_slice(&[0u8;15]);
-            }
-
-            for time in &times {
-                top10_bytes.write_i32::<LittleEndian>(*time).unwrap();
-            }
-
-            for _ in 0..10 - times.len() {
-                top10_bytes.write_i32::<LittleEndian>(0).unwrap();
-            }
-
-            top10_bytes.extend_from_slice(&names_1);
-            top10_bytes.extend_from_slice(&names_2);
-
-            // Multi-player times.
-            top10_bytes.write_i32::<LittleEndian>(self.top10_multi.len() as i32).unwrap();
-            let mut times = [0_i32;10];
-            let mut names_1: Vec<u8> = vec![];
-            let mut names_2: Vec<u8> = vec![];
-            for (n, entry) in self.top10_multi.iter().enumerate() {
-                times[n] = entry.time;
-                names_1.extend_from_slice(&string_null_pad(&entry.name_1, 15));
-                names_2.extend_from_slice(&string_null_pad(&entry.name_2, 15));
-            }
-            // Pad with null bytes if less than 10 entries.
-            for _ in 0..10 - self.top10_multi.len() {
-                names_1.extend_from_slice(&[0u8;15]);
-                names_2.extend_from_slice(&[0u8;15]);
-            }
-
-            for time in &times {
-                top10_bytes.write_i32::<LittleEndian>(*time).unwrap();
-            }
-
-            for _ in 0..10 - times.len() {
-                top10_bytes.write_i32::<LittleEndian>(0).unwrap();
-            }
-
-            top10_bytes.extend_from_slice(&names_1);
-            top10_bytes.extend_from_slice(&names_2);
-
-            // Encrypt the data before writing.
-            bytes.extend_from_slice(&crypt_top10(&top10_bytes));
-
-        } else {
-            bytes.extend_from_slice(&EMPTY_TOP10);
+        for time in &times {
+            try!(top10_bytes.write_i32::<LittleEndian>(*time));
         }
 
-        // EOF marker.
-        bytes.write_i32::<LittleEndian>(EOF).unwrap();
+        for _ in 0..10 - times.len() {
+            try!(top10_bytes.write_i32::<LittleEndian>(0));
+        }
 
-        self.raw = bytes;
+        top10_bytes.extend_from_slice(&names_1);
+        top10_bytes.extend_from_slice(&names_2);
+
+        // Multi-player times.
+        try!(top10_bytes.write_i32::<LittleEndian>(self.top10_multi.len() as i32));
+        let mut times = [0_i32;10];
+        let mut names_1: Vec<u8> = vec![];
+        let mut names_2: Vec<u8> = vec![];
+        for (n, entry) in self.top10_multi.iter().enumerate() {
+            times[n] = entry.time;
+            names_1.extend_from_slice(&string_null_pad(&entry.name_1, 15));
+            names_2.extend_from_slice(&string_null_pad(&entry.name_2, 15));
+        }
+        // Pad with null bytes if less than 10 entries.
+        for _ in 0..10 - self.top10_multi.len() {
+            names_1.extend_from_slice(&[0u8;15]);
+            names_2.extend_from_slice(&[0u8;15]);
+        }
+
+        for time in &times {
+            try!(top10_bytes.write_i32::<LittleEndian>(*time));
+        }
+
+        for _ in 0..10 - times.len() {
+            try!(top10_bytes.write_i32::<LittleEndian>(0));
+        }
+
+        top10_bytes.extend_from_slice(&names_1);
+        top10_bytes.extend_from_slice(&names_2);
+
+        // Encrypt the data before writing.
+        bytes.extend_from_slice(&crypt_top10(&top10_bytes));
+        Ok(bytes)
     }
 
     /// Check topology of level.
@@ -616,17 +634,18 @@ impl Level {
     }
 
     /// Converts all struct fields into raw binary form and returns the raw data.
-    pub fn get_raw (&mut self, top10: bool) -> Vec<u8> {
-        self.update(top10);
-        self.raw.clone()
+    pub fn get_raw (&mut self, top10: bool) -> Result<Vec<u8>, LevelError> {
+        try!(self.update(top10));
+        Ok(self.raw.clone())
     }
 
     /// Saves level as a file.
-    pub fn save (&mut self, filename: &str, top10: bool) {
+    pub fn save (&mut self, filename: &str, top10: bool) -> Result<(), LevelError> {
         let path = Path::new(&filename);
-        self.update(top10);
-        let mut file = File::create(path).unwrap();
-        file.write_all(&self.raw).unwrap();
+        try!(self.update(top10));
+        let mut file = try!(File::create(path));
+        try!(file.write_all(&self.raw));
+        Ok(())
     }
 }
 
@@ -649,7 +668,7 @@ pub fn crypt_top10 (top10_data: &[u8]) -> Vec<u8> {
 }
 
 /// Parse top10 lists and return a vector of `ListEntry`s
-pub fn parse_top10 (top10: &[u8]) -> Vec<ListEntry> {
+pub fn parse_top10 (top10: &[u8]) -> Result<Vec<ListEntry>, LevelError> {
     let mut list: Vec<ListEntry> = vec![];
     let times = LittleEndian::read_i32(&top10[0..4]);
     for n in 0..times {
@@ -665,9 +684,9 @@ pub fn parse_top10 (top10: &[u8]) -> Vec<ListEntry> {
         let time = &top10[time_offset..time_end];
         list.push(ListEntry {
             time: LittleEndian::read_i32(time),
-            name_1: trim_string(name_1).unwrap(),
-            name_2: trim_string(name_2).unwrap()
+            name_1: try!(trim_string(name_1)),
+            name_2: try!(trim_string(name_2))
         });
     }
-    list
+    Ok(list)
 }

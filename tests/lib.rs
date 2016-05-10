@@ -176,7 +176,7 @@ mod tests {
     #[test]
     fn load_valid_level_1_and_save_with_top10 () {
         let mut level = lev::Level::load("tests/test_1.lev").unwrap();
-        level.save("tests/save_level_1_wtop10.lev", true);
+        level.save("tests/save_level_1_wtop10.lev", true).unwrap();
         let level_saved = lev::Level::load("tests/save_level_1_wtop10.lev").unwrap();
         assert_eq!(level.name, level_saved.name);
         assert_eq!(level.ground, level_saved.ground);
@@ -191,7 +191,7 @@ mod tests {
     #[test]
     fn load_valid_level_1_and_save_without_top10 () {
         let mut level = lev::Level::load("tests/test_1.lev").unwrap();
-        level.save("tests/save_level_1_notop10.lev", false);
+        level.save("tests/save_level_1_notop10.lev", false).unwrap();
         let level_saved = lev::Level::load("tests/save_level_1_notop10.lev").unwrap();
         assert_eq!(level.name, level_saved.name);
         assert_eq!(level.ground, level_saved.ground);
