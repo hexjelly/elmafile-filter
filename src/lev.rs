@@ -255,85 +255,20 @@ impl Level {
 
         // Polygons.
         let poly_count = (try!(remaining.read_f64::<LittleEndian>()) - 0.4643643).round() as usize;
-        for _ in 0..poly_count {
-            let grass = try!(remaining.read_i32::<LittleEndian>()) > 0;
-            let vertex_count = try!(remaining.read_i32::<LittleEndian>());
-            let mut vertices: Vec<Position<f64>> = vec![];
-            for _ in 0..vertex_count {
-                let x = try!(remaining.read_f64::<LittleEndian>());
-                let y = try!(remaining.read_f64::<LittleEndian>());
-                vertices.push(Position {
-                    x: x,
-                    y: y
-                });
-            }
-            self.polygons.push(Polygon {
-                grass: grass,
-                vertices: vertices
-            });
-        }
+        let (polygons, read_bytes) = try!(self.parse_polygons(remaining, poly_count));
+        self.polygons = polygons;
+        let (_, mut remaining) = remaining.split_at(read_bytes);
 
         // Objects.
         let object_count = (try!(remaining.read_f64::<LittleEndian>()) - 0.4643643).round() as usize;
-        for _ in 0..object_count {
-            let x = try!(remaining.read_f64::<LittleEndian>());
-            let y = try!(remaining.read_f64::<LittleEndian>());
-            let position = Position { x: x, y: y };
-            let object_type = try!(remaining.read_i32::<LittleEndian>());
-            let gravity = try!(remaining.read_i32::<LittleEndian>());
-            let gravity_direction = match gravity {
-                0 => Direction::Normal,
-                1 => Direction::Up,
-                2 => Direction::Down,
-                3 => Direction::Left,
-                4 => Direction::Right,
-                _ => return Err(LevelError::InvalidGravity)
-            };
-            let animation = (try!(remaining.read_i32::<LittleEndian>()) + 1) as u8;
-            let object = match object_type {
-                1 => ObjectType::Exit,
-                2 => ObjectType::Apple { gravity: gravity_direction, animation: animation },
-                3 => ObjectType::Killer,
-                4 => ObjectType::Player,
-                _ => return Err(LevelError::InvalidObject)
-            };
-
-            self.objects.push(Object {
-                position: position,
-                object_type: object
-            });
-        }
+        let (object_data, mut remaining) = remaining.split_at(object_count*28);
+        self.objects = try!(self.parse_objects(object_data, object_count));
 
         // Pictures.
         let picture_count = (try!(remaining.read_f64::<LittleEndian>()) - 0.2345672).round() as usize;
-        for _ in 0..picture_count {
-            let (name, temp_remaining) = remaining.split_at(10);
-            let name = try!(trim_string(name));
-            let (texture, temp_remaining) = temp_remaining.split_at(10);
-            let texture = try!(trim_string(texture));
-            let (mask, temp_remaining) = temp_remaining.split_at(10);
-            let mask = try!(trim_string(mask));
-            remaining = temp_remaining;
-            let x = try!(remaining.read_f64::<LittleEndian>());
-            let y = try!(remaining.read_f64::<LittleEndian>());
-            let distance = try!(remaining.read_i32::<LittleEndian>());
-            let clipping = try!(remaining.read_i32::<LittleEndian>());
-            let clip = match clipping {
-                0 => Clip::Unclipped,
-                1 => Clip::Ground,
-                2 => Clip::Sky,
-                _ => return Err(LevelError::InvalidClipping)
-            };
+        let (picture_data, mut remaining) = remaining.split_at(picture_count*54);
+        self.pictures = try!(self.parse_pictures(picture_data, picture_count));
 
-            self.pictures.push(Picture {
-                name: name,
-                texture: texture,
-                mask: mask,
-                position: Position { x: x, y: y },
-                distance: distance,
-                clip: clip
-            });
-        }
 
         // EOD marker expected at this point.
         let expected = try!(remaining.read_i32::<LittleEndian>());
@@ -356,6 +291,97 @@ impl Level {
         if expected != EOF { return Err(LevelError::EOFMismatch) }
 
         Ok(())
+    }
+
+    fn parse_polygons (&self, mut buffer: &[u8], n: usize) -> Result<(Vec<Polygon>, usize), LevelError> {
+        let mut polygons = vec![];
+        let mut read_bytes = 0;
+        for _ in 0..n {
+            read_bytes += 8;
+            let grass = try!(buffer.read_i32::<LittleEndian>()) > 0;
+            let vertex_count = try!(buffer.read_i32::<LittleEndian>());
+            let mut vertices: Vec<Position<f64>> = vec![];
+            for _ in 0..vertex_count {
+                read_bytes += 16;
+                let x = try!(buffer.read_f64::<LittleEndian>());
+                let y = try!(buffer.read_f64::<LittleEndian>());
+                vertices.push(Position {
+                    x: x,
+                    y: y
+                });
+            }
+            polygons.push(Polygon {
+                grass: grass,
+                vertices: vertices
+            });
+        }
+        Ok((polygons, read_bytes))
+    }
+
+    fn parse_objects (&self, mut buffer: &[u8], n: usize) -> Result<Vec<Object>, LevelError> {
+        let mut objects = vec![];
+        for _ in 0..n {
+            let x = try!(buffer.read_f64::<LittleEndian>());
+            let y = try!(buffer.read_f64::<LittleEndian>());
+            let position = Position { x: x, y: y };
+            let object_type = try!(buffer.read_i32::<LittleEndian>());
+            let gravity = try!(buffer.read_i32::<LittleEndian>());
+            let gravity_direction = match gravity {
+                0 => Direction::Normal,
+                1 => Direction::Up,
+                2 => Direction::Down,
+                3 => Direction::Left,
+                4 => Direction::Right,
+                _ => return Err(LevelError::InvalidGravity)
+            };
+            let animation = (try!(buffer.read_i32::<LittleEndian>()) + 1) as u8;
+            let object = match object_type {
+                1 => ObjectType::Exit,
+                2 => ObjectType::Apple { gravity: gravity_direction, animation: animation },
+                3 => ObjectType::Killer,
+                4 => ObjectType::Player,
+                _ => return Err(LevelError::InvalidObject)
+            };
+
+            objects.push(Object {
+                position: position,
+                object_type: object
+            });
+        }
+        Ok(objects)
+    }
+
+    fn parse_pictures (&self, mut buffer: &[u8], n: usize) -> Result<Vec<Picture>, LevelError> {
+        let mut pictures = vec![];
+        for _ in 0..n {
+            let (name, temp_remaining) = buffer.split_at(10);
+            let name = try!(trim_string(name));
+            let (texture, temp_remaining) = temp_remaining.split_at(10);
+            let texture = try!(trim_string(texture));
+            let (mask, temp_remaining) = temp_remaining.split_at(10);
+            let mask = try!(trim_string(mask));
+            buffer = temp_remaining;
+            let x = try!(buffer.read_f64::<LittleEndian>());
+            let y = try!(buffer.read_f64::<LittleEndian>());
+            let distance = try!(buffer.read_i32::<LittleEndian>());
+            let clipping = try!(buffer.read_i32::<LittleEndian>());
+            let clip = match clipping {
+                0 => Clip::Unclipped,
+                1 => Clip::Ground,
+                2 => Clip::Sky,
+                _ => return Err(LevelError::InvalidClipping)
+            };
+
+            pictures.push(Picture {
+                name: name,
+                texture: texture,
+                mask: mask,
+                position: Position { x: x, y: y },
+                distance: distance,
+                clip: clip
+            });
+        }
+        Ok(pictures)
     }
 
     /// Combines the `Level` struct fields to generate the raw binary data, and calculates
