@@ -50,6 +50,12 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
+    fn load_invalid_level_path () {
+        let _ = rec::Replay::load("tests/missing.lev").unwrap();
+    }
+
+    #[test]
     fn load_valid_level_1 () {
         let level = lev::Level::load("tests/test_1.lev").unwrap();
         assert_eq!(level.version, lev::Version::Elma);
@@ -228,6 +234,12 @@ mod tests {
             frames_2: vec![],
             events_2: vec![]
         });
+    }
+
+    #[test]
+    #[should_panic]
+    fn load_invalid_replay_path () {
+        let _ = rec::Replay::load("tests/missing.rec").unwrap();
     }
 
     #[test]
