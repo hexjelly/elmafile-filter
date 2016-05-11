@@ -347,4 +347,34 @@ mod tests {
         assert_eq!(replay.frames_2[0].bike.y, -1.1253118515015_f32);
         assert_eq!(replay.events_2.len(), 23);
     }
+
+    #[test]
+    fn load_valid_replay_1_and_save () {
+        let replay = rec::Replay::load("tests/test_1.rec").unwrap();
+        replay.save("tests/save_replay_1.rec").unwrap();
+        let replay_saved = rec::Replay::load("tests/save_replay_1.rec").unwrap();
+        assert_eq!(replay.multi, replay_saved.multi);
+        assert_eq!(replay.flag_tag, replay_saved.flag_tag);
+        assert_eq!(replay.link, replay_saved.link);
+        assert_eq!(replay.level, replay_saved.level);
+        assert_eq!(replay.frames, replay_saved.frames);
+        assert_eq!(replay.events, replay_saved.events);
+        assert_eq!(replay.frames_2, replay_saved.frames_2);
+        assert_eq!(replay.events_2, replay_saved.events_2);
+    }
+
+    #[test]
+    fn load_valid_multi_replay_1_and_save () {
+        let replay = rec::Replay::load("tests/test_2.rec").unwrap();
+        replay.save("tests/save_multi_replay_2.rec").unwrap();
+        let replay_saved = rec::Replay::load("tests/save_multi_replay_2.rec").unwrap();
+        assert_eq!(replay.multi, replay_saved.multi);
+        assert_eq!(replay.flag_tag, replay_saved.flag_tag);
+        assert_eq!(replay.link, replay_saved.link);
+        assert_eq!(replay.level, replay_saved.level);
+        assert_eq!(replay.frames, replay_saved.frames);
+        assert_eq!(replay.events, replay_saved.events);
+        assert_eq!(replay.frames_2, replay_saved.frames_2);
+        assert_eq!(replay.events_2, replay_saved.events_2);
+    }
 }
