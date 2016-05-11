@@ -222,6 +222,24 @@ mod tests {
     // Probably redundant, but maybe some new fields are added in the future.
     // Doesn't hurt or impact anything.
     fn rec_default_values () {
+        let frame = rec::Frame::new();
+        assert_eq!(frame, rec::Frame {
+            bike: Position { x: 0_f32, y: 0_f32 },
+            left_wheel: Position { x: 0, y: 0 },
+            right_wheel: Position { x: 0, y: 0 },
+            head: Position { x: 0, y: 0 },
+            rotation: 0,
+            left_wheel_rotation: 0,
+            right_wheel_rotation: 0,
+            throttle: false,
+            right: false,
+            volume: 0
+        });
+        let event = rec::Event::new();
+        assert_eq!(event, rec::Event {
+            time: 0_f64,
+            event_type: rec::EventType::Touch { index: 0 }
+        });
         let replay = rec::Replay::new();
         assert_eq!(replay, rec::Replay {
             raw: vec![],
