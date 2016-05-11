@@ -1,5 +1,6 @@
 /// Read and write Elasto Mania replay files.
-use std::io::prelude::*;
+
+use std::io::{ Read, Write };
 use std::fs::File;
 use std::path::Path;
 use rand::random;

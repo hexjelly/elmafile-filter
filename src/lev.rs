@@ -1,6 +1,6 @@
 /// Read and write Elasto Mania level files.
 
-use std::io::prelude::*;
+use std::io::{ Read, Write };
 use std::fs::File;
 use std::path::Path;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
