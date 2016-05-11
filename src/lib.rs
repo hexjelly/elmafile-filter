@@ -28,6 +28,7 @@ pub enum ElmaError {
     EOFMismatch,
     InvalidEvent(u8),
     EORMismatch,
+    InvalidTimeFormat,
     Io(io::Error),
     StringFromUtf8(string::FromUtf8Error)
 }
@@ -87,15 +88,21 @@ pub fn trim_string (data: &[u8]) -> Result<String, std::string::FromUtf8Error> {
 ///
 /// ```
 /// let time: i32 = 2039;
-/// let formatted = elma::time_format(time);
+/// let formatted = elma::time_format(time).unwrap();
 /// assert_eq!("00:20,39", formatted);
 /// ```
-pub fn time_format (time: i32) -> String {
+pub fn time_format (time: i32) -> Result<String, ElmaError> {
     let time = time.to_string().into_bytes();
     let mut formatted = String::from("00:00,00").into_bytes();
 
+    // If input time is longer than 6 characters, return max time.
+    if time.len() > 6 { return Ok(String::from("59:59,99")); }
+
     let mut n = 7;
     for byte in time.iter().rev() {
+        // If first digit of minutes or seconds are over 5, return error.
+        if ((n == 3) || (n == 0)) && (*byte > 53) { return Err(ElmaError::InvalidTimeFormat); }
+
         formatted[n] = *byte;
         if n == 6 || n == 3 {
             n -= 2;
@@ -104,7 +111,8 @@ pub fn time_format (time: i32) -> String {
         }
     }
 
-    String::from_utf8(formatted).unwrap()
+    let time = try!(String::from_utf8(formatted));
+    Ok(time)
 }
 
 /// Pads a string with null bytes.

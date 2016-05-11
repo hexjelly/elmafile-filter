@@ -19,11 +19,26 @@ mod tests {
 
     #[test]
     fn test_time_format () {
-        assert_eq!("11:48,01", time_format(114801));
-        assert_eq!("01:00,21", time_format(10021));
-        assert_eq!("00:10,00", time_format(1000));
-        assert_eq!("10:00,00", time_format(100000));
-        assert_eq!("00:00,00", time_format(0));
+        assert_eq!("11:48,01", time_format(114801).unwrap());
+        assert_eq!("01:00,21", time_format(10021).unwrap());
+        assert_eq!("01:00,99", time_format(10099).unwrap());
+        assert_eq!("59:00,99", time_format(590099).unwrap());
+        assert_eq!("00:10,00", time_format(1000).unwrap());
+        assert_eq!("10:00,00", time_format(100000).unwrap());
+        assert_eq!("00:00,00", time_format(0).unwrap());
+        assert_eq!("59:59,99", time_format(1922039).unwrap());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_time_format_1 () {
+        time_format(16039_i32).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_time_format_2 () {
+        time_format(601039_i32).unwrap();
     }
 
 
