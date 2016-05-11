@@ -34,7 +34,7 @@ pub struct Frame {
 }
 
 impl Frame {
-    /// Returns a new Frame struct with zero-filled values.
+    /// Returns a new Frame struct with default values.
     ///
     /// # Examples
     ///
@@ -84,6 +84,13 @@ impl Default for EventType {
 }
 
 impl Event {
+    /// Returns a new Event struct with default values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let event = elma::rec::Event::new();
+    /// ```
     pub fn new() -> Self {
         Event {
             time: 0_f64,
