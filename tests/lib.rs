@@ -30,15 +30,15 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_invalid_time_format_1 () {
-        time_format(16039_i32).unwrap();
+        let time = time_format(16039_i32);
+        assert_eq!(true, time.is_err());
     }
 
     #[test]
-    #[should_panic]
     fn test_invalid_time_format_2 () {
-        time_format(601039_i32).unwrap();
+        let time = time_format(601039_i32);
+        assert_eq!(true, time.is_err());
     }
 
 
@@ -65,9 +65,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn load_invalid_level_path () {
-        let _ = rec::Replay::load("tests/missing.lev").unwrap();
+        let replay = rec::Replay::load("tests/missing.lev");
+        assert_eq!(true, replay.is_err());
     }
 
     #[test]
@@ -227,9 +227,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn load_invalid_level_1 () {
-        let _ = lev::Level::load("tests/invalid_1.lev").unwrap();
+        let level = lev::Level::load("tests/invalid_1.lev");
+        assert_eq!(true, level.is_err());
     }
     // TODO: Add more levels to test, including some corrupt ones!
 
@@ -270,9 +270,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn load_invalid_replay_path () {
-        let _ = rec::Replay::load("tests/missing.rec").unwrap();
+        let replay = rec::Replay::load("tests/missing.rec");
+        assert_eq!(true, replay.is_err());
     }
 
     #[test]
@@ -412,8 +412,8 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn load_invalid_event_replay () {
-        let _ = rec::Replay::load("tests/invalid_event.rec").unwrap();
+        let replay = rec::Replay::load("tests/invalid_event.rec");
+        assert_eq!(true, replay.is_err());
     }
 }
