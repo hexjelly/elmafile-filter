@@ -8,12 +8,13 @@ Elasto Mania file handler crate for Rust. Very much still a work in progress.
 
 ## Progress
 
+-   [ ] Across support
+
 ### Levels
 
 -   [x] Parse level information
 -   [x] Edit levels
--   [ ] Save levels/data
--   [ ] Across support
+-   [x] Save levels/data
 
 ### Replays
 
@@ -21,8 +22,7 @@ Elasto Mania file handler crate for Rust. Very much still a work in progress.
 -   [x] Edit single-player replays
 -   [x] Parse multi-player replay information
 -   [x] Edit multi-player replays
--   [ ] Save replays/data
--   [ ] Across support
+-   [x] Save replays/data
 
 ### State.dat
 
