@@ -395,4 +395,10 @@ mod tests {
         assert_eq!(replay.frames_2, replay_saved.frames_2);
         assert_eq!(replay.events_2, replay_saved.events_2);
     }
+
+    #[test]
+    #[should_panic]
+    fn load_invalid_event_replay () {
+        let _ = rec::Replay::load("tests/invalid_event.rec").unwrap();
+    }
 }
