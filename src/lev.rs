@@ -1,4 +1,4 @@
-//! Read and write Elasto Mania level files.
+/// Read and write Elasto Mania level files.
 
 use std::io::prelude::*;
 use std::fs::File;

@@ -1,11 +1,11 @@
-//! Library for reading and writing Elasto Mania files.
-
 #![doc(html_root_url = "https://hexjelly.github.io/elma-rust/")]
 
 #![feature(slice_patterns)]
 #![feature(plugin)]
 
 #![plugin(clippy)]
+
+/// Library for reading and writing Elasto Mania files.
 
 extern crate byteorder;
 extern crate rand;
@@ -26,7 +26,7 @@ pub enum ElmaError {
     InvalidClipping,
     EODMismatch,
     EOFMismatch,
-    InvalidEvent(i32),
+    InvalidEvent(u8),
     EORMismatch,
     Io(io::Error),
     StringFromUtf8(string::FromUtf8Error)
