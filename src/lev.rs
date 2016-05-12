@@ -110,12 +110,12 @@ pub struct Picture {
 impl Picture {
     /// Creates a new picture with default values.
     pub fn new () -> Self {
-        Picture {   name: String::from("barrel"),
-                    texture: String::new(),
-                    mask: String::new(),
-                    position: Position { x: 0_f64, y: 0_f64 },
-                    distance: 600,
-                    clip: Clip::default() }
+        Picture { name: String::from("barrel"),
+                  texture: String::new(),
+                  mask: String::new(),
+                  position: Position { x: 0_f64, y: 0_f64 },
+                  distance: 600,
+                  clip: Clip::default() }
     }
 }
 
