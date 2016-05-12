@@ -71,6 +71,9 @@ mod tests {
 
         level.polygons.push(lev::Polygon::new());
         level.objects.push(lev::Object::new());
+        level.objects.push(lev::Object { position: Position { x: 0_f64, y: 0_f64 },
+                                         object_type: lev::ObjectType::Apple { gravity: lev::Direction::Down,
+                                                                               animation: 1 }});
         level.pictures.push(lev::Picture::new());
     }
 
