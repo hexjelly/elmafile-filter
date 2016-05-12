@@ -356,9 +356,8 @@ impl Level {
     }
 
     /// Combines the `Level` struct fields to generate the raw binary data, and calculates
-    /// integrity sums. Called automatically when using `get_raw`, `get_raw_with_top_10`, `save` or
-    /// `save_with_top_10` methods, and is provided mainly for convinience if you need to use it
-    /// manually.
+    /// integrity sums. Called automatically when using `get_raw` or `save` methods,
+    /// and is provided mainly for convinience if you need to use it manually.
     ///
     /// # Examples
     ///
@@ -606,6 +605,17 @@ impl Level {
     }
 
     /// Converts all struct fields into raw binary form and returns the raw data.
+    ///
+    /// # Arguments
+    ///
+    /// * `top10` - Specifies whether to keep the top10 list (true), or write an empty list (false).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut level = elma::lev::Level::new();
+    /// let raw_bytes = level.get_raw(false).unwrap();
+    /// ```
     pub fn get_raw (&mut self, top10: bool) -> Result<Vec<u8>, ElmaError> {
         try!(self.update(top10));
         Ok(self.raw.clone())
@@ -629,6 +639,7 @@ impl Level {
     ///
     /// # Arguments
     ///
+    /// * `filename` - Path and filename to save as.
     /// * `top10` - Specifies whether to keep the top10 list (true), or write an empty list (false).
     ///
     /// # Examples
