@@ -1,9 +1,6 @@
 #![doc(html_root_url = "https://hexjelly.github.io/elma-rust/")]
 
 #![feature(slice_patterns)]
-#![feature(plugin)]
-
-#![plugin(clippy)]
 
 /// Library for reading and writing Elasto Mania files.
 
