@@ -626,6 +626,17 @@ impl Level {
     }
 
     /// Saves level as a file.
+    ///
+    /// # Arguments
+    ///
+    /// * `top10` - Specifies whether to keep the top10 list (true), or write an empty list (false).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut level = elma::lev::Level::new();
+    /// level.save("tests/newlevel.lev", false).unwrap();
+    /// ```
     pub fn save (&mut self, filename: &str, top10: bool) -> Result<(), ElmaError> {
         let path = Path::new(&filename);
         try!(self.update(top10));
