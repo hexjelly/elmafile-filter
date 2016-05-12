@@ -55,19 +55,23 @@ mod tests {
 
     #[test]
     fn construct_level () {
-        let _ = lev::Level { raw: vec![],
-                        version: lev::Version::Elma,
-                        link: random::<i32>(),
-                        integrity: [0f64; 4],
-                        name: String::new(),
-                        lgr: String::from("default"),
-                        ground: String::from("ground"),
-                        sky: String::from("sky"),
-                        polygons: vec![],
-                        objects: vec![],
-                        pictures: vec![],
-                        top10_single: vec![],
-                        top10_multi: vec![] };
+        let mut level = lev::Level { raw: vec![],
+                                     version: lev::Version::default(),
+                                     link: random::<i32>(),
+                                     integrity: [0f64; 4],
+                                     name: String::new(),
+                                     lgr: String::from("default"),
+                                     ground: String::from("ground"),
+                                     sky: String::from("sky"),
+                                     polygons: vec![],
+                                     objects: vec![],
+                                     pictures: vec![],
+                                     top10_single: vec![],
+                                     top10_multi: vec![] };
+
+        level.polygons.push(lev::Polygon::new());
+        level.objects.push(lev::Object::new());
+        level.pictures.push(lev::Picture::new());
     }
 
     #[test]

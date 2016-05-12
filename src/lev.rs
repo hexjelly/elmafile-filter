@@ -54,6 +54,13 @@ pub struct Object {
     pub object_type: ObjectType
 }
 
+impl Object {
+    pub fn new() -> Self {
+        Object { position: Position { x: 0_f64, y: 0_f64 },
+                 object_type: ObjectType::default() }
+    }
+}
+
 /// Polygon struct.
 #[derive(Debug, Default, PartialEq)]
 pub struct Polygon {
@@ -64,11 +71,10 @@ pub struct Polygon {
 }
 
 impl Polygon {
+    /// Create a new empty polygon.
     pub fn new () -> Self {
-        Polygon {
-            grass: false,
-            vertices: vec![]
-        }
+        Polygon { grass: false,
+                  vertices: vec![] }
     }
 }
 
@@ -99,6 +105,18 @@ pub struct Picture {
     pub distance: i32,
     /// Clipping.
     pub clip: Clip
+}
+
+impl Picture {
+    /// Creates a new picture with default values.
+    pub fn new () -> Self {
+        Picture {   name: String::from("barrel"),
+                    texture: String::new(),
+                    mask: String::new(),
+                    position: Position { x: 0_f64, y: 0_f64 },
+                    distance: 600,
+                    clip: Clip::default() }
+    }
 }
 
 /// Top10 list entry struct.
