@@ -46,6 +46,7 @@ mod tests {
     // Probably redundant, but maybe some new fields are added in the future.
     // Doesn't hurt or impact anything.
     fn level_default_values () {
+        let _ = lev::Level::default();
         let _ = lev::Level::new();
     }
 
