@@ -57,6 +57,12 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
+    fn load_across_level_1 () {
+        let _ = lev::Level::load("tests/across.lev").unwrap();
+    }
+
+    #[test]
     fn load_valid_level_1 () {
         let level = lev::Level::load("tests/test_1.lev").unwrap();
         assert_eq!(level.version, lev::Version::Elma);
