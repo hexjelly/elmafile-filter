@@ -159,7 +159,7 @@ impl Level {
         Level {
             raw: vec![],
             version: Version::Elma,
-            link: 0,
+            link: random::<i32>(),
             integrity: [0f64; 4],
             name: String::new(),
             lgr: String::from("default"),
@@ -609,6 +609,20 @@ impl Level {
     pub fn get_raw (&mut self, top10: bool) -> Result<Vec<u8>, ElmaError> {
         try!(self.update(top10));
         Ok(self.raw.clone())
+    }
+
+    /// Generate a random link number. When you save a level, it will keep the original link
+    /// number unless explicitly changed manually or by running this function before saving.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut level = elma::lev::Level::new();
+    /// level.generate_link();
+    /// level.save("tests/newlink.lev", false).unwrap();
+    /// ```
+    pub fn generate_link (&mut self) {
+        self.link = random::<i32>();
     }
 
     /// Saves level as a file.

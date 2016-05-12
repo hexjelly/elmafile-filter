@@ -46,22 +46,7 @@ mod tests {
     // Probably redundant, but maybe some new fields are added in the future.
     // Doesn't hurt or impact anything.
     fn level_default_values () {
-        let level = lev::Level::new();
-        assert_eq!(level, lev::Level {
-            raw: vec![],
-            version: lev::Version::Elma,
-            link: 0,
-            integrity: [0_f64; 4],
-            name: String::new(),
-            lgr: String::from("default"),
-            ground: String::from("ground"),
-            sky: String::from("sky"),
-            polygons: vec![],
-            objects: vec![],
-            pictures: vec![],
-            top10_single: vec![],
-            top10_multi: vec![]
-        });
+        let _ = lev::Level::new();
     }
 
     #[test]
