@@ -42,18 +42,16 @@ impl Frame {
     /// let frame = elma::rec::Frame::new();
     /// ```
     pub fn new() -> Self {
-        Frame {
-            bike: Position { x: 0_f32, y: 0_f32 },
-            left_wheel: Position { x: 0, y: 0 },
-            right_wheel: Position { x: 0, y: 0 },
-            head: Position { x: 0, y: 0 },
-            rotation: 0,
-            left_wheel_rotation: 0,
-            right_wheel_rotation: 0,
-            throttle: false,
-            right: false,
-            volume: 0
-        }
+        Frame { bike: Position { x: 0_f32, y: 0_f32 },
+                left_wheel: Position { x: 0, y: 0 },
+                right_wheel: Position { x: 0, y: 0 },
+                head: Position { x: 0, y: 0 },
+                rotation: 0,
+                left_wheel_rotation: 0,
+                right_wheel_rotation: 0,
+                throttle: false,
+                right: false,
+                volume: 0 }
     }
 }
 
@@ -122,10 +120,6 @@ pub struct Replay {
     pub events_2: Vec<Event>
 }
 
-impl Default for Replay {
-    fn default() -> Replay { Replay::new() }
-}
-
 impl Replay {
     /// Return a new Replay struct.
     ///
@@ -135,17 +129,15 @@ impl Replay {
     /// let rec = elma::rec::Replay::new();
     /// ```
     pub fn new() -> Self {
-        Replay {
-            raw: vec![],
-            multi: false,
-            flag_tag: false,
-            link: 0,
-            level: String::new(),
-            frames: vec![],
-            events: vec![],
-            frames_2: vec![],
-            events_2: vec![]
-        }
+        Replay { raw: vec![],
+                 multi: false,
+                 flag_tag: false,
+                 link: 0,
+                 level: String::new(),
+                 frames: vec![],
+                 events: vec![],
+                 frames_2: vec![],
+                 events_2: vec![] }
     }
 
     /// Loads a replay file and returns a Replay struct.

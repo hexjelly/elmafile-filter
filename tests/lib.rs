@@ -21,8 +21,7 @@ mod tests {
     #[should_panic]
     fn test_trim_string () {
         let bytes: [u8;5] = [222,222,222,100,211];
-        trim_string(&bytes).unwrap();
-    }
+        trim_string(&bytes).unwrap(); }
 
     #[test]
     fn test_time_format () {
@@ -39,14 +38,12 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_invalid_time_format_1 () {
-        time_format(16039_i32).unwrap();
-    }
+        time_format(16039_i32).unwrap(); }
 
     #[test]
     #[should_panic]
     fn test_invalid_time_format_2 () {
-        time_format(601039_i32).unwrap();
-    }
+        time_format(601039_i32).unwrap(); }
 
 
     #[test]
@@ -96,22 +93,19 @@ mod tests {
     #[test]
     #[should_panic]
     fn load_invalid_level_path () {
-        let _ = rec::Replay::load("tests/missing.lev").unwrap();
-    }
+        let _ = rec::Replay::load("tests/missing.lev").unwrap(); }
 
     #[test]
     #[should_panic]
     fn load_across_level_1 () {
-        let _ = lev::Level::load("tests/across.lev").unwrap();
-    }
+        let _ = lev::Level::load("tests/across.lev").unwrap(); }
 
     #[test]
     #[should_panic]
     fn save_across_level_1 () {
         let mut level = lev::Level::new();
         level.version = lev::Version::Across;
-        level.save("tests/save_across_level_1.lev", false).unwrap();
-    }
+        level.save("tests/save_across_level_1.lev", false).unwrap(); }
 
     #[test]
     fn load_valid_level_1 () {
@@ -272,26 +266,22 @@ mod tests {
     #[test]
     #[should_panic]
     fn load_invalid_level_1 () {
-        let _ = lev::Level::load("tests/invalid_1.lev").unwrap();
-    }
+        let _ = lev::Level::load("tests/invalid_1.lev").unwrap(); }
 
     #[test]
     #[should_panic]
     fn load_invalid_gravity_level_1 () {
-        let _ = lev::Level::load("tests/invalid_grav.lev").unwrap();
-    }
+        let _ = lev::Level::load("tests/invalid_grav.lev").unwrap(); }
 
     #[test]
     #[should_panic]
     fn load_invalid_object_level_1 () {
-        let _ = lev::Level::load("tests/invalid_obj.lev").unwrap();
-    }
+        let _ = lev::Level::load("tests/invalid_obj.lev").unwrap(); }
 
     #[test]
     #[should_panic]
     fn load_invalid_clip_level_1 () {
-        let _ = lev::Level::load("tests/invalid_clip.lev").unwrap();
-    }
+        let _ = lev::Level::load("tests/invalid_clip.lev").unwrap(); }
 
 
     #[test]
@@ -333,8 +323,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn load_invalid_replay_path () {
-        let _ = rec::Replay::load("tests/missing.rec").unwrap();
-    }
+        let _ = rec::Replay::load("tests/missing.rec").unwrap(); }
 
     #[test]
     fn load_valid_replay_1 () {
@@ -490,6 +479,5 @@ mod tests {
     #[test]
     #[should_panic]
     fn load_invalid_event_replay () {
-        let _ = rec::Replay::load("tests/invalid_event.rec").unwrap();
-    }
+        let _ = rec::Replay::load("tests/invalid_event.rec").unwrap(); }
 }
