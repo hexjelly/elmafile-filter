@@ -67,13 +67,14 @@ pub struct Position<T> {
 /// let trimmed = elma::trim_string(&cstring).unwrap();
 /// assert_eq!(trimmed, "Elma");
 /// ```
-pub fn trim_string (data: &[u8]) -> Result<String, std::string::FromUtf8Error> {
+pub fn trim_string (data: &[u8]) -> Result<String, ElmaError> {
     let bytes: Vec<u8> = data.into_iter()
                              .take_while(|&&d| d != 0)
                              .cloned()
                              .collect();
 
-    String::from_utf8(bytes)
+    let trimmed = try!(String::from_utf8(bytes));
+    Ok(trimmed)
 }
 
 /// Converts the string-as-i32 times in top10 list to strings.

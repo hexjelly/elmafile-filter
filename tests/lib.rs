@@ -2,7 +2,7 @@ extern crate elma;
 extern crate rand;
 #[cfg(test)]
 mod tests {
-    use elma::{ lev, rec, Position, time_format };
+    use elma::{ lev, rec, Position, time_format, trim_string };
     use rand::random;
 
     // Helper functions.
@@ -15,6 +15,13 @@ mod tests {
         let decrypted = lev::crypt_top10(&initial);
         let encrypted = lev::crypt_top10(&decrypted);
         assert_eq!(initial, encrypted);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_trim_string () {
+        let bytes: [u8;5] = [222,222,222,100,211];
+        trim_string(&bytes).unwrap();
     }
 
     #[test]
