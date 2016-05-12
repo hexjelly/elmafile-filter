@@ -156,21 +156,19 @@ impl Level {
     /// let level = elma::lev::Level::new();
     /// ```
     pub fn new () -> Self {
-        Level {
-            raw: vec![],
-            version: Version::Elma,
-            link: random::<i32>(),
-            integrity: [0f64; 4],
-            name: String::new(),
-            lgr: String::from("default"),
-            ground: String::from("ground"),
-            sky: String::from("sky"),
-            polygons: vec![],
-            objects: vec![],
-            pictures: vec![],
-            top10_single: vec![],
-            top10_multi: vec![]
-        }
+        Level { raw: vec![],
+                version: Version::Elma,
+                link: random::<i32>(),
+                integrity: [0f64; 4],
+                name: String::new(),
+                lgr: String::from("default"),
+                ground: String::from("ground"),
+                sky: String::from("sky"),
+                polygons: vec![],
+                objects: vec![],
+                pictures: vec![],
+                top10_single: vec![],
+                top10_multi: vec![] }
     }
 
     /// Loads a level file and returns a `Level` struct.

@@ -46,8 +46,28 @@ mod tests {
     // Probably redundant, but maybe some new fields are added in the future.
     // Doesn't hurt or impact anything.
     fn level_default_values () {
-        let _ = lev::Level::default();
-        let _ = lev::Level::new();
+        let mut default_lev = lev::Level::default();
+        let mut new_lev = lev::Level::new();
+        default_lev.link = 1000;
+        new_lev.link = 1000;
+        assert_eq!(default_lev, new_lev);
+    }
+
+    #[test]
+    fn construct_level () {
+        let _ = lev::Level { raw: vec![],
+                        version: lev::Version::Elma,
+                        link: random::<i32>(),
+                        integrity: [0f64; 4],
+                        name: String::new(),
+                        lgr: String::from("default"),
+                        ground: String::from("ground"),
+                        sky: String::from("sky"),
+                        polygons: vec![],
+                        objects: vec![],
+                        pictures: vec![],
+                        top10_single: vec![],
+                        top10_multi: vec![] };
     }
 
     #[test]
@@ -60,6 +80,14 @@ mod tests {
     #[should_panic]
     fn load_across_level_1 () {
         let _ = lev::Level::load("tests/across.lev").unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn save_across_level_1 () {
+        let mut level = lev::Level::new();
+        level.version = lev::Version::Across;
+        level.save("tests/save_across_level_1.lev", false).unwrap();
     }
 
     #[test]
