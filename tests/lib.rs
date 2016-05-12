@@ -280,6 +280,12 @@ mod tests {
         let _ = lev::Level::load("tests/invalid_obj.lev").unwrap();
     }
 
+    #[test]
+    #[should_panic]
+    fn load_invalid_clip_level_1 () {
+        let _ = lev::Level::load("tests/invalid_clip.lev").unwrap();
+    }
+
 
     #[test]
     // Probably redundant, but maybe some new fields are added in the future.
