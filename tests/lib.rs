@@ -251,7 +251,19 @@ mod tests {
     fn load_invalid_level_1 () {
         let _ = lev::Level::load("tests/invalid_1.lev").unwrap();
     }
-    // TODO: Add more levels to test, including some corrupt ones!
+
+    #[test]
+    #[should_panic]
+    fn load_invalid_gravity_level_1 () {
+        let _ = lev::Level::load("tests/invalid_grav.lev").unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn load_invalid_object_level_1 () {
+        let _ = lev::Level::load("tests/invalid_obj.lev").unwrap();
+    }
+
 
     #[test]
     // Probably redundant, but maybe some new fields are added in the future.
