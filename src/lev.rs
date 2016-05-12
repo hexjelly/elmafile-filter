@@ -87,7 +87,7 @@ pub enum Clip {
 }
 
 impl Default for Clip {
-    fn default() -> Clip { Clip::Ground }
+    fn default() -> Clip { Clip::Sky }
 }
 
 /// Picture struct.
