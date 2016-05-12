@@ -54,7 +54,7 @@ mod tests {
     }
 
     #[test]
-    fn construct_level () {
+    fn construct_level_and_save () {
         let mut level = lev::Level { raw: vec![],
                                      version: lev::Version::default(),
                                      link: random::<i32>(),
@@ -79,6 +79,10 @@ mod tests {
         level.pictures.push(lev::Picture::new());
         level.pictures[1].clip = lev::Clip::Unclipped;
         level.pictures[2].clip = lev::Clip::Ground;
+        level.top10_single.push(lev::ListEntry::new());
+        level.top10_multi.push(lev::ListEntry::new());
+        let _ = level.get_raw(false).unwrap();
+        level.save("tests/constructed.lev", true).unwrap();
     }
 
     #[test]

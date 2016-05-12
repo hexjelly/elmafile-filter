@@ -130,6 +130,14 @@ pub struct ListEntry {
     pub time: i32
 }
 
+impl ListEntry {
+    pub fn new () -> Self {
+        ListEntry { name_1: String::from("Player1"),
+                    name_2: String::from("Player2"),
+                    time: 100000 }
+    }
+}
+
 /// Level struct that contains all level information.
 #[derive(Debug, PartialEq)]
 pub struct Level {
