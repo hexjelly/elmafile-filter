@@ -540,10 +540,6 @@ impl Level {
             try!(top10_bytes.write_i32::<LittleEndian>(*time));
         }
 
-        for _ in 0..10 - times.len() {
-            try!(top10_bytes.write_i32::<LittleEndian>(0));
-        }
-
         top10_bytes.extend_from_slice(&names_1);
         top10_bytes.extend_from_slice(&names_2);
 
@@ -565,10 +561,6 @@ impl Level {
 
         for time in &times {
             try!(top10_bytes.write_i32::<LittleEndian>(*time));
-        }
-
-        for _ in 0..10 - times.len() {
-            try!(top10_bytes.write_i32::<LittleEndian>(0));
         }
 
         top10_bytes.extend_from_slice(&names_1);
