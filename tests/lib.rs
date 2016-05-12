@@ -75,6 +75,10 @@ mod tests {
                                          object_type: lev::ObjectType::Apple { gravity: lev::Direction::Down,
                                                                                animation: 1 }});
         level.pictures.push(lev::Picture::new());
+        level.pictures.push(lev::Picture::new());
+        level.pictures.push(lev::Picture::new());
+        level.pictures[1].clip = lev::Clip::Unclipped;
+        level.pictures[2].clip = lev::Clip::Ground;
     }
 
     #[test]
