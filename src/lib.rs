@@ -133,6 +133,11 @@ pub fn string_null_pad (name: &str, pad: usize) -> Vec<u8> {
     bytes
 }
 
+// Bike diameters and radius.
+pub const HEAD_DIAMETER: f64 = 0.476;
+pub const HEAD_RADIUS: f64 = 0.238;
+pub const OBJECT_DIAMETER: f64 = 0.8;
+pub const OBJECT_RADIUS: f64 = 0.4;
 // Magic arbitrary number signifying end-of-data in level file.
 const EOD: i32 = 0x0067103A;
 // Magic arbitrary number signifying end-of-file in level file.
