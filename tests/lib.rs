@@ -81,6 +81,7 @@ mod tests {
         level.pictures[2].clip = lev::Clip::Ground;
         level.top10_single.push(lev::ListEntry::new());
         level.top10_multi.push(lev::ListEntry::new());
+        level.generate_link();
         let _ = level.get_raw(false).unwrap();
         level.save("tests/constructed.lev", true).unwrap();
     }
