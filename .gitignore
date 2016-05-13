@@ -15,3 +15,15 @@ target
 # Remove Cargo.lock from gitignore if creating an executable, leave it for libraries
 # More information here http://doc.crates.io/guide.html#cargotoml-vs-cargolock
 Cargo.lock
+
+# Repo assets and temporary files
+assets
+tests/constructed.lev
+tests/newlevel.lev
+tests/newlink.lev
+tests/save_level_1_notop10.lev
+tests/save_level_1_wtop10.lev
+tests/save_multi_replay_2.rec
+tests/save_replay_1.rec
+tests/save_replay_2.rec
+tests/save_test_1.lev
