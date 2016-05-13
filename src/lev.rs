@@ -5,7 +5,7 @@ use std::fs::File;
 use std::path::Path;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
-use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, ElmaError };
+use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, ElmaError, OBJECT_RADIUS };
 
 /// Game version.
 #[derive(Debug, PartialEq)]
@@ -190,8 +190,13 @@ impl Level {
                 lgr: String::from("default"),
                 ground: String::from("ground"),
                 sky: String::from("sky"),
-                polygons: vec![],
-                objects: vec![],
+                polygons: vec![Polygon { grass: false, vertices: vec![Position { x: 0., y: 0. },
+                                                                      Position { x: 0., y: 7. },
+                                                                      Position { x: 10., y: 7. },
+                                                                      Position { x: 10., y: 0. }]
+                                        }],
+                objects: vec![Object { position: Position { x: 2., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Player },
+                              Object { position: Position { x: 8., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Exit }],
                 pictures: vec![],
                 top10_single: vec![],
                 top10_multi: vec![] }
