@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/hexjelly/elma-rust.svg?branch=master)](https://travis-ci.org/hexjelly/elma-rust) [![Coverage Status](https://coveralls.io/repos/github/hexjelly/elma-rust/badge.svg?branch=master)](https://coveralls.io/github/hexjelly/elma-rust?branch=master)
 
-# ![logo](http://i.imgur.com/alqSGVz.png)
+# ![logo](http://i.imgur.com/4Pg7LyG.png)
 
 Elasto Mania file handler crate for Rust. Very much still a work in progress.
 
