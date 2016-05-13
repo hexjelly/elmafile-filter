@@ -190,10 +190,10 @@ impl Level {
                 lgr: String::from("default"),
                 ground: String::from("ground"),
                 sky: String::from("sky"),
-                polygons: vec![Polygon { grass: false, vertices: vec![Position { x: 0., y: 0. },
-                                                                      Position { x: 0., y: 7. },
+                polygons: vec![Polygon { grass: false, vertices: vec![Position { x: 10., y: 0. },
                                                                       Position { x: 10., y: 7. },
-                                                                      Position { x: 10., y: 0. }]
+                                                                      Position { x: 0., y: 7. },
+                                                                      Position { x: 0., y: 0. }]
                                         }],
                 objects: vec![Object { position: Position { x: 2., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Player },
                               Object { position: Position { x: 8., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Exit }],
