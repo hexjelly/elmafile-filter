@@ -6,8 +6,8 @@ Elasto Mania file handler crate for Rust. Very much still a work in progress.
 
 ## Installation
 
-Things are still not finalized for an initial release version suited for Cargo,
-to test things out add this in your Cargo.toml file:
+Things are still not finalized for an initial release version suited for
+crates.io, to test things out add this in your Cargo.toml file:
 
 ```toml
 [dependencies]
