@@ -61,7 +61,7 @@ mod tests {
     fn construct_level_and_save () {
         let mut level = lev::Level { raw: vec![],
                                      version: lev::Version::default(),
-                                     link: random::<i32>(),
+                                     link: random::<u32>(),
                                      integrity: [0f64; 4],
                                      name: String::new(),
                                      lgr: String::from("default"),
@@ -306,12 +306,13 @@ mod tests {
             time: 0_f64,
             event_type: rec::EventType::Touch { index: 0 }
         });
-        let replay = rec::Replay::new();
+        let mut replay = rec::Replay::new();
+        replay.link = 1239;
         assert_eq!(replay, rec::Replay {
             raw: vec![],
             multi: false,
             flag_tag: false,
-            link: 0,
+            link: 1239,
             level: String::new(),
             frames: vec![],
             events: vec![],

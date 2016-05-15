@@ -146,7 +146,7 @@ pub struct Level {
     /// Elma or Across level.
     pub version: Version,
     /// Random number that links level file to replay files.
-    pub link: i32,
+    pub link: u32,
     /// Contains four integrity checks.
     pub integrity: [f64; 4],
     /// Level name.
@@ -184,7 +184,7 @@ impl Level {
     pub fn new () -> Self {
         Level { raw: vec![],
                 version: Version::Elma,
-                link: random::<i32>(),
+                link: random::<u32>(),
                 integrity: [0f64; 4],
                 name: String::new(),
                 lgr: String::from("default"),
@@ -234,7 +234,7 @@ impl Level {
 
         // Link.
         let (_, mut remaining) = remaining.split_at(2); // Never used
-        self.link = try!(remaining.read_i32::<LittleEndian>());
+        self.link = try!(remaining.read_u32::<LittleEndian>());
 
         // Integrity checksums.
         for i in 0..4 {
@@ -406,7 +406,7 @@ impl Level {
         // Lower short of link.
         try!(bytes.write_i16::<LittleEndian>((self.link & 0xFFFF) as i16));
         // Link.
-        try!(bytes.write_i32::<LittleEndian>(self.link));
+        try!(bytes.write_u32::<LittleEndian>(self.link));
         // Integrity checksums.
         self.calculate_integrity_sums(true);
         for sum in self.integrity.into_iter() {
@@ -653,7 +653,7 @@ impl Level {
     /// level.save("tests/newlink.lev", false).unwrap();
     /// ```
     pub fn generate_link (&mut self) {
-        self.link = random::<i32>();
+        self.link = random::<u32>();
     }
 
     /// Saves level as a file.

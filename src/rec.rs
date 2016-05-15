@@ -132,7 +132,7 @@ impl Replay {
         Replay { raw: vec![],
                  multi: false,
                  flag_tag: false,
-                 link: 0,
+                 link: random::<u32>(),
                  level: String::new(),
                  frames: vec![],
                  events: vec![],
