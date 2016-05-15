@@ -2,7 +2,8 @@
 
 # ![logo](http://i.imgur.com/4Pg7LyG.png)
 
-Elasto Mania file handler crate for Rust. Very much still a work in progress.
+[Elasto Mania](http://elmaonline.net/) file handler crate for Rust.
+Very much still a work in progress.
 
 ## Installation
 
