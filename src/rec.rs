@@ -270,7 +270,7 @@ impl Replay {
         let last_event_2 = self.events_2.last();
         let time_1 = match last_event_1 {
             Some(last_event_1) => { match last_event_1.event_type {
-                                    EventType::Touch { .. } | EventType::Ground { .. } => last_event_1.time,
+                                    EventType::Touch { .. } => last_event_1.time,
                                     _ => 0_f64
                                 }},
             None => 0_f64
@@ -278,7 +278,7 @@ impl Replay {
 
         let time_2 = match last_event_2 {
             Some(last_event_2) => { match last_event_2.event_type {
-                                    EventType::Touch { .. } | EventType::Ground { .. } => last_event_2.time,
+                                    EventType::Touch { .. } => last_event_2.time,
                                     _ => 0_f64
                                 }},
             None => 0_f64
