@@ -486,5 +486,6 @@ mod tests {
         let replay = rec::Replay::load("tests/test_1.rec").unwrap();
         let (time, finished) = replay.get_time_ms();
         assert_eq!(time, 14649);
+        assert_eq!(finished, true);
     }
 }

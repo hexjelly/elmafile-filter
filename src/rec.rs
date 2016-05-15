@@ -265,7 +265,6 @@ impl Replay {
 
     /// Get time of replay. Returns tuple with milliseconds and whether replay was finished.
     pub fn get_time_ms (&self) -> (usize, bool) {
-        use std::cmp;
         // First check if last event was a touch event in either event data.
         let last_event_1 = self.events.last();
         let last_event_2 = self.events_2.last();
@@ -286,7 +285,9 @@ impl Replay {
         };
 
         // Highest frame time.
-        let frame_time_max = cmp::max(self.frames.len(), self.frames_2.len()) as f64 * 33.333;
+        let frames_1_len = self.frames.len();
+        let frames_2_len = self.frames_2.len();
+        let frame_time_max = if frames_1_len > frames_2_len { frames_1_len } else { frames_2_len } as f64 * 33.333;
 
         // If neither had a touch event, return approximate frame time.
         if (time_1 == 0.) && (time_2 == 0.) {
@@ -294,7 +295,7 @@ impl Replay {
         }
 
         // Set to highest event time.
-        let event_time_max = if time_1 > time_2 { time_1 * 2289.37728938 } else { time_2 * 2289.37728938 };
+        let event_time_max = if time_1 > time_2 { time_1 } else { time_2 } * 2289.37728938;
         // If event difference to frame time is >1 frames of time, probably not finished?
         if frame_time_max > (event_time_max + 33.333){
             return (frame_time_max.round() as usize, false);
