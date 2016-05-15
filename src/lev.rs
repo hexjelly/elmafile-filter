@@ -385,13 +385,18 @@ impl Level {
     }
 
     /// Combines the `Level` struct fields to generate the raw binary data, and calculates
-    /// integrity sums. Called automatically when using `get_raw` or `save` methods,
+    /// integrity sums. Called automatically when using the `get_raw` or `save` methods,
     /// and is provided mainly for convinience if you need to use it manually.
+    ///
+    /// # Arguments
+    ///
+    /// * top_10 - Whether to update top10 lists or not.
     ///
     /// # Examples
     ///
     /// ```
     /// let mut level = elma::lev::Level::load("tests/test_1.lev").unwrap();
+    /// level.pictures = vec![] // Let's just delete all pictures
     /// level.update(false);
     /// ```
     pub fn update (&mut self, top_10: bool) -> Result<(), ElmaError> {
@@ -441,7 +446,6 @@ impl Level {
         try!(bytes.write_i32::<LittleEndian>(EOD));
 
         // Top10 lists.
-        // TODO: figure out how to write this to be less idiotic.
         if top_10 {
             bytes = try!(self.write_top10(bytes));
         } else {
