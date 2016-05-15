@@ -263,7 +263,9 @@ impl Replay {
         Ok(())
     }
 
-    /// Get time of replay. Returns tuple with milliseconds and whether replay was finished.
+    /// Get time of replay. Returns tuple with milliseconds and whether replay was finished,
+    /// caveat being that there is no way to tell if a replay was finished or not just from the
+    /// replay file with a 100% certainty. Merely provided for convinience.
     pub fn get_time_ms (&self) -> (usize, bool) {
         // First check if last event was a touch event in either event data.
         let last_event_1 = self.events.last();
@@ -304,7 +306,9 @@ impl Replay {
         (event_time_max.round() as usize, true)
     }
 
-    /// Get time of replay. Returns tuple with hundredths and whether replay was finished.
+    /// Get time of replay. Returns tuple with hundredths and whether replay was finished,
+    /// caveat being that there is no way to tell if a replay was finished or not just from the
+    /// replay file with a 100% certainty. Merely provided for convinience.
     pub fn get_time_hs (&self) -> (usize, bool) {
         let (time, finished) = self.get_time_ms();
         (time / 10, finished)
