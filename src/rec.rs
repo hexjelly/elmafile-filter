@@ -303,6 +303,12 @@ impl Replay {
 
         (event_time_max.round() as usize, true)
     }
+
+    /// Get time of replay. Returns tuple with hundredths and whether replay was finished.
+    pub fn get_time_hs (&self) -> (usize, bool) {
+        let (time, finished) = self.get_time_ms();
+        (time / 10, finished)
+    }
 }
 
 /// Function for parsing frame data from either single-player or multi-player replays.

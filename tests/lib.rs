@@ -482,7 +482,7 @@ mod tests {
         let _ = rec::Replay::load("tests/invalid_event.rec").unwrap(); }
 
     #[test]
-    fn replay_get_time_finished_single () {
+    fn replay_get_time_ms_finished_single () {
         let replay = rec::Replay::load("tests/test_1.rec").unwrap();
         let (time, finished) = replay.get_time_ms();
         assert_eq!(time, 14649);
@@ -490,7 +490,7 @@ mod tests {
     }
 
     #[test]
-    fn replay_get_time_finished_multi () {
+    fn replay_get_time_ms_finished_multi () {
         let replay = rec::Replay::load("tests/test_2.rec").unwrap();
         let (time, finished) = replay.get_time_ms();
         assert_eq!(time, 14671);
@@ -498,7 +498,7 @@ mod tests {
     }
 
     #[test]
-    fn replay_get_time_unfinished_no_event () {
+    fn replay_get_time_ms_unfinished_no_event () {
         let replay = rec::Replay::load("tests/unfinished.rec").unwrap();
         let (time, finished) = replay.get_time_ms();
         assert_eq!(time, 533);
@@ -506,7 +506,7 @@ mod tests {
     }
 
     #[test]
-    fn replay_get_time_unfinished_event_single () {
+    fn replay_get_time_ms_unfinished_event_single () {
         let replay = rec::Replay::load("tests/test_3.rec").unwrap();
         let (time, finished) = replay.get_time_ms();
         assert_eq!(time, 4767);
@@ -514,7 +514,7 @@ mod tests {
     }
 
     #[test]
-    fn replay_get_time_unfinished_event_multi () {
+    fn replay_get_time_ms_unfinished_event_multi () {
         let replay = rec::Replay::load("tests/multi_event_unfinished.rec").unwrap();
         let (time, finished) = replay.get_time_ms();
         assert_eq!(time, 1600);
@@ -522,7 +522,7 @@ mod tests {
     }
 
     #[test]
-    fn replay_get_time_unfinished_event_multi_2 () {
+    fn replay_get_time_ms_unfinished_event_multi_2 () {
         let replay = rec::Replay::load("tests/multi_event_unfinished_2.rec").unwrap();
         let (time, finished) = replay.get_time_ms();
         assert_eq!(time, 3233);
@@ -530,13 +530,66 @@ mod tests {
     }
 
     #[test]
-    fn replay_get_time_unfinished_event_single_2_frame_diff () {
+    fn replay_get_time_ms_unfinished_event_single_2_frame_diff () {
         let replay = rec::Replay::load("tests/event_unfinished.rec").unwrap();
         let (time, finished) = replay.get_time_ms();
         assert_eq!(time, 8567);
         assert_eq!(finished, false);
     }
 
+    #[test]
+    fn replay_get_time_hs_finished_single () {
+        let replay = rec::Replay::load("tests/test_1.rec").unwrap();
+        let (time, finished) = replay.get_time_hs();
+        assert_eq!(time, 1464);
+        assert_eq!(finished, true);
+    }
 
-    // TODO: NEEDS MORE TESTS!
+    #[test]
+    fn replay_get_time_hs_finished_multi () {
+        let replay = rec::Replay::load("tests/test_2.rec").unwrap();
+        let (time, finished) = replay.get_time_hs();
+        assert_eq!(time, 1467);
+        assert_eq!(finished, true);
+    }
+
+    #[test]
+    fn replay_get_time_hs_unfinished_no_event () {
+        let replay = rec::Replay::load("tests/unfinished.rec").unwrap();
+        let (time, finished) = replay.get_time_hs();
+        assert_eq!(time, 53);
+        assert_eq!(finished, false);
+    }
+
+    #[test]
+    fn replay_get_time_hs_unfinished_event_single () {
+        let replay = rec::Replay::load("tests/test_3.rec").unwrap();
+        let (time, finished) = replay.get_time_hs();
+        assert_eq!(time, 476);
+        assert_eq!(finished, false);
+    }
+
+    #[test]
+    fn replay_get_time_hs_unfinished_event_multi () {
+        let replay = rec::Replay::load("tests/multi_event_unfinished.rec").unwrap();
+        let (time, finished) = replay.get_time_hs();
+        assert_eq!(time, 160);
+        assert_eq!(finished, false);
+    }
+
+    #[test]
+    fn replay_get_time_hs_unfinished_event_multi_2 () {
+        let replay = rec::Replay::load("tests/multi_event_unfinished_2.rec").unwrap();
+        let (time, finished) = replay.get_time_hs();
+        assert_eq!(time, 323);
+        assert_eq!(finished, false);
+    }
+
+    #[test]
+    fn replay_get_time_hs_unfinished_event_single_2_frame_diff () {
+        let replay = rec::Replay::load("tests/event_unfinished.rec").unwrap();
+        let (time, finished) = replay.get_time_hs();
+        assert_eq!(time, 856);
+        assert_eq!(finished, false);
+    }
 }
