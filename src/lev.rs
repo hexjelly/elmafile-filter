@@ -396,7 +396,7 @@ impl Level {
     ///
     /// ```
     /// let mut level = elma::lev::Level::load("tests/test_1.lev").unwrap();
-    /// level.pictures = vec![] // Let's just delete all pictures
+    /// level.pictures = vec![]; // Let's just delete all pictures
     /// level.update(false);
     /// ```
     pub fn update (&mut self, top_10: bool) -> Result<(), ElmaError> {
