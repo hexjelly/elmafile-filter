@@ -266,6 +266,14 @@ impl Replay {
     /// Get time of replay. Returns tuple with milliseconds and whether replay was finished,
     /// caveat being that there is no way to tell if a replay was finished or not just from the
     /// replay file with a 100% certainty. Merely provided for convinience.
+    /// # Examples
+    ///
+    /// ```
+    /// let replay = elma::rec::Replay::load("tests/test_1.rec").unwrap();
+    /// let (time, finished) = replay.get_time_ms();
+    /// assert_eq!(time, 14649);
+    /// assert_eq!(finished, true);
+    /// ```
     pub fn get_time_ms (&self) -> (usize, bool) {
         // First check if last event was a touch event in either event data.
         let last_event_1 = self.events.last();
@@ -309,6 +317,15 @@ impl Replay {
     /// Get time of replay. Returns tuple with hundredths and whether replay was finished,
     /// caveat being that there is no way to tell if a replay was finished or not just from the
     /// replay file with a 100% certainty. Merely provided for convinience.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let replay = elma::rec::Replay::load("tests/test_1.rec").unwrap();
+    /// let (time, finished) = replay.get_time_hs();
+    /// assert_eq!(time, 1464);
+    /// assert_eq!(finished, true);
+    /// ```
     pub fn get_time_hs (&self) -> (usize, bool) {
         let (time, finished) = self.get_time_ms();
         (time / 10, finished)
