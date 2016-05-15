@@ -262,6 +262,47 @@ impl Replay {
         try!(file.write_all(&bytes));
         Ok(())
     }
+
+    /// Get time of replay. Returns tuple with milliseconds and whether replay was finished.
+    pub fn get_time_ms (&self) -> (usize, bool) {
+        use std::cmp;
+        // First check if last event was a touch event in either event data.
+        let last_event_1 = self.events.last();
+        let last_event_2 = self.events_2.last();
+        let time_1 = match last_event_1 {
+            Some(last_event_1) => { match last_event_1.event_type {
+                                    EventType::Touch { .. } => last_event_1.time,
+                                    _ => 0_f64
+                                }},
+            None => 0_f64
+        };
+
+        let time_2 = match last_event_2 {
+            Some(last_event_2) => { match last_event_2.event_type {
+                                    EventType::Touch { .. } => last_event_2.time,
+                                    _ => 0_f64
+                                }},
+            None => 0_f64
+        };
+
+        // Highest frame time.
+        let frame_time_max = cmp::max(self.frames.len(), self.frames_2.len()) as f64 * 33.333;
+
+        // If neither had a touch event, return approximate frame time.
+        if (time_1 == 0.) && (time_2 == 0.) {
+            return (frame_time_max.round() as usize, false);
+        }
+
+        // Set to highest event time.
+        let event_time_max = if time_1 > time_2 { time_1 * 2289.37728938 } else { time_2 * 2289.37728938 };
+        // If event difference to frame time is >1 frames of time, probably not finished?
+        if frame_time_max > (event_time_max + 33.333){
+            return (frame_time_max.round() as usize, false);
+        }
+
+
+        (event_time_max.round() as usize, true)
+    }
 }
 
 /// Function for parsing frame data from either single-player or multi-player replays.

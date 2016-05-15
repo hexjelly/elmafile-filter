@@ -480,4 +480,11 @@ mod tests {
     #[should_panic]
     fn load_invalid_event_replay () {
         let _ = rec::Replay::load("tests/invalid_event.rec").unwrap(); }
+
+    #[test]
+    fn replay_get_time () {
+        let replay = rec::Replay::load("tests/test_1.rec").unwrap();
+        let (time, finished) = replay.get_time_ms();
+        assert_eq!(time, 14649);
+    }
 }
