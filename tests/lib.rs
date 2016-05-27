@@ -5,8 +5,9 @@ mod tests {
     use elma::{ lev, rec, Position, time_format, trim_string };
     use rand::random;
 
-    // Helper functions.
     #[test]
+    /// Generate random u8 data to simulate top10 lists, encrypting it and decrypting it,
+    /// and testing whether it returns the same unencrypted data.
     fn test_decrypt_encrypt () {
         let mut initial: Vec<u8> = vec![];
         for _ in 0..688 {
@@ -19,6 +20,7 @@ mod tests {
 
     #[test]
     #[should_panic]
+    /// Supply some bogus utf-8 bytes.
     fn test_trim_string () {
         let bytes: [u8;5] = [222,222,222,100,211];
         trim_string(&bytes).unwrap(); }
@@ -37,17 +39,19 @@ mod tests {
 
     #[test]
     #[should_panic]
+    /// Supply "60" as seconds, should generate error.
     fn test_invalid_time_format_1 () {
         time_format(16039_i32).unwrap(); }
 
     #[test]
     #[should_panic]
+    /// Supply "60" as minutes, should generate error.
     fn test_invalid_time_format_2 () {
         time_format(601039_i32).unwrap(); }
 
 
     #[test]
-    // Probably redundant, but maybe some new fields are added in the future.
+    // Probably redundant, but maybe some new fields are added in the future. I don't know.
     // Doesn't hurt or impact anything.
     fn level_default_values () {
         let mut default_lev = lev::Level::default();
@@ -58,6 +62,7 @@ mod tests {
     }
 
     #[test]
+    /// Generate a level with some arbitrary values and see if it saves.
     fn construct_level_and_save () {
         let mut level = lev::Level { raw: vec![],
                                      version: lev::Version::default(),
@@ -97,11 +102,13 @@ mod tests {
 
     #[test]
     #[should_panic]
+    /// This should panic until Across support is added, if ever.
     fn load_across_level_1 () {
         let _ = lev::Level::load("tests/across.lev").unwrap(); }
 
     #[test]
     #[should_panic]
+    /// Until Across is supported, should generate error when you try to save a Across level.
     fn save_across_level_1 () {
         let mut level = lev::Level::new();
         level.version = lev::Version::Across;
