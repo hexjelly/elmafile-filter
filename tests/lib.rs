@@ -2,13 +2,13 @@ extern crate elma;
 extern crate rand;
 #[cfg(test)]
 mod tests {
-    use elma::{ lev, rec, Position, time_format, trim_string };
+    use elma::{ lev, rec, Position, time_format, trim_string, string_null_pad };
     use rand::random;
 
     #[test]
     /// Generate random u8 data to simulate top10 lists, encrypting it and decrypting it,
     /// and testing whether it returns the same unencrypted data.
-    fn test_decrypt_encrypt () {
+    fn decrypt_encrypt_top10 () {
         let mut initial: Vec<u8> = vec![];
         for _ in 0..688 {
             initial.push(random::<u8>());
@@ -21,9 +21,22 @@ mod tests {
     #[test]
     #[should_panic]
     /// Supply some bogus utf-8 bytes.
-    fn test_trim_string () {
+    fn trim_string_invalid_utf8 () {
         let bytes: [u8;5] = [222,222,222,100,211];
         trim_string(&bytes).unwrap(); }
+
+    #[test]
+    #[should_panic]
+    /// Supply shorter padding than string length.
+    fn string_null_pad_length_error () {
+        let _ = string_null_pad("elma-rust", 5).unwrap(); }
+
+    #[test]
+    #[should_panic]
+    /// Supply 8 UTF-8 characters and try to pad 10.
+    fn string_null_pad_utf8_error () {
+        let _ = string_null_pad("✗✗✗✗✗✗✗✗", 10).unwrap(); }
+
 
     #[test]
     fn test_time_format () {

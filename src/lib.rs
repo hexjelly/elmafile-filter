@@ -9,6 +9,7 @@ extern crate rand;
 
 use std::io;
 use std::string;
+use std::ascii::AsciiExt;
 
 pub mod lev;
 pub mod rec;
@@ -26,6 +27,8 @@ pub enum ElmaError {
     InvalidEvent(u8),
     EORMismatch,
     InvalidTimeFormat,
+    PaddingTooShort(isize),
+    NonASCII,
     Io(io::Error),
     StringFromUtf8(string::FromUtf8Error)
 }
@@ -122,15 +125,22 @@ pub fn time_format (time: i32) -> Result<String, ElmaError> {
 ///
 /// ```
 /// let string = String::from("Elma");
-/// let padded = elma::string_null_pad(&string, 10);
+/// let padded = elma::string_null_pad(&string, 10).unwrap();
 /// assert_eq!(&padded, &[0x45, 0x6C, 0x6D, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
 /// ```
-pub fn string_null_pad (name: &str, pad: usize) -> Vec<u8> {
+pub fn string_null_pad (name: &str, pad: usize) -> Result<Vec<u8>, ElmaError> {
+    let name = name.as_bytes();
+
+    // first check if string is ASCII
+    if !name.is_ascii() { return Err(ElmaError::NonASCII) }
+    // padding shorter than string
+    if name.len() > pad { return Err(ElmaError::PaddingTooShort((pad as isize - name.len() as isize) as isize)) }
+
     let mut bytes = vec![0u8; pad];
-    for (n, char) in name.as_bytes().iter().enumerate() {
+    for (n, char) in name.iter().enumerate() {
         bytes[n] = *char;
     }
-    bytes
+    Ok(bytes)
 }
 
 // Bike diameters and radius.

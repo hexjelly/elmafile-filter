@@ -419,13 +419,13 @@ impl Level {
         }
 
         // Level name.
-        bytes.extend_from_slice(&string_null_pad(&self.name, 51));
+        bytes.extend_from_slice(&try!(string_null_pad(&self.name, 51)));
         // LGR name.
-        bytes.extend_from_slice(&string_null_pad(&self.lgr, 16));
+        bytes.extend_from_slice(&try!(string_null_pad(&self.lgr, 16)));
         // Ground name.
-        bytes.extend_from_slice(&string_null_pad(&self.ground, 10));
+        bytes.extend_from_slice(&try!(string_null_pad(&self.ground, 10)));
         // Sky name.
-        bytes.extend_from_slice(&string_null_pad(&self.sky, 10));
+        bytes.extend_from_slice(&try!(string_null_pad(&self.sky, 10)));
 
         // Number of polygons.
         try!(bytes.write_f64::<LittleEndian>(self.polygons.len() as f64 + 0.4643643_f64));
@@ -506,11 +506,11 @@ impl Level {
     fn write_pictures (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
         for pic in &self.pictures {
             // Picture name.
-            bytes.extend_from_slice(&string_null_pad(&pic.name, 10));
+            bytes.extend_from_slice(&try!(string_null_pad(&pic.name, 10)));
             // Texture name.
-            bytes.extend_from_slice(&string_null_pad(&pic.texture, 10));
+            bytes.extend_from_slice(&try!(string_null_pad(&pic.texture, 10)));
             // Mask name.
-            bytes.extend_from_slice(&string_null_pad(&pic.mask, 10));
+            bytes.extend_from_slice(&try!(string_null_pad(&pic.mask, 10)));
             // Position.
             try!(bytes.write_f64::<LittleEndian>(pic.position.x));
             try!(bytes.write_f64::<LittleEndian>(pic.position.y));
@@ -536,8 +536,8 @@ impl Level {
         let mut names_2: Vec<u8> = vec![];
         for (n, entry) in self.top10_single.iter().enumerate() {
             times[n] = entry.time;
-            names_1.extend_from_slice(&string_null_pad(&entry.name_1, 15));
-            names_2.extend_from_slice(&string_null_pad(&entry.name_2, 15));
+            names_1.extend_from_slice(&try!(string_null_pad(&entry.name_1, 15)));
+            names_2.extend_from_slice(&try!(string_null_pad(&entry.name_2, 15)));
         }
         // Pad with null bytes if less than 10 entries.
         for _ in 0..10 - self.top10_single.len() {
@@ -559,8 +559,8 @@ impl Level {
         let mut names_2: Vec<u8> = vec![];
         for (n, entry) in self.top10_multi.iter().enumerate() {
             times[n] = entry.time;
-            names_1.extend_from_slice(&string_null_pad(&entry.name_1, 15));
-            names_2.extend_from_slice(&string_null_pad(&entry.name_2, 15));
+            names_1.extend_from_slice(&try!(string_null_pad(&entry.name_1, 15)));
+            names_2.extend_from_slice(&try!(string_null_pad(&entry.name_2, 15)));
         }
         // Pad with null bytes if less than 10 entries.
         for _ in 0..10 - self.top10_multi.len() {

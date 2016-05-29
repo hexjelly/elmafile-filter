@@ -232,7 +232,7 @@ impl Replay {
         // Link.
         try!(bytes.write_u32::<LittleEndian>(self.link));
         // Level name.
-        bytes.extend_from_slice(&string_null_pad(&self.level, 12));
+        bytes.extend_from_slice(&try!(string_null_pad(&self.level, 12)));
         // Garbage value.
         try!(bytes.write_i32::<LittleEndian>(0x00_i32));
 
