@@ -39,7 +39,7 @@ mod tests {
 
 
     #[test]
-    fn test_time_format () {
+    fn correct_time_format () {
         assert_eq!("11:48,01", time_format(114801).unwrap());
         assert_eq!("01:00,21", time_format(10021).unwrap());
         assert_eq!("01:00,99", time_format(10099).unwrap());
@@ -53,13 +53,13 @@ mod tests {
     #[test]
     #[should_panic]
     /// Supply "60" as seconds, should generate error.
-    fn test_invalid_time_format_1 () {
+    fn invalid_time_format_1 () {
         time_format(16039_i32).unwrap(); }
 
     #[test]
     #[should_panic]
     /// Supply "60" as minutes, should generate error.
-    fn test_invalid_time_format_2 () {
+    fn invalid_time_format_2 () {
         time_format(601039_i32).unwrap(); }
 
 
@@ -106,6 +106,58 @@ mod tests {
         level.generate_link();
         let _ = level.get_raw(false).unwrap();
         level.save("tests/constructed.lev", true).unwrap();
+    }
+
+    #[test]
+    /// Test top 10 saving when lists are longer than 10 entries, and whether they get sorted.
+    fn overflow_top10_and_sort () {
+        let mut level = lev::Level::new();
+        // Create more than 10 entries unordered.
+        let top10_single = vec![lev::ListEntry { time: 2221, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                 lev::ListEntry { time: 231, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                 lev::ListEntry { time: 1221, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                 lev::ListEntry { time: 10221, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                 lev::ListEntry { time: 2321, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                 lev::ListEntry { time: 22211, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                 lev::ListEntry { time: 2201, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                 lev::ListEntry { time: 5, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                 lev::ListEntry { time: 5121, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                 lev::ListEntry { time: 918, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                 lev::ListEntry { time: 17, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                 lev::ListEntry { time: 8172, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() }];
+        // Make multi list shorter, but still unordered.
+        let top10_multi = vec![lev::ListEntry { time: 2221, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                lev::ListEntry { time: 231, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                lev::ListEntry { time: 2321, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                lev::ListEntry { time: 22211, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                lev::ListEntry { time: 918, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                lev::ListEntry { time: 17, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                lev::ListEntry { time: 8172, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() }];
+        level.top10_single = top10_single;
+        level.top10_multi = top10_multi;
+        // Save and then load it again to see whether it worked.
+        level.save("top10_overflow_and_sort.lev", true).unwrap();
+        let level = lev::Level::load("top10_overflow_and_sort.lev").unwrap();
+        // Check if we get the expected sorted times.
+        let expected_single = vec![lev::ListEntry { time: 5, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                            lev::ListEntry { time: 17, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                            lev::ListEntry { time: 231, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                            lev::ListEntry { time: 918, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                            lev::ListEntry { time: 1221, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                            lev::ListEntry { time: 2201, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                            lev::ListEntry { time: 2221, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                            lev::ListEntry { time: 2321, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                            lev::ListEntry { time: 5121, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                            lev::ListEntry { time: 8172, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() }];
+        let expected_multi = vec![lev::ListEntry { time: 17, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                    lev::ListEntry { time: 231, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                    lev::ListEntry { time: 918, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                    lev::ListEntry { time: 2221, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                    lev::ListEntry { time: 2321, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                    lev::ListEntry { time: 8172, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
+                                    lev::ListEntry { time: 22211, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() }];
+        assert_eq!(level.top10_single, expected_single);
+        assert_eq!(level.top10_multi, expected_multi);
     }
 
     #[test]

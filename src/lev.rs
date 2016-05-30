@@ -3,6 +3,7 @@
 use std::io::{ Read, Write };
 use std::fs::File;
 use std::path::Path;
+use std::cmp::Ordering;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
 use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, ElmaError, OBJECT_RADIUS };
@@ -120,7 +121,7 @@ impl Picture {
 }
 
 /// Top10 list entry struct.
-#[derive(Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ListEntry {
     /// Player 1 name.
     pub name_1: String,
@@ -128,6 +129,18 @@ pub struct ListEntry {
     pub name_2: String,
     /// Time.
     pub time: i32
+}
+
+impl Ord for ListEntry {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.time.cmp(&other.time)
+    }
+}
+
+impl PartialOrd for ListEntry {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl ListEntry {
@@ -447,6 +460,9 @@ impl Level {
 
         // Top10 lists.
         if top_10 {
+            // Order lists first.
+            self.top10_single.sort();
+            self.top10_multi.sort();
             bytes = try!(self.write_top10(bytes));
         } else {
             bytes.extend_from_slice(&EMPTY_TOP10);
@@ -530,19 +546,24 @@ impl Level {
         let mut top10_bytes: Vec<u8> = vec![];
 
         // Single-player times.
-        try!(top10_bytes.write_i32::<LittleEndian>(self.top10_single.len() as i32));
+        let single_times = self.top10_single.len();
+        try!(top10_bytes.write_i32::<LittleEndian>(if 10 < single_times { 10 } else { single_times } as i32));
         let mut times = [0_i32;10];
-        let mut names_1: Vec<u8> = vec![];
-        let mut names_2: Vec<u8> = vec![];
+        let mut names_1 = vec![];
+        let mut names_2 = vec![];
         for (n, entry) in self.top10_single.iter().enumerate() {
-            times[n] = entry.time;
-            names_1.extend_from_slice(&try!(string_null_pad(&entry.name_1, 15)));
-            names_2.extend_from_slice(&try!(string_null_pad(&entry.name_2, 15)));
+            if n < 10 {
+                times[n] = entry.time;
+                names_1.extend_from_slice(&try!(string_null_pad(&entry.name_1, 15)));
+                names_2.extend_from_slice(&try!(string_null_pad(&entry.name_2, 15)));
+            }
         }
         // Pad with null bytes if less than 10 entries.
-        for _ in 0..10 - self.top10_single.len() {
-            names_1.extend_from_slice(&[0u8;15]);
-            names_2.extend_from_slice(&[0u8;15]);
+        if single_times < 10 {
+            for _ in 0..10 - single_times {
+                names_1.extend_from_slice(&[0u8;15]);
+                names_2.extend_from_slice(&[0u8;15]);
+            }
         }
 
         for time in &times {
@@ -553,19 +574,24 @@ impl Level {
         top10_bytes.extend_from_slice(&names_2);
 
         // Multi-player times.
-        try!(top10_bytes.write_i32::<LittleEndian>(self.top10_multi.len() as i32));
+        let multi_times = self.top10_multi.len();
+        try!(top10_bytes.write_i32::<LittleEndian>(if 10 < multi_times { 10 } else { multi_times } as i32));
         let mut times = [0_i32;10];
-        let mut names_1: Vec<u8> = vec![];
-        let mut names_2: Vec<u8> = vec![];
+        let mut names_1 = vec![];
+        let mut names_2 = vec![];
         for (n, entry) in self.top10_multi.iter().enumerate() {
-            times[n] = entry.time;
-            names_1.extend_from_slice(&try!(string_null_pad(&entry.name_1, 15)));
-            names_2.extend_from_slice(&try!(string_null_pad(&entry.name_2, 15)));
+            if n < 10 {
+                times[n] = entry.time;
+                names_1.extend_from_slice(&try!(string_null_pad(&entry.name_1, 15)));
+                names_2.extend_from_slice(&try!(string_null_pad(&entry.name_2, 15)));
+            }
         }
         // Pad with null bytes if less than 10 entries.
-        for _ in 0..10 - self.top10_multi.len() {
-            names_1.extend_from_slice(&[0u8;15]);
-            names_2.extend_from_slice(&[0u8;15]);
+        if multi_times < 10 {
+            for _ in 0..10 - multi_times {
+                names_1.extend_from_slice(&[0u8;15]);
+                names_2.extend_from_slice(&[0u8;15]);
+            }
         }
 
         for time in &times {
