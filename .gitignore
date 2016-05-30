@@ -27,3 +27,4 @@ tests/save_multi_replay_2.rec
 tests/save_replay_1.rec
 tests/save_replay_2.rec
 tests/save_test_1.lev
+tests/top10_overflow_and_sort.lev

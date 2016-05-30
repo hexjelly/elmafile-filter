@@ -136,8 +136,8 @@ mod tests {
         level.top10_single = top10_single;
         level.top10_multi = top10_multi;
         // Save and then load it again to see whether it worked.
-        level.save("top10_overflow_and_sort.lev", true).unwrap();
-        let level = lev::Level::load("top10_overflow_and_sort.lev").unwrap();
+        level.save("tests/top10_overflow_and_sort.lev", true).unwrap();
+        let level = lev::Level::load("tests/top10_overflow_and_sort.lev").unwrap();
         // Check if we get the expected sorted times.
         let expected_single = vec![lev::ListEntry { time: 5, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
                             lev::ListEntry { time: 17, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
