@@ -240,8 +240,8 @@ impl Level {
         // POT06 = Across, POT14 = Elma.
         let (version, remaining) = remaining.split_at(5);
         self.version = match version {
-            [80, 79, 84, 49, 52] => Version::Elma,
-            [80, 79, 84, 48, 54] => return Err(ElmaError::AcrossUnsupported),
+            &[80, 79, 84, 49, 52] => Version::Elma,
+            &[80, 79, 84, 48, 54] => return Err(ElmaError::AcrossUnsupported),
             _ => return Err(ElmaError::InvalidLevelFile)
         };
 
