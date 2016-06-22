@@ -7,12 +7,11 @@ Very much still a work in progress.
 
 ## Installation
 
-Things are still not finalized for an initial release version suited for
-crates.io, to test things out add this in your Cargo.toml file:
+Add this in your Cargo.toml file:
 
 ```toml
 [dependencies]
-elma = { git = "https://github.com/hexjelly/elma-rust" }
+elma = "*"
 ```
 
 ## Documentation
