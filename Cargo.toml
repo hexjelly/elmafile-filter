@@ -7,7 +7,7 @@ documentation = "http://hexjelly.github.io/elma-rust/elma/"
 homepage = "https://github.com/hexjelly/elma-rust"
 repository = "https://github.com/hexjelly/elma-rust"
 readme = "README.md"
-keywords = ["Elasto Mania", "Elma"]
+keywords = ["ElastoMania", "Elma"]
 license = "MIT"
 
 [dependencies]
