@@ -4,6 +4,7 @@ use std::io::{ Read, Write };
 use std::fs::File;
 use std::path::Path;
 use std::cmp::Ordering;
+use std::str;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
 use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, ElmaError, OBJECT_RADIUS };
@@ -237,11 +238,11 @@ impl Level {
     fn parse_level (&mut self) -> Result<(), ElmaError> {
         let remaining = self.raw.as_slice();
 
-        // POT06 = Across, POT14 = Elma.
+        // Version.
         let (version, remaining) = remaining.split_at(5);
-        self.version = match version {
-            &[80, 79, 84, 49, 52] => Version::Elma,
-            &[80, 79, 84, 48, 54] => return Err(ElmaError::AcrossUnsupported),
+        self.version = match try!(str::from_utf8(version)) {
+            "POT14" => Version::Elma,
+            "POT06" => return Err(ElmaError::AcrossUnsupported),
             _ => return Err(ElmaError::InvalidLevelFile)
         };
 

@@ -1,14 +1,11 @@
 #![doc(html_root_url = "https://hexjelly.github.io/elma-rust/")]
 
-#![feature(slice_patterns)]
-
 /// Library for reading and writing Elasto Mania files.
 
 extern crate byteorder;
 extern crate rand;
 
-use std::io;
-use std::string;
+use std::{io, str, string};
 use std::ascii::AsciiExt;
 
 pub mod lev;
@@ -30,7 +27,8 @@ pub enum ElmaError {
     PaddingTooShort(isize),
     NonASCII,
     Io(io::Error),
-    StringFromUtf8(string::FromUtf8Error)
+    StringFromUtf8(string::FromUtf8Error),
+    StrUtf8(str::Utf8Error)
 }
 
 impl From<io::Error> for ElmaError {
@@ -42,6 +40,12 @@ impl From<io::Error> for ElmaError {
 impl From<string::FromUtf8Error> for ElmaError {
     fn from(err: string::FromUtf8Error) -> ElmaError {
         ElmaError::StringFromUtf8(err)
+    }
+}
+
+impl From<str::Utf8Error> for ElmaError {
+    fn from(err: str::Utf8Error) -> ElmaError {
+        ElmaError::StrUtf8(err)
     }
 }
 
