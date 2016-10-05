@@ -20,7 +20,7 @@ script:
 after_success:
   - travis-cargo doc-upload
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then travis-cargo coveralls --no-sudo --verify; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./kcov/build/src/kcov --verify --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/$TEST_EXECUTABLE; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./kcov/build/src/kcov --verify --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/lib-*; fi
 env:
   global:
     - TRAVIS_CARGO_NIGHTLY_FEATURE=""
