@@ -462,17 +462,9 @@ fn write_frames (frame_data: &[Frame]) -> Result<Vec<u8>, ElmaError> {
         try!(left_rotation.write_u8(frame.left_wheel_rotation));
         try!(right_rotation.write_u8(frame.right_wheel_rotation));
 
-        let mut data_temp = random::<u8>();
-        if frame.throttle {
-            data_temp |= 1;
-        } else {
-            data_temp &= !1;
-        }
-        if frame.right {
-            data_temp |= 1 << 1;
-        } else {
-            data_temp &= !(1 << 1);
-        }
+        let mut data_temp = random::<u8>() & 0xFC;
+        if frame.throttle { data_temp |= 1; }
+        if frame.right { data_temp |= 2; }
         try!(data.write_u8(data_temp));
 
         try!(volume.write_i16::<LittleEndian>(frame.volume));
