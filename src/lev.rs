@@ -226,11 +226,11 @@ impl Level {
     pub fn load (filename: &str) -> Result<Self, ElmaError> {
         let path = Path::new(&filename);
         let mut level = Level::new();
-        let mut file = try!(File::open(path));
+        let mut file = File::open(path)?;
         let mut buffer = vec![];
-        try!(file.read_to_end(&mut buffer));
+        file.read_to_end(&mut buffer)?;
         level.raw = buffer;
-        try!(level.parse_level());
+        level.parse_level()?;
         Ok(level)
     }
 
@@ -240,7 +240,7 @@ impl Level {
 
         // Version.
         let (version, remaining) = remaining.split_at(5);
-        self.version = match try!(str::from_utf8(version)) {
+        self.version = match str::from_utf8(version)? {
             "POT14" => Version::Elma,
             "POT06" => return Err(ElmaError::AcrossUnsupported),
             _ => return Err(ElmaError::InvalidLevelFile)
@@ -248,44 +248,44 @@ impl Level {
 
         // Link.
         let (_, mut remaining) = remaining.split_at(2); // Never used
-        self.link = try!(remaining.read_u32::<LittleEndian>());
+        self.link = remaining.read_u32::<LittleEndian>()?;
 
         // Integrity checksums.
         for i in 0..4 {
-            self.integrity[i] = try!(remaining.read_f64::<LittleEndian>());
+            self.integrity[i] = remaining.read_f64::<LittleEndian>()?;
         }
 
         // Level name.
         let (name, remaining) = remaining.split_at(51);
-        self.name = try!(trim_string(name));
+        self.name = trim_string(name)?;
         // LGR name.
         let (lgr, remaining) = remaining.split_at(16);
-        self.lgr = try!(trim_string(lgr));
+        self.lgr = trim_string(lgr)?;
         // Ground texture name.
         let (ground, remaining) = remaining.split_at(10);
-        self.ground = try!(trim_string(ground));
+        self.ground = trim_string(ground)?;
         // Sky texture name.
         let (sky, mut remaining) = remaining.split_at(10);
-        self.sky = try!(trim_string(sky));
+        self.sky = trim_string(sky)?;
 
         // Polygons.
-        let poly_count = (try!(remaining.read_f64::<LittleEndian>()) - 0.4643643).round() as usize;
-        let (polygons, read_bytes) = try!(self.parse_polygons(remaining, poly_count));
+        let poly_count = (remaining.read_f64::<LittleEndian>()? - 0.4643643).round() as usize;
+        let (polygons, read_bytes) = self.parse_polygons(remaining, poly_count)?;
         self.polygons = polygons;
         let (_, mut remaining) = remaining.split_at(read_bytes);
 
         // Objects.
-        let object_count = (try!(remaining.read_f64::<LittleEndian>()) - 0.4643643).round() as usize;
+        let object_count = (remaining.read_f64::<LittleEndian>()? - 0.4643643).round() as usize;
         let (object_data, mut remaining) = remaining.split_at(object_count*28);
-        self.objects = try!(self.parse_objects(object_data, object_count));
+        self.objects = self.parse_objects(object_data, object_count)?;
 
         // Pictures.
-        let picture_count = (try!(remaining.read_f64::<LittleEndian>()) - 0.2345672).round() as usize;
+        let picture_count = (remaining.read_f64::<LittleEndian>()? - 0.2345672).round() as usize;
         let (picture_data, mut remaining) = remaining.split_at(picture_count*54);
-        self.pictures = try!(self.parse_pictures(picture_data, picture_count));
+        self.pictures = self.parse_pictures(picture_data, picture_count)?;
 
         // EOD marker expected at this point.
-        let expected = try!(remaining.read_i32::<LittleEndian>());
+        let expected = remaining.read_i32::<LittleEndian>()?;
         if expected != EOD { return Err(ElmaError::EODMismatch) }
 
         // First decrypt the top10 blocks.
@@ -294,14 +294,14 @@ impl Level {
 
         // Single-player list.
         let single = &decrypted_top10_data[0..344];
-        self.top10_single = try!(parse_top10(single));
+        self.top10_single = parse_top10(single)?;
 
         // Multi-player list.
         let multi = &decrypted_top10_data[344..688];
-        self.top10_multi = try!(parse_top10(multi));
+        self.top10_multi = parse_top10(multi)?;
 
         // EOF marker expected at this point.
-        let expected = try!(remaining.read_i32::<LittleEndian>());
+        let expected = remaining.read_i32::<LittleEndian>()?;
         if expected != EOF { return Err(ElmaError::EOFMismatch) }
 
         Ok(())
@@ -312,13 +312,13 @@ impl Level {
         let mut read_bytes = 0;
         for _ in 0..n {
             read_bytes += 8;
-            let grass = try!(buffer.read_i32::<LittleEndian>()) > 0;
-            let vertex_count = try!(buffer.read_i32::<LittleEndian>());
+            let grass = buffer.read_i32::<LittleEndian>()? > 0;
+            let vertex_count = buffer.read_i32::<LittleEndian>()?;
             let mut vertices: Vec<Position<f64>> = vec![];
             for _ in 0..vertex_count {
                 read_bytes += 16;
-                let x = try!(buffer.read_f64::<LittleEndian>());
-                let y = try!(buffer.read_f64::<LittleEndian>());
+                let x = buffer.read_f64::<LittleEndian>()?;
+                let y = buffer.read_f64::<LittleEndian>()?;
                 vertices.push(Position {
                     x: x,
                     y: y
@@ -335,11 +335,11 @@ impl Level {
     fn parse_objects (&self, mut buffer: &[u8], n: usize) -> Result<Vec<Object>, ElmaError> {
         let mut objects = vec![];
         for _ in 0..n {
-            let x = try!(buffer.read_f64::<LittleEndian>());
-            let y = try!(buffer.read_f64::<LittleEndian>());
+            let x = buffer.read_f64::<LittleEndian>()?;
+            let y = buffer.read_f64::<LittleEndian>()?;
             let position = Position { x: x, y: y };
-            let object_type = try!(buffer.read_i32::<LittleEndian>());
-            let gravity = try!(buffer.read_i32::<LittleEndian>());
+            let object_type = buffer.read_i32::<LittleEndian>()?;
+            let gravity = buffer.read_i32::<LittleEndian>()?;
             let gravity_direction = match gravity {
                 0 => Direction::Normal,
                 1 => Direction::Up,
@@ -348,7 +348,7 @@ impl Level {
                 4 => Direction::Right,
                 _ => return Err(ElmaError::InvalidGravity)
             };
-            let animation = (try!(buffer.read_i32::<LittleEndian>()) + 1) as u8;
+            let animation = (buffer.read_i32::<LittleEndian>()? + 1) as u8;
             let object = match object_type {
                 1 => ObjectType::Exit,
                 2 => ObjectType::Apple { gravity: gravity_direction, animation: animation },
@@ -369,16 +369,16 @@ impl Level {
         let mut pictures = vec![];
         for _ in 0..n {
             let (name, temp_remaining) = buffer.split_at(10);
-            let name = try!(trim_string(name));
+            let name = trim_string(name)?;
             let (texture, temp_remaining) = temp_remaining.split_at(10);
-            let texture = try!(trim_string(texture));
+            let texture = trim_string(texture)?;
             let (mask, temp_remaining) = temp_remaining.split_at(10);
-            let mask = try!(trim_string(mask));
+            let mask = trim_string(mask)?;
             buffer = temp_remaining;
-            let x = try!(buffer.read_f64::<LittleEndian>());
-            let y = try!(buffer.read_f64::<LittleEndian>());
-            let distance = try!(buffer.read_i32::<LittleEndian>());
-            let clipping = try!(buffer.read_i32::<LittleEndian>());
+            let x = buffer.read_f64::<LittleEndian>()?;
+            let y = buffer.read_f64::<LittleEndian>()?;
+            let distance = buffer.read_i32::<LittleEndian>()?;
+            let clipping = buffer.read_i32::<LittleEndian>()?;
             let clip = match clipping {
                 0 => Clip::Unclipped,
                 1 => Clip::Ground,
@@ -423,54 +423,54 @@ impl Level {
         };
 
         // Lower short of link.
-        try!(bytes.write_i16::<LittleEndian>((self.link & 0xFFFF) as i16));
+        bytes.write_i16::<LittleEndian>((self.link & 0xFFFF) as i16)?;
         // Link.
-        try!(bytes.write_u32::<LittleEndian>(self.link));
+        bytes.write_u32::<LittleEndian>(self.link)?;
         // Integrity checksums.
         self.calculate_integrity_sums(true);
         for sum in self.integrity.into_iter() {
-            try!(bytes.write_f64::<LittleEndian>(*sum));
+            bytes.write_f64::<LittleEndian>(*sum)?;
         }
 
         // Level name.
-        bytes.extend_from_slice(&try!(string_null_pad(&self.name, 51)));
+        bytes.extend_from_slice(&string_null_pad(&self.name, 51)?);
         // LGR name.
-        bytes.extend_from_slice(&try!(string_null_pad(&self.lgr, 16)));
+        bytes.extend_from_slice(&string_null_pad(&self.lgr, 16)?);
         // Ground name.
-        bytes.extend_from_slice(&try!(string_null_pad(&self.ground, 10)));
+        bytes.extend_from_slice(&string_null_pad(&self.ground, 10)?);
         // Sky name.
-        bytes.extend_from_slice(&try!(string_null_pad(&self.sky, 10)));
+        bytes.extend_from_slice(&string_null_pad(&self.sky, 10)?);
 
         // Number of polygons.
-        try!(bytes.write_f64::<LittleEndian>(self.polygons.len() as f64 + 0.4643643_f64));
+        bytes.write_f64::<LittleEndian>(self.polygons.len() as f64 + 0.4643643_f64)?;
         // Polygons.
-        bytes = try!(self.write_polygons(bytes));
+        bytes = self.write_polygons(bytes)?;
 
         // Number of objects.
-        try!(bytes.write_f64::<LittleEndian>(self.objects.len() as f64 + 0.4643643_f64));
+        bytes.write_f64::<LittleEndian>(self.objects.len() as f64 + 0.4643643_f64)?;
         // Objects.
-        bytes = try!(self.write_objects(bytes));
+        bytes = self.write_objects(bytes)?;
 
         // Number of pictures.
-        try!(bytes.write_f64::<LittleEndian>(self.pictures.len() as f64 + 0.2345672_f64));
+        bytes.write_f64::<LittleEndian>(self.pictures.len() as f64 + 0.2345672_f64)?;
         // Pictures.
-        bytes = try!(self.write_pictures(bytes));
+        bytes = self.write_pictures(bytes)?;
 
         // EOD marker.
-        try!(bytes.write_i32::<LittleEndian>(EOD));
+        bytes.write_i32::<LittleEndian>(EOD)?;
 
         // Top10 lists.
         if top_10 {
             // Order lists first.
             self.top10_single.sort();
             self.top10_multi.sort();
-            bytes = try!(self.write_top10(bytes));
+            bytes = self.write_top10(bytes)?;
         } else {
             bytes.extend_from_slice(&EMPTY_TOP10);
         }
 
         // EOF marker.
-        try!(bytes.write_i32::<LittleEndian>(EOF));
+        bytes.write_i32::<LittleEndian>(EOF)?;
 
         self.raw = bytes;
         Ok(())
@@ -479,13 +479,13 @@ impl Level {
     fn write_polygons (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
         for poly in &self.polygons {
             // Grass poly.
-            try!(bytes.write_i32::<LittleEndian>(if poly.grass { 1 } else { 0 }));
+            bytes.write_i32::<LittleEndian>(if poly.grass { 1 } else { 0 })?;
             // Number of vertices.
-            try!(bytes.write_i32::<LittleEndian>(poly.vertices.len() as i32));
+            bytes.write_i32::<LittleEndian>(poly.vertices.len() as i32)?;
             // Vertices.
             for vertex in &poly.vertices {
-                try!(bytes.write_f64::<LittleEndian>(vertex.x));
-                try!(bytes.write_f64::<LittleEndian>(vertex.y));
+                bytes.write_f64::<LittleEndian>(vertex.x)?;
+                bytes.write_f64::<LittleEndian>(vertex.y)?;
             }
         }
         Ok(bytes)
@@ -494,28 +494,28 @@ impl Level {
     fn write_objects (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
         for obj in &self.objects {
             // Position.
-            try!(bytes.write_f64::<LittleEndian>(obj.position.x));
-            try!(bytes.write_f64::<LittleEndian>(obj.position.y));
+            bytes.write_f64::<LittleEndian>(obj.position.x)?;
+            bytes.write_f64::<LittleEndian>(obj.position.y)?;
             // Object type.
-            try!(bytes.write_i32::<LittleEndian>(match obj.object_type {
+            bytes.write_i32::<LittleEndian>(match obj.object_type {
                 ObjectType::Exit => 1,
                 ObjectType::Apple { .. } => 2,
                 ObjectType::Killer => 3,
                 ObjectType::Player => 4
-            }));
+            })?;
             // Apple gravity.
-            try!(bytes.write_i32::<LittleEndian>(match obj.object_type {
+            bytes.write_i32::<LittleEndian>(match obj.object_type {
                 ObjectType::Apple { gravity: Direction::Up, .. } => 1,
                 ObjectType::Apple { gravity: Direction::Down, .. } => 2,
                 ObjectType::Apple { gravity: Direction::Left, .. } => 3,
                 ObjectType::Apple { gravity: Direction::Right, .. } => 4,
                 _ => 0
-            }));
+            })?;
             // Apple animation.
-            try!(bytes.write_i32::<LittleEndian>(match obj.object_type {
+            bytes.write_i32::<LittleEndian>(match obj.object_type {
                 ObjectType::Apple { animation: n, .. } => (n - 1) as i32,
                 _ => 0
-            }));
+            })?;
         }
         Ok(bytes)
     }
@@ -523,22 +523,22 @@ impl Level {
     fn write_pictures (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
         for pic in &self.pictures {
             // Picture name.
-            bytes.extend_from_slice(&try!(string_null_pad(&pic.name, 10)));
+            bytes.extend_from_slice(&string_null_pad(&pic.name, 10)?);
             // Texture name.
-            bytes.extend_from_slice(&try!(string_null_pad(&pic.texture, 10)));
+            bytes.extend_from_slice(&string_null_pad(&pic.texture, 10)?);
             // Mask name.
-            bytes.extend_from_slice(&try!(string_null_pad(&pic.mask, 10)));
+            bytes.extend_from_slice(&string_null_pad(&pic.mask, 10)?);
             // Position.
-            try!(bytes.write_f64::<LittleEndian>(pic.position.x));
-            try!(bytes.write_f64::<LittleEndian>(pic.position.y));
+            bytes.write_f64::<LittleEndian>(pic.position.x)?;
+            bytes.write_f64::<LittleEndian>(pic.position.y)?;
             // Z-distance.
-            try!(bytes.write_i32::<LittleEndian>(pic.distance));
+            bytes.write_i32::<LittleEndian>(pic.distance)?;
             // Clipping.
-            try!(bytes.write_i32::<LittleEndian>(match pic.clip {
+            bytes.write_i32::<LittleEndian>(match pic.clip {
                 Clip::Unclipped => 0,
                 Clip::Ground => 1,
                 Clip::Sky => 2
-            }));
+            })?;
         }
         Ok(bytes)
     }
@@ -548,15 +548,15 @@ impl Level {
 
         // Single-player times.
         let single_times = self.top10_single.len();
-        try!(top10_bytes.write_i32::<LittleEndian>(if 10 < single_times { 10 } else { single_times } as i32));
+        top10_bytes.write_i32::<LittleEndian>(if 10 < single_times { 10 } else { single_times } as i32)?;
         let mut times = [0_i32;10];
         let mut names_1 = vec![];
         let mut names_2 = vec![];
         for (n, entry) in self.top10_single.iter().enumerate() {
             if n < 10 {
                 times[n] = entry.time;
-                names_1.extend_from_slice(&try!(string_null_pad(&entry.name_1, 15)));
-                names_2.extend_from_slice(&try!(string_null_pad(&entry.name_2, 15)));
+                names_1.extend_from_slice(&string_null_pad(&entry.name_1, 15)?);
+                names_2.extend_from_slice(&string_null_pad(&entry.name_2, 15)?);
             }
         }
         // Pad with null bytes if less than 10 entries.
@@ -568,7 +568,7 @@ impl Level {
         }
 
         for time in &times {
-            try!(top10_bytes.write_i32::<LittleEndian>(*time));
+            top10_bytes.write_i32::<LittleEndian>(*time)?;
         }
 
         top10_bytes.extend_from_slice(&names_1);
@@ -576,15 +576,15 @@ impl Level {
 
         // Multi-player times.
         let multi_times = self.top10_multi.len();
-        try!(top10_bytes.write_i32::<LittleEndian>(if 10 < multi_times { 10 } else { multi_times } as i32));
+        top10_bytes.write_i32::<LittleEndian>(if 10 < multi_times { 10 } else { multi_times } as i32)?;
         let mut times = [0_i32;10];
         let mut names_1 = vec![];
         let mut names_2 = vec![];
         for (n, entry) in self.top10_multi.iter().enumerate() {
             if n < 10 {
                 times[n] = entry.time;
-                names_1.extend_from_slice(&try!(string_null_pad(&entry.name_1, 15)));
-                names_2.extend_from_slice(&try!(string_null_pad(&entry.name_2, 15)));
+                names_1.extend_from_slice(&string_null_pad(&entry.name_1, 15)?);
+                names_2.extend_from_slice(&string_null_pad(&entry.name_2, 15)?);
             }
         }
         // Pad with null bytes if less than 10 entries.
@@ -596,7 +596,7 @@ impl Level {
         }
 
         for time in &times {
-            try!(top10_bytes.write_i32::<LittleEndian>(*time));
+            top10_bytes.write_i32::<LittleEndian>(*time)?;
         }
 
         top10_bytes.extend_from_slice(&names_1);
@@ -669,7 +669,7 @@ impl Level {
     /// let raw_bytes = level.get_raw(false).unwrap();
     /// ```
     pub fn get_raw (&mut self, top10: bool) -> Result<Vec<u8>, ElmaError> {
-        try!(self.update(top10));
+        self.update(top10)?;
         Ok(self.raw.clone())
     }
 
@@ -702,9 +702,9 @@ impl Level {
     /// ```
     pub fn save (&mut self, filename: &str, top10: bool) -> Result<(), ElmaError> {
         let path = Path::new(&filename);
-        try!(self.update(top10));
-        let mut file = try!(File::create(path));
-        try!(file.write_all(&self.raw));
+        self.update(top10)?;
+        let mut file = File::create(path)?;
+        file.write_all(&self.raw)?;
         Ok(())
     }
 }
@@ -744,8 +744,8 @@ pub fn parse_top10 (top10: &[u8]) -> Result<Vec<ListEntry>, ElmaError> {
         let time = &top10[time_offset..time_end];
         list.push(ListEntry {
             time: LittleEndian::read_i32(time),
-            name_1: try!(trim_string(name_1)),
-            name_2: try!(trim_string(name_2))
+            name_1: trim_string(name_1)?,
+            name_2: trim_string(name_2)?
         });
     }
     Ok(list)

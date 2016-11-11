@@ -80,7 +80,7 @@ pub fn trim_string (data: &[u8]) -> Result<String, ElmaError> {
                              .cloned()
                              .collect();
 
-    let trimmed = try!(String::from_utf8(bytes));
+    let trimmed = String::from_utf8(bytes)?;
     Ok(trimmed)
 }
 
@@ -116,7 +116,7 @@ pub fn time_format (time: i32) -> Result<String, ElmaError> {
         }
     }
 
-    let time = try!(String::from_utf8(formatted));
+    let time = String::from_utf8(formatted)?;
     Ok(time)
 }
 
