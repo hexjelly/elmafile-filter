@@ -120,6 +120,10 @@ pub struct Replay {
     pub events_2: Vec<Event>
 }
 
+impl Default for Replay {
+    fn default() -> Replay { Replay::new() }
+}
+
 impl Replay {
     /// Return a new Replay struct.
     ///
@@ -220,15 +224,9 @@ impl Replay {
         // Garbage value.
         bytes.write_i32::<LittleEndian>(0x83_i32)?;
         // Multi-player replay or not.
-        bytes.write_i32::<LittleEndian>(match self.multi {
-            true => 1_i32,
-            false => 0_i32
-        })?;
+        bytes.write_i32::<LittleEndian>(if self.multi { 1_i32 } else { 0_i32 })?;
         // Flag-tag replay or not.
-        bytes.write_i32::<LittleEndian>(match self.flag_tag {
-            true => 1_i32,
-            false => 0_i32
-        })?;
+        bytes.write_i32::<LittleEndian>(if self.flag_tag { 1_i32 } else { 0_i32 })?;
         // Link.
         bytes.write_u32::<LittleEndian>(self.link)?;
         // Level name.
