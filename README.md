@@ -20,7 +20,7 @@ elma = "*"
 
 ## Documentation
 
-[http://hexjelly.github.io/elma-rust/elma/](http://hexjelly.github.io/elma-rust/elma/)
+[https://docs.rs/elma/0.1.2/elma/](https://docs.rs/elma/0.1.2/elma/)
 
 ## Progress
 

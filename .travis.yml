@@ -1,3 +1,4 @@
+sudo: false
 language: rust
 
 addons:
@@ -7,23 +8,27 @@ addons:
       - libelf-dev
       - libdw-dev
       - binutils-dev
-
+      - cmake
+    sources:
+      - kalakris-cmake
 rust:
   - nightly
+  - beta
+  - stable
 
-before_script:
-  - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/.local/bin:$PATH
+before_script: |
+  cargo install cargo-travis &&
+  export PATH=$HOME/.cargo/bin:$PATH
 
 script: |
-  travis-cargo build &&
-  travis-cargo test &&
-  travis-cargo bench &&
+  cargo build &&
+  cargo test &&
+  cargo bench &&
   cargo doc --no-deps
 
-after_success: |
-  travis-cargo doc-upload
-  travis-cargo coveralls --no-sudo --verify
-  ./kcov/build/src/kcov --verify --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/lib-*
+after_success:
+  - cargo coveralls
+
 env:
   global:
     - TRAVIS_CARGO_NIGHTLY_FEATURE=""
