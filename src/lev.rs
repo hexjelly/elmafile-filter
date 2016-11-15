@@ -221,12 +221,11 @@ impl Level {
     /// # Examples
     ///
     /// ```
-    /// let level = elma::lev::Level::load("tests/test_1.lev").unwrap();
+    /// let level = elma::lev::Level::load("tests/levels/test_1.lev").unwrap();
     /// ```
-    pub fn load (filename: &str) -> Result<Self, ElmaError> {
-        let path = Path::new(&filename);
+    pub fn load<P: AsRef<Path>> (filename: P) -> Result<Self, ElmaError> {
         let mut level = Level::new();
-        let mut file = File::open(path)?;
+        let mut file = File::open(filename)?;
         let mut buffer = vec![];
         file.read_to_end(&mut buffer)?;
         level.raw = buffer;
@@ -409,7 +408,7 @@ impl Level {
     /// # Examples
     ///
     /// ```
-    /// let mut level = elma::lev::Level::load("tests/test_1.lev").unwrap();
+    /// let mut level = elma::lev::Level::load("tests/levels/test_1.lev").unwrap();
     /// level.pictures = vec![]; // Let's just delete all pictures
     /// level.update(false);
     /// ```
@@ -678,10 +677,10 @@ impl Level {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust,no_run
     /// let mut level = elma::lev::Level::new();
     /// level.generate_link();
-    /// level.save("tests/newlink.lev", false).unwrap();
+    /// level.save("newlink.lev", false).unwrap();
     /// ```
     pub fn generate_link (&mut self) {
         self.link = random::<u32>();
@@ -696,14 +695,13 @@ impl Level {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```rust,no_run
     /// let mut level = elma::lev::Level::new();
-    /// level.save("tests/newlevel.lev", false).unwrap();
+    /// level.save("newlevel.lev", false).unwrap();
     /// ```
-    pub fn save (&mut self, filename: &str, top10: bool) -> Result<(), ElmaError> {
-        let path = Path::new(&filename);
+    pub fn save<P: AsRef<Path>> (&mut self, filename: P, top10: bool) -> Result<(), ElmaError> {
         self.update(top10)?;
-        let mut file = File::create(path)?;
+        let mut file = File::create(filename)?;
         file.write_all(&self.raw)?;
         Ok(())
     }

@@ -149,12 +149,11 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let rec = elma::rec::Replay::load("tests/test_1.rec").unwrap();
+    /// let rec = elma::rec::Replay::load("tests/replays/test_1.rec").unwrap();
     /// ```
-    pub fn load(filename: &str) -> Result<Self, ElmaError> {
-        let path = Path::new(&filename);
+    pub fn load<P: AsRef<Path>> (filename: P) -> Result<Self, ElmaError> {
         let mut replay = Replay::new();
-        let mut file = File::open(path)?;
+        let mut file = File::open(filename)?;
         let mut buffer = vec![];
         file.read_to_end(&mut buffer)?;
         replay.raw = buffer;
@@ -163,7 +162,7 @@ impl Replay {
     }
 
     /// Parses the raw binary data into Replay struct fields.
-    fn parse_replay(&mut self) -> Result<(), ElmaError> {
+    fn parse_replay (&mut self) -> Result<(), ElmaError> {
         let mut remaining = self.raw.as_slice();
 
         // Frame count.
@@ -250,13 +249,12 @@ impl Replay {
     }
 
     /// Save replay as a file.
-    pub fn save (&self, filename: &str) -> Result<(), ElmaError> {
-        let path = Path::new(&filename);
+    pub fn save<P: AsRef<Path>> (&self, filename: P) -> Result<(), ElmaError> {
         let mut bytes = self.write_rec(false)?;
         if self.multi {
             bytes.extend_from_slice(&self.write_rec(true)?);
         }
-        let mut file = File::create(path)?;
+        let mut file = File::create(filename)?;
         file.write_all(&bytes)?;
         Ok(())
     }
@@ -267,7 +265,7 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let replay = elma::rec::Replay::load("tests/test_1.rec").unwrap();
+    /// let replay = elma::rec::Replay::load("tests/replays/test_1.rec").unwrap();
     /// let (time, finished) = replay.get_time_ms();
     /// assert_eq!(time, 14649);
     /// assert_eq!(finished, true);
@@ -319,7 +317,7 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let replay = elma::rec::Replay::load("tests/test_1.rec").unwrap();
+    /// let replay = elma::rec::Replay::load("tests/replays/test_1.rec").unwrap();
     /// let (time, finished) = replay.get_time_hs();
     /// assert_eq!(time, 1464);
     /// assert_eq!(finished, true);

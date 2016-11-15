@@ -18,13 +18,3 @@ Cargo.lock
 
 # Repo assets and temporary files
 assets
-tests/constructed.lev
-tests/newlevel.lev
-tests/newlink.lev
-tests/save_level_1_notop10.lev
-tests/save_level_1_wtop10.lev
-tests/save_multi_replay_2.rec
-tests/save_replay_1.rec
-tests/save_replay_2.rec
-tests/save_test_1.lev
-tests/top10_overflow_and_sort.lev

@@ -3,6 +3,7 @@ extern crate rand;
 
 use elma::{ lev, rec, Position, time_format, trim_string, string_null_pad };
 use rand::random;
+use std::env;
 
 #[test]
 /// Generate random u8 data to simulate top10 lists, encrypting it and decrypting it,
@@ -53,14 +54,15 @@ fn correct_time_format () {
 #[should_panic]
 /// Supply "60" as seconds, should generate error.
 fn invalid_time_format_1 () {
-    time_format(16039_i32).unwrap(); }
+    time_format(16039_i32).unwrap();
+}
 
 #[test]
 #[should_panic]
 /// Supply "60" as minutes, should generate error.
 fn invalid_time_format_2 () {
-    time_format(601039_i32).unwrap(); }
-
+    time_format(601039_i32).unwrap();
+}
 
 #[test]
 // Probably redundant, but maybe some new fields are added in the future. I don't know.
@@ -104,7 +106,9 @@ fn construct_level_and_save () {
     level.top10_multi.push(lev::ListEntry::new());
     level.generate_link();
     let _ = level.get_raw(false).unwrap();
-    level.save("tests/constructed.lev", true).unwrap();
+    let mut dir = env::temp_dir();
+    dir.push("constructed.lev");
+    level.save(&dir, true).unwrap();
 }
 
 #[test]
@@ -135,8 +139,10 @@ fn overflow_top10_and_sort () {
     level.top10_single = top10_single;
     level.top10_multi = top10_multi;
     // Save and then load it again to see whether it worked.
-    level.save("tests/top10_overflow_and_sort.lev", true).unwrap();
-    let level = lev::Level::load("tests/top10_overflow_and_sort.lev").unwrap();
+    let mut dir = env::temp_dir();
+    dir.push("top10_overflow_and_sort.lev");
+    level.save(&dir, true).unwrap();
+    let level = lev::Level::load(&dir).unwrap();
     // Check if we get the expected sorted times.
     let expected_single = vec![lev::ListEntry { time: 5, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
                         lev::ListEntry { time: 17, name_1: "test_p1".to_string(), name_2: "test_p2".to_string() },
@@ -162,13 +168,15 @@ fn overflow_top10_and_sort () {
 #[test]
 #[should_panic]
 fn load_invalid_level_path () {
-    let _ = rec::Replay::load("tests/missing.lev").unwrap(); }
+    let _ = rec::Replay::load("tests/levels/missing.lev").unwrap();
+}
 
 #[test]
 #[should_panic]
 /// This should panic until Across support is added, if ever.
 fn load_across_level_1 () {
-    let _ = lev::Level::load("tests/across.lev").unwrap(); }
+    let _ = lev::Level::load("tests/levels/across.lev").unwrap();
+}
 
 #[test]
 #[should_panic]
@@ -176,11 +184,14 @@ fn load_across_level_1 () {
 fn save_across_level_1 () {
     let mut level = lev::Level::new();
     level.version = lev::Version::Across;
-    level.save("tests/save_across_level_1.lev", false).unwrap(); }
+    let mut dir = env::temp_dir();
+    dir.push("save_across_level_1.lev");
+    level.save(&dir, false).unwrap();
+}
 
 #[test]
 fn load_valid_level_1 () {
-    let level = lev::Level::load("tests/test_1.lev").unwrap();
+    let level = lev::Level::load("tests/levels/test_1.lev").unwrap();
     assert_eq!(level.version, lev::Version::Elma);
     assert_eq!(level.link, 1524269776);
     assert_eq!(level.integrity, [-1148375.210607791_f64,
@@ -286,7 +297,7 @@ fn load_valid_level_1 () {
 
 #[test]
 fn load_valid_level_2 () {
-    let level = lev::Level::load("tests/test_2.lev").unwrap();
+    let level = lev::Level::load("tests/levels/test_2.lev").unwrap();
     assert_eq!(level.version, lev::Version::Elma);
     assert_eq!(level.link, 1505288190);
     assert_eq!(level.name, "");
@@ -304,9 +315,11 @@ fn load_valid_level_2 () {
 
 #[test]
 fn load_valid_level_1_and_save_with_top10 () {
-    let mut level = lev::Level::load("tests/test_1.lev").unwrap();
-    level.save("tests/save_level_1_wtop10.lev", true).unwrap();
-    let level_saved = lev::Level::load("tests/save_level_1_wtop10.lev").unwrap();
+    let mut level = lev::Level::load("tests/levels/test_1.lev").unwrap();
+    let mut dir = env::temp_dir();
+    dir.push("save_level_1_wtop10.lev");
+    level.save(&dir, true).unwrap();
+    let level_saved = lev::Level::load(&dir).unwrap();
     assert_eq!(level.name, level_saved.name);
     assert_eq!(level.ground, level_saved.ground);
     assert_eq!(level.sky, level_saved.sky);
@@ -319,9 +332,11 @@ fn load_valid_level_1_and_save_with_top10 () {
 
 #[test]
 fn load_valid_level_1_and_save_without_top10 () {
-    let mut level = lev::Level::load("tests/test_1.lev").unwrap();
-    level.save("tests/save_level_1_notop10.lev", false).unwrap();
-    let level_saved = lev::Level::load("tests/save_level_1_notop10.lev").unwrap();
+    let mut level = lev::Level::load("tests/levels/test_1.lev").unwrap();
+    let mut dir = env::temp_dir();
+    dir.push("save_level_1_notop10.lev");
+    level.save(&dir, false).unwrap();
+    let level_saved = lev::Level::load(&dir).unwrap();
     assert_eq!(level.name, level_saved.name);
     assert_eq!(level.ground, level_saved.ground);
     assert_eq!(level.sky, level_saved.sky);
@@ -337,23 +352,26 @@ fn load_valid_level_1_and_save_without_top10 () {
 #[test]
 #[should_panic]
 fn load_invalid_level_1 () {
-    let _ = lev::Level::load("tests/invalid_1.lev").unwrap(); }
+    let _ = lev::Level::load("tests/levels/invalid_1.lev").unwrap();
+}
 
 #[test]
 #[should_panic]
 fn load_invalid_gravity_level_1 () {
-    let _ = lev::Level::load("tests/invalid_grav.lev").unwrap(); }
+    let _ = lev::Level::load("tests/levels/invalid_grav.lev").unwrap();
+}
 
 #[test]
 #[should_panic]
 fn load_invalid_object_level_1 () {
-    let _ = lev::Level::load("tests/invalid_obj.lev").unwrap(); }
+    let _ = lev::Level::load("tests/levels/invalid_obj.lev").unwrap();
+}
 
 #[test]
 #[should_panic]
 fn load_invalid_clip_level_1 () {
-    let _ = lev::Level::load("tests/invalid_clip.lev").unwrap(); }
-
+    let _ = lev::Level::load("tests/levels/invalid_clip.lev").unwrap();
+}
 
 #[test]
 // Probably redundant, but maybe some new fields are added in the future.
@@ -395,11 +413,12 @@ fn rec_default_values () {
 #[test]
 #[should_panic]
 fn load_invalid_replay_path () {
-    let _ = rec::Replay::load("tests/missing.rec").unwrap(); }
+    let _ = rec::Replay::load("tests/replays/missing.rec").unwrap();
+}
 
 #[test]
 fn load_valid_replay_1 () {
-    let replay = rec::Replay::load("tests/test_1.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/test_1.rec").unwrap();
     assert_eq!(replay.multi, false);
     assert_eq!(replay.flag_tag, false);
     assert_eq!(replay.link, 2549082363);
@@ -478,7 +497,7 @@ fn load_valid_replay_1 () {
 
 #[test]
 fn load_valid_multi_replay_1 () {
-    let replay = rec::Replay::load("tests/test_2.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/test_2.rec").unwrap();
     assert_eq!(replay.multi, true);
     assert_eq!(replay.flag_tag, false);
     assert_eq!(replay.link, 2549082363);
@@ -505,9 +524,11 @@ fn load_valid_multi_replay_1 () {
 
 #[test]
 fn load_valid_replay_1_and_save () {
-    let replay = rec::Replay::load("tests/test_1.rec").unwrap();
-    replay.save("tests/save_replay_1.rec").unwrap();
-    let replay_saved = rec::Replay::load("tests/save_replay_1.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/test_1.rec").unwrap();
+    let mut dir = env::temp_dir();
+    dir.push("save_replay_1.rec");
+    replay.save(&dir).unwrap();
+    let replay_saved = rec::Replay::load(&dir).unwrap();
     assert_eq!(replay.multi, replay_saved.multi);
     assert_eq!(replay.flag_tag, replay_saved.flag_tag);
     assert_eq!(replay.link, replay_saved.link);
@@ -520,9 +541,11 @@ fn load_valid_replay_1_and_save () {
 
 #[test]
 fn load_valid_replay_2_and_save () {
-    let replay = rec::Replay::load("tests/test_3.rec").unwrap();
-    replay.save("tests/save_replay_2.rec").unwrap();
-    let replay_saved = rec::Replay::load("tests/save_replay_2.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/test_3.rec").unwrap();
+    let mut dir = env::temp_dir();
+    dir.push("save_replay_2.rec");
+    replay.save(&dir).unwrap();
+    let replay_saved = rec::Replay::load(&dir).unwrap();
     assert_eq!(replay.multi, replay_saved.multi);
     assert_eq!(replay.flag_tag, replay_saved.flag_tag);
     assert_eq!(replay.link, replay_saved.link);
@@ -535,9 +558,11 @@ fn load_valid_replay_2_and_save () {
 
 #[test]
 fn load_valid_multi_replay_1_and_save () {
-    let replay = rec::Replay::load("tests/test_2.rec").unwrap();
-    replay.save("tests/save_multi_replay_2.rec").unwrap();
-    let replay_saved = rec::Replay::load("tests/save_multi_replay_2.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/test_2.rec").unwrap();
+    let mut dir = env::temp_dir();
+    dir.push("save_multi_replay_2.rec");
+    replay.save(&dir).unwrap();
+    let replay_saved = rec::Replay::load(&dir).unwrap();
     assert_eq!(replay.multi, replay_saved.multi);
     assert_eq!(replay.flag_tag, replay_saved.flag_tag);
     assert_eq!(replay.link, replay_saved.link);
@@ -551,11 +576,12 @@ fn load_valid_multi_replay_1_and_save () {
 #[test]
 #[should_panic]
 fn load_invalid_event_replay () {
-    let _ = rec::Replay::load("tests/invalid_event.rec").unwrap(); }
+    let _ = rec::Replay::load("tests/replays/invalid_event.rec").unwrap();
+}
 
 #[test]
 fn replay_get_time_ms_finished_single () {
-    let replay = rec::Replay::load("tests/test_1.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/test_1.rec").unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 14649);
     assert_eq!(finished, true);
@@ -563,7 +589,7 @@ fn replay_get_time_ms_finished_single () {
 
 #[test]
 fn replay_get_time_ms_finished_multi () {
-    let replay = rec::Replay::load("tests/test_2.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/test_2.rec").unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 14671);
     assert_eq!(finished, true);
@@ -571,7 +597,7 @@ fn replay_get_time_ms_finished_multi () {
 
 #[test]
 fn replay_get_time_ms_unfinished_no_event () {
-    let replay = rec::Replay::load("tests/unfinished.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/unfinished.rec").unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 533);
     assert_eq!(finished, false);
@@ -579,7 +605,7 @@ fn replay_get_time_ms_unfinished_no_event () {
 
 #[test]
 fn replay_get_time_ms_unfinished_event_single () {
-    let replay = rec::Replay::load("tests/test_3.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/test_3.rec").unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 4767);
     assert_eq!(finished, false);
@@ -587,7 +613,7 @@ fn replay_get_time_ms_unfinished_event_single () {
 
 #[test]
 fn replay_get_time_ms_unfinished_event_multi () {
-    let replay = rec::Replay::load("tests/multi_event_unfinished.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/multi_event_unfinished.rec").unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 1600);
     assert_eq!(finished, false);
@@ -595,7 +621,7 @@ fn replay_get_time_ms_unfinished_event_multi () {
 
 #[test]
 fn replay_get_time_ms_unfinished_event_multi_2 () {
-    let replay = rec::Replay::load("tests/multi_event_unfinished_2.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/multi_event_unfinished_2.rec").unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 3233);
     assert_eq!(finished, false);
@@ -603,7 +629,7 @@ fn replay_get_time_ms_unfinished_event_multi_2 () {
 
 #[test]
 fn replay_get_time_ms_unfinished_event_single_2_frame_diff () {
-    let replay = rec::Replay::load("tests/event_unfinished.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/event_unfinished.rec").unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 8567);
     assert_eq!(finished, false);
@@ -611,7 +637,7 @@ fn replay_get_time_ms_unfinished_event_single_2_frame_diff () {
 
 #[test]
 fn replay_get_time_hs_finished_single () {
-    let replay = rec::Replay::load("tests/test_1.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/test_1.rec").unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 1464);
     assert_eq!(finished, true);
@@ -619,7 +645,7 @@ fn replay_get_time_hs_finished_single () {
 
 #[test]
 fn replay_get_time_hs_finished_multi () {
-    let replay = rec::Replay::load("tests/test_2.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/test_2.rec").unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 1467);
     assert_eq!(finished, true);
@@ -627,7 +653,7 @@ fn replay_get_time_hs_finished_multi () {
 
 #[test]
 fn replay_get_time_hs_unfinished_no_event () {
-    let replay = rec::Replay::load("tests/unfinished.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/unfinished.rec").unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 53);
     assert_eq!(finished, false);
@@ -635,7 +661,7 @@ fn replay_get_time_hs_unfinished_no_event () {
 
 #[test]
 fn replay_get_time_hs_unfinished_event_single () {
-    let replay = rec::Replay::load("tests/test_3.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/test_3.rec").unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 476);
     assert_eq!(finished, false);
@@ -643,7 +669,7 @@ fn replay_get_time_hs_unfinished_event_single () {
 
 #[test]
 fn replay_get_time_hs_unfinished_event_multi () {
-    let replay = rec::Replay::load("tests/multi_event_unfinished.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/multi_event_unfinished.rec").unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 160);
     assert_eq!(finished, false);
@@ -651,7 +677,7 @@ fn replay_get_time_hs_unfinished_event_multi () {
 
 #[test]
 fn replay_get_time_hs_unfinished_event_multi_2 () {
-    let replay = rec::Replay::load("tests/multi_event_unfinished_2.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/multi_event_unfinished_2.rec").unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 323);
     assert_eq!(finished, false);
@@ -659,7 +685,7 @@ fn replay_get_time_hs_unfinished_event_multi_2 () {
 
 #[test]
 fn replay_get_time_hs_unfinished_event_single_2_frame_diff () {
-    let replay = rec::Replay::load("tests/event_unfinished.rec").unwrap();
+    let replay = rec::Replay::load("tests/replays/event_unfinished.rec").unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 856);
     assert_eq!(finished, false);
