@@ -14,17 +14,29 @@ pub mod rec;
 // Errors.
 #[derive(Debug)]
 pub enum ElmaError {
+    /// Across files are not supported.
     AcrossUnsupported,
+    /// Not a level file.
     InvalidLevelFile,
+    /// Invalid gravity value.
     InvalidGravity,
+    /// Invalid object value.
     InvalidObject,
+    /// Invalid clipping value.
     InvalidClipping,
+    /// End-of-data marker mismatch.
     EODMismatch,
+    /// End-of-file marker mismatch.
     EOFMismatch,
+    /// Invalid event value.
     InvalidEvent(u8),
+    /// End-of-replay marker mismatch.
     EORMismatch,
+    /// Invalid time format.
     InvalidTimeFormat,
+    /// Too short padding.
     PaddingTooShort(isize),
+    /// String contains non-ASCII characters.
     NonASCII,
     Io(io::Error),
     StringFromUtf8(string::FromUtf8Error),
