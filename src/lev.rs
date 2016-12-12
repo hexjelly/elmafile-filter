@@ -9,6 +9,26 @@ use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
 use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, ElmaError, OBJECT_RADIUS };
 
+// Errors.
+#[derive(Debug)]
+pub enum TopologyError {
+    AppleInsideGround(usize),
+    MaxObjects(usize),
+    MaxPictures(usize),
+    MaxPolygons(usize),
+    InvalidPlayerCount(usize),
+    MissingExit
+}
+
+pub trait BoundingBox {
+    /// Bounding box of `&self`, going from top-left, top-right, bottom-left to bottom-right.
+    fn bounding_box(&self) -> [Position<f64>;4];
+    /// Bounding box width.
+    fn width(&self) -> f64;
+    /// Bounding box height.
+    fn height(&self) -> f64;
+}
+
 /// Game version.
 #[derive(Debug, PartialEq)]
 pub enum Version {
@@ -70,6 +90,37 @@ pub struct Polygon {
     pub grass: bool,
     /// Vector with all vertices, see `Position` struct.
     pub vertices: Vec<Position<f64>>
+}
+
+impl BoundingBox for Polygon {
+    fn bounding_box(&self) -> [Position<f64>; 4] {
+        let mut max_x = 0_f64;
+        let mut max_y = 0_f64;
+        let mut min_x = 0_f64;
+        let mut min_y = 0_f64;
+
+        for vertex in &self.vertices {
+            if vertex.x > max_x { max_x = vertex.x }
+            if vertex.x < min_x { min_x = vertex.x }
+            if vertex.y > max_y { max_y = vertex.y }
+            if vertex.y < min_y { min_y = vertex.y }
+        }
+
+        [Position { x: min_x, y: max_y },
+         Position { x: max_x, y: max_y },
+         Position { x: min_x, y: min_y },
+         Position { x: max_x, y: min_y }]
+    }
+
+    fn width(&self) -> f64 {
+        let poly_box = &self.bounding_box();
+        (poly_box[0].x + poly_box[1].x).abs()
+    }
+
+    fn height(&self) -> f64 {
+        let poly_box = &self.bounding_box();
+        (poly_box[2].y + poly_box[0].y).abs()
+    }
 }
 
 impl Polygon {
@@ -185,6 +236,40 @@ pub struct Level {
 
 impl Default for Level {
     fn default() -> Level { Level::new() }
+}
+
+impl BoundingBox for Level {
+    fn bounding_box(&self) -> [Position<f64>; 4] {
+        let mut max_x = 0_f64;
+        let mut max_y = 0_f64;
+        let mut min_x = 0_f64;
+        let mut min_y = 0_f64;
+
+        for polygon in &self.polygons {
+            let polygon_box = polygon.bounding_box();
+            for vertex in &polygon_box {
+                if vertex.x > max_x { max_x = vertex.x }
+                if vertex.x < min_x { min_x = vertex.x }
+                if vertex.y > max_y { max_y = vertex.y }
+                if vertex.y < min_y { min_y = vertex.y }
+            }
+        }
+
+        [Position { x: min_x, y: max_y },
+         Position { x: max_x, y: max_y },
+         Position { x: min_x, y: min_y },
+         Position { x: max_x, y: min_y }]
+    }
+
+    fn width(&self) -> f64 {
+        let level_box = &self.bounding_box();
+        (level_box[0].x + level_box[1].x).abs()
+    }
+
+    fn height(&self) -> f64 {
+        let level_box = &self.bounding_box();
+        (level_box[2].y + level_box[0].y).abs()
+    }
 }
 
 impl Level {
@@ -608,14 +693,33 @@ impl Level {
 
     /// Check topology of level.
     // TODO: make this return a Result with problematic polygons/vertices.
-    pub fn topology_check (&self) -> bool {
-        // TODO: check max polygons
-        // TODO: check max objects
-        // TODO: check max pictures
+    pub fn topology_check (&self) -> Option<TopologyError>  {
+        if *&self.polygons.len() > 1000 {
+            return Some(TopologyError::MaxPolygons(&self.objects.len() - 1000))
+        }
+
+        if *&self.objects.len() > 252 {
+            return Some(TopologyError::MaxObjects(&self.objects.len() - 252))
+        }
+
+        if *&self.pictures.len() > 5000 {
+            return Some(TopologyError::MaxPictures(&self.objects.len() - 5000))
+        }
+
+        let player_count = *&self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Player { total + 1} else { total });
+        if player_count != 1 {
+            return Some(TopologyError::InvalidPlayerCount(player_count))
+        }
+
+        let exit_count = *&self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Exit { total + 1} else { total });
+        if exit_count < 1 {
+            return Some(TopologyError::MissingExit)
+        }
+
         // TODO: check line segment overlaps
-        // TODO: check if player and at least one exit object
         // TODO: check if head inside ground
-        unimplemented!();
+        // TODO: check if apples fully inside ground
+        None
     }
 
     /// Calculate integrity sums for level.
