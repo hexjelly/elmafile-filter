@@ -4,7 +4,6 @@ use std::io::{ Read, Write };
 use std::fs::File;
 use std::path::Path;
 use std::cmp::Ordering;
-use std::str;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
 use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, ElmaError, OBJECT_RADIUS };
@@ -324,9 +323,9 @@ impl Level {
 
         // Version.
         let (version, remaining) = remaining.split_at(5);
-        self.version = match str::from_utf8(version)? {
-            "POT14" => Version::Elma,
-            "POT06" => return Err(ElmaError::AcrossUnsupported),
+        self.version = match version {
+            b"POT14" => Version::Elma,
+            b"POT06" => return Err(ElmaError::AcrossUnsupported),
             _ => return Err(ElmaError::InvalidLevelFile)
         };
 
