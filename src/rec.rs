@@ -149,7 +149,7 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let rec = elma::rec::Replay::load("tests/replays/test_1.rec").unwrap();
+    /// let rec = elma::rec::Replay::load("tests/assets/replays/test_1.rec").unwrap();
     /// ```
     pub fn load<P: AsRef<Path>> (filename: P) -> Result<Self, ElmaError> {
         let mut replay = Replay::new();
@@ -265,7 +265,7 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let replay = elma::rec::Replay::load("tests/replays/test_1.rec").unwrap();
+    /// let replay = elma::rec::Replay::load("tests/assets/replays/test_1.rec").unwrap();
     /// let (time, finished) = replay.get_time_ms();
     /// assert_eq!(time, 14649);
     /// assert_eq!(finished, true);
@@ -317,7 +317,7 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let replay = elma::rec::Replay::load("tests/replays/test_1.rec").unwrap();
+    /// let replay = elma::rec::Replay::load("tests/assets/replays/test_1.rec").unwrap();
     /// let (time, finished) = replay.get_time_hs();
     /// assert_eq!(time, 1464);
     /// assert_eq!(finished, true);

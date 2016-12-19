@@ -317,7 +317,7 @@ impl Level {
     /// # Examples
     ///
     /// ```
-    /// let level = elma::lev::Level::load("tests/levels/test_1.lev").unwrap();
+    /// let level = elma::lev::Level::load("tests/assets/levels/test_1.lev").unwrap();
     /// ```
     pub fn load<P: AsRef<Path>> (filename: P) -> Result<Self, ElmaError> {
         let mut level = Level::new();
@@ -504,7 +504,7 @@ impl Level {
     /// # Examples
     ///
     /// ```
-    /// let mut level = elma::lev::Level::load("tests/levels/test_1.lev").unwrap();
+    /// let mut level = elma::lev::Level::load("tests/assets/levels/test_1.lev").unwrap();
     /// level.pictures = vec![]; // Let's just delete all pictures
     /// level.update(false);
     /// ```
