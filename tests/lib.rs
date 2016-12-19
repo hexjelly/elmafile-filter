@@ -19,24 +19,22 @@ fn decrypt_encrypt_top10 () {
 }
 
 #[test]
-#[should_panic]
 /// Supply some bogus utf-8 bytes.
 fn trim_string_invalid_utf8 () {
-    let bytes: [u8;5] = [222,222,222,100,211];
-    trim_string(&bytes).unwrap(); }
+    assert_eq!(trim_string(&[222, 222, 222, 100, 211]).unwrap_err(), elma::ElmaError::StringFromUtf8(0));
+}
 
 #[test]
-#[should_panic]
 /// Supply shorter padding than string length.
 fn string_null_pad_length_error () {
-    let _ = string_null_pad("elma-rust", 5).unwrap(); }
+    assert_eq!(string_null_pad("elma-rust", 5).unwrap_err(), elma::ElmaError::PaddingTooShort(-4));
+}
 
 #[test]
-#[should_panic]
-/// Supply 8 UTF-8 characters and try to pad 10.
+/// Supply UTF-8 characters.
 fn string_null_pad_utf8_error () {
-    let _ = string_null_pad("✗✗✗✗✗✗✗✗", 10).unwrap(); }
-
+    assert_eq!(string_null_pad("✗✗✗✗✗✗✗✗", 10).unwrap_err(), elma::ElmaError::NonASCII);
+}
 
 #[test]
 fn correct_time_format () {
@@ -51,17 +49,15 @@ fn correct_time_format () {
 }
 
 #[test]
-#[should_panic]
 /// Supply "60" as seconds, should generate error.
 fn invalid_time_format_1 () {
-    time_format(16039_i32).unwrap();
+    assert_eq!(time_format(16039_i32).unwrap_err(), elma::ElmaError::InvalidTimeFormat);
 }
 
 #[test]
-#[should_panic]
 /// Supply "60" as minutes, should generate error.
 fn invalid_time_format_2 () {
-    time_format(601039_i32).unwrap();
+    assert_eq!(time_format(601039_i32).unwrap_err(), elma::ElmaError::InvalidTimeFormat);
 }
 
 #[test]
@@ -166,27 +162,24 @@ fn overflow_top10_and_sort () {
 }
 
 #[test]
-#[should_panic]
 fn load_invalid_level_path () {
-    let _ = rec::Replay::load("tests/levels/missing.lev").unwrap();
+    assert_eq!(lev::Level::load("tests/levels/missing.lev").unwrap_err(), elma::ElmaError::Io(std::io::ErrorKind::NotFound));
 }
 
 #[test]
-#[should_panic]
-/// This should panic until Across support is added, if ever.
+/// This should error until Across support is added, if ever.
 fn load_across_level_1 () {
-    let _ = lev::Level::load("tests/levels/across.lev").unwrap();
+    assert_eq!(lev::Level::load("tests/levels/across.lev").unwrap_err(), elma::ElmaError::AcrossUnsupported);
 }
 
 #[test]
-#[should_panic]
 /// Until Across is supported, should generate error when you try to save a Across level.
 fn save_across_level_1 () {
     let mut level = lev::Level::new();
     level.version = lev::Version::Across;
     let mut dir = env::temp_dir();
     dir.push("save_across_level_1.lev");
-    level.save(&dir, false).unwrap();
+    assert_eq!(level.save(&dir, false).unwrap_err(), elma::ElmaError::AcrossUnsupported);
 }
 
 #[test]
@@ -350,26 +343,23 @@ fn load_valid_level_1_and_save_without_top10 () {
 }
 
 #[test]
-#[should_panic]
 fn load_invalid_level_1 () {
-    let _ = lev::Level::load("tests/levels/invalid_1.lev").unwrap();
+    assert_eq!(lev::Level::load("tests/levels/invalid_1.lev").unwrap_err(), elma::ElmaError::InvalidLevelFile);
 }
 
 #[test]
-#[should_panic]
 fn load_invalid_gravity_level_1 () {
-    let _ = lev::Level::load("tests/levels/invalid_grav.lev").unwrap();
+    assert_eq!(lev::Level::load("tests/levels/invalid_grav.lev").unwrap_err(), elma::ElmaError::InvalidGravity(6));
 }
 
 #[test]
-#[should_panic]
 fn load_invalid_object_level_1 () {
-    let _ = lev::Level::load("tests/levels/invalid_obj.lev").unwrap();
+    assert_eq!(lev::Level::load("tests/levels/invalid_obj.lev").unwrap_err(), elma::ElmaError::InvalidObject(6));
 }
 
 #[test]
 fn load_invalid_clip_level_1 () {
-    assert_eq!(lev::Level::load("tests/levels/invalid_clip.lev").unwrap_err(), elma::ElmaError::InvalidClipping);
+    assert_eq!(lev::Level::load("tests/levels/invalid_clip.lev").unwrap_err(), elma::ElmaError::InvalidClipping(3));
 }
 
 #[test]
@@ -436,9 +426,8 @@ fn rec_default_values () {
 }
 
 #[test]
-#[should_panic]
 fn load_invalid_replay_path () {
-    let _ = rec::Replay::load("tests/replays/missing.rec").unwrap();
+    assert_eq!(rec::Replay::load("tests/replays/missing.rec").unwrap_err(), elma::ElmaError::Io(std::io::ErrorKind::NotFound));
 }
 
 #[test]
@@ -599,9 +588,8 @@ fn load_valid_multi_replay_1_and_save () {
 }
 
 #[test]
-#[should_panic]
 fn load_invalid_event_replay () {
-    let _ = rec::Replay::load("tests/replays/invalid_event.rec").unwrap();
+    assert_eq!(rec::Replay::load("tests/replays/invalid_event.rec").unwrap_err(), elma::ElmaError::InvalidEvent(8));
 }
 
 #[test]

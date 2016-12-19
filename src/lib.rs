@@ -19,11 +19,11 @@ pub enum ElmaError {
     /// Not a level file.
     InvalidLevelFile,
     /// Invalid gravity value.
-    InvalidGravity,
+    InvalidGravity(i32),
     /// Invalid object value.
-    InvalidObject,
+    InvalidObject(i32),
     /// Invalid clipping value.
-    InvalidClipping,
+    InvalidClipping(i32),
     /// End-of-data marker mismatch.
     EODMismatch,
     /// End-of-file marker mismatch.
@@ -39,7 +39,7 @@ pub enum ElmaError {
     /// String contains non-ASCII characters.
     NonASCII,
     Io(std::io::ErrorKind),
-    StringFromUtf8(std::str::Utf8Error),
+    StringFromUtf8(usize),
 }
 
 impl From<io::Error> for ElmaError {
@@ -50,7 +50,7 @@ impl From<io::Error> for ElmaError {
 
 impl From<string::FromUtf8Error> for ElmaError {
     fn from(err: string::FromUtf8Error) -> ElmaError {
-        ElmaError::StringFromUtf8(err.utf8_error())
+        ElmaError::StringFromUtf8(err.utf8_error().valid_up_to())
     }
 }
 

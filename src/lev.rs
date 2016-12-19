@@ -44,7 +44,7 @@ impl Default for Version {
 /// Type of object.
 #[derive(Debug, PartialEq)]
 pub enum ObjectType {
-    Apple { gravity: Direction, animation: u8 },
+    Apple { gravity: Direction, animation: i32 },
     Exit,
     Killer,
     Player
@@ -441,15 +441,15 @@ impl Level {
                 2 => Direction::Down,
                 3 => Direction::Left,
                 4 => Direction::Right,
-                _ => return Err(ElmaError::InvalidGravity)
+                other => return Err(ElmaError::InvalidGravity(other))
             };
-            let animation = (buffer.read_i32::<LittleEndian>()? + 1) as u8;
+            let animation = buffer.read_i32::<LittleEndian>()? + 1;
             let object = match object_type {
                 1 => ObjectType::Exit,
                 2 => ObjectType::Apple { gravity: gravity_direction, animation: animation },
                 3 => ObjectType::Killer,
                 4 => ObjectType::Player,
-                _ => return Err(ElmaError::InvalidObject)
+                other => return Err(ElmaError::InvalidObject(other))
             };
 
             objects.push(Object {
@@ -478,7 +478,7 @@ impl Level {
                 0 => Clip::Unclipped,
                 1 => Clip::Ground,
                 2 => Clip::Sky,
-                _ => return Err(ElmaError::InvalidClipping)
+                other => return Err(ElmaError::InvalidClipping(other))
             };
 
             pictures.push(Picture {
