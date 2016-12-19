@@ -17,4 +17,4 @@ target
 Cargo.lock
 
 # Repo assets and temporary files
-assets
+/assets/
