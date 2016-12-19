@@ -9,14 +9,16 @@ use rand::random;
 use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, ElmaError, OBJECT_RADIUS };
 
 // Errors.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TopologyError {
     AppleInsideGround(usize),
     MaxObjects(usize),
     MaxPictures(usize),
     MaxPolygons(usize),
     InvalidPlayerCount(usize),
-    MissingExit
+    MissingExit,
+    TooWide(f64),
+    TooHigh(f64),
 }
 
 pub trait BoundingBox {
@@ -125,8 +127,10 @@ impl BoundingBox for Polygon {
 impl Polygon {
     /// Create a new empty polygon.
     pub fn new () -> Self {
-        Polygon { grass: false,
-                  vertices: vec![] }
+        Polygon {
+            grass: false,
+            vertices: vec![]
+        }
     }
 }
 
@@ -162,12 +166,14 @@ pub struct Picture {
 impl Picture {
     /// Creates a new picture with default values.
     pub fn new () -> Self {
-        Picture { name: String::from("barrel"),
-                  texture: String::new(),
-                  mask: String::new(),
-                  position: Position { x: 0_f64, y: 0_f64 },
-                  distance: 600,
-                  clip: Clip::default() }
+        Picture {
+            name: String::from("barrel"),
+            texture: String::new(),
+            mask: String::new(),
+            position: Position { x: 0_f64, y: 0_f64 },
+            distance: 600,
+            clip: Clip::default()
+        }
     }
 }
 
@@ -196,9 +202,11 @@ impl PartialOrd for ListEntry {
 
 impl ListEntry {
     pub fn new () -> Self {
-        ListEntry { name_1: String::from("Player1"),
-                    name_2: String::from("Player2"),
-                    time: 100000 }
+        ListEntry {
+            name_1: String::from("Player1"),
+            name_2: String::from("Player2"),
+            time: 100000
+        }
     }
 }
 
@@ -280,24 +288,28 @@ impl Level {
     /// let level = elma::lev::Level::new();
     /// ```
     pub fn new () -> Self {
-        Level { raw: vec![],
-                version: Version::Elma,
-                link: random::<u32>(),
-                integrity: [0f64; 4],
-                name: String::new(),
-                lgr: String::from("default"),
-                ground: String::from("ground"),
-                sky: String::from("sky"),
-                polygons: vec![Polygon { grass: false, vertices: vec![Position { x: 10., y: 0. },
-                                                                      Position { x: 10., y: 7. },
-                                                                      Position { x: 0., y: 7. },
-                                                                      Position { x: 0., y: 0. }]
-                                        }],
-                objects: vec![Object { position: Position { x: 2., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Player },
-                              Object { position: Position { x: 8., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Exit }],
-                pictures: vec![],
-                top10_single: vec![],
-                top10_multi: vec![] }
+        Level {
+            raw: vec![],
+            version: Version::Elma,
+            link: random::<u32>(),
+            integrity: [0f64; 4],
+            name: String::new(),
+            lgr: String::from("default"),
+            ground: String::from("ground"),
+            sky: String::from("sky"),
+            polygons: vec![Polygon {
+                                grass: false,
+                                vertices: vec![Position { x: 10., y: 0. },
+                                               Position { x: 10., y: 7. },
+                                               Position { x: 0., y: 7. },
+                                               Position { x: 0., y: 0. }]
+                                }],
+            objects: vec![Object { position: Position { x: 2., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Player },
+                          Object { position: Position { x: 8., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Exit }],
+            pictures: vec![],
+            top10_single: vec![],
+            top10_multi: vec![]
+        }
     }
 
     /// Loads a level file and returns a `Level` struct.
@@ -691,34 +703,45 @@ impl Level {
     }
 
     /// Check topology of level.
-    // TODO: make this return a Result with problematic polygons/vertices.
-    pub fn topology_check (&self) -> Option<TopologyError>  {
+    pub fn check_topology (&self) -> Result<(), TopologyError>  {
+        &self.check_objects()?;
+        if *&self.width() > 188_f64 { return Err(TopologyError::TooWide(*&self.width() - 188_f64)) }
+        if *&self.height() > 188_f64 { return Err(TopologyError::TooHigh(*&self.height() - 188_f64)) }
+        // TODO: check line segment overlaps
+        // TODO: make this return a Result with problematic polygons/vertices.
+        // TODO: check if head inside ground
+        // TODO: check if apples fully inside ground
+        Ok(())
+    }
+
+    pub fn check_objects(&self) -> Result<(), TopologyError> {
         if *&self.polygons.len() > 1000 {
-            return Some(TopologyError::MaxPolygons(&self.objects.len() - 1000))
+            return Err(TopologyError::MaxPolygons(&self.objects.len() - 1000))
         }
 
         if *&self.objects.len() > 252 {
-            return Some(TopologyError::MaxObjects(&self.objects.len() - 252))
+            return Err(TopologyError::MaxObjects(&self.objects.len() - 252))
         }
 
         if *&self.pictures.len() > 5000 {
-            return Some(TopologyError::MaxPictures(&self.objects.len() - 5000))
+            return Err(TopologyError::MaxPictures(&self.objects.len() - 5000))
         }
 
         let player_count = *&self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Player { total + 1} else { total });
         if player_count != 1 {
-            return Some(TopologyError::InvalidPlayerCount(player_count))
+            return Err(TopologyError::InvalidPlayerCount(player_count))
         }
 
         let exit_count = *&self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Exit { total + 1} else { total });
         if exit_count < 1 {
-            return Some(TopologyError::MissingExit)
+            return Err(TopologyError::MissingExit)
         }
 
-        // TODO: check line segment overlaps
-        // TODO: check if head inside ground
-        // TODO: check if apples fully inside ground
-        None
+        Ok(())
+    }
+
+    pub fn check_overlapping_polygons(&self) -> Result<(), TopologyError> {
+        Ok(())
     }
 
     /// Calculate integrity sums for level.

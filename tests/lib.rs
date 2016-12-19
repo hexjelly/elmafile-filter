@@ -368,9 +368,34 @@ fn load_invalid_object_level_1 () {
 }
 
 #[test]
-#[should_panic]
 fn load_invalid_clip_level_1 () {
-    let _ = lev::Level::load("tests/levels/invalid_clip.lev").unwrap();
+    assert_eq!(lev::Level::load("tests/levels/invalid_clip.lev").unwrap_err(), elma::ElmaError::InvalidClipping);
+}
+
+#[test]
+fn topology_ok() {
+    let level = lev::Level::load("tests/levels/test_1.lev").unwrap();
+    assert_eq!(level.check_topology().is_ok(), true);
+}
+
+#[test]
+fn topology_err_too_wide() {
+    let mut level = lev::Level::new();
+    level.polygons.push(lev::Polygon { grass: false, vertices: vec![
+        Position { x: 0_f64, y: 0_f64 },
+        Position { x: 188.00001_f64, y: 0_f64 },
+        Position { x: 0_f64, y: 1_f64 }]});
+    assert_eq!(level.check_topology().unwrap_err(), lev::TopologyError::TooWide(0.000010000000003174137_f64));
+}
+
+#[test]
+fn topology_err_too_high() {
+    let mut level = lev::Level::new();
+    level.polygons.push(lev::Polygon { grass: false, vertices: vec![
+        Position { x: 0_f64, y: 0_f64 },
+        Position { x: 0_f64, y: 188.00001_f64 },
+        Position { x: 1_f64, y: 0_f64 }]});
+    assert_eq!(level.check_topology().unwrap_err(), lev::TopologyError::TooHigh(0.000010000000003174137_f64));
 }
 
 #[test]

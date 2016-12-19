@@ -12,7 +12,7 @@ pub mod lev;
 pub mod rec;
 
 // Errors.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ElmaError {
     /// Across files are not supported.
     AcrossUnsupported,
@@ -38,26 +38,19 @@ pub enum ElmaError {
     PaddingTooShort(isize),
     /// String contains non-ASCII characters.
     NonASCII,
-    Io(io::Error),
-    StringFromUtf8(string::FromUtf8Error),
-    StrUtf8(str::Utf8Error)
+    Io(std::io::ErrorKind),
+    StringFromUtf8(std::str::Utf8Error),
 }
 
 impl From<io::Error> for ElmaError {
     fn from(err: io::Error) -> ElmaError {
-        ElmaError::Io(err)
+        ElmaError::Io(err.kind())
     }
 }
 
 impl From<string::FromUtf8Error> for ElmaError {
     fn from(err: string::FromUtf8Error) -> ElmaError {
-        ElmaError::StringFromUtf8(err)
-    }
-}
-
-impl From<str::Utf8Error> for ElmaError {
-    fn from(err: str::Utf8Error) -> ElmaError {
-        ElmaError::StrUtf8(err)
+        ElmaError::StringFromUtf8(err.utf8_error())
     }
 }
 
