@@ -71,8 +71,35 @@ fn topology_err_missing_player() {
     assert_eq!(level.check_topology().unwrap_err(), TopologyError::InvalidPlayerCount(0));
 }
 
-// TODO: AppleInsideGround(usize),
-// TODO: IntersectingPolygons,
-// TODO: MaxObjects(usize),
-// TODO: MaxPictures(usize),
-// TODO: MaxPolygons(usize),
+#[test]
+fn topology_err_polygon_count() {
+    let mut level = Level::new();
+    // Add too many polygons
+    for _ in 0..1005 {
+        level.polygons.push(Polygon::new());
+    }
+    assert_eq!(level.check_topology().unwrap_err(), TopologyError::MaxPolygons(6));
+}
+
+#[test]
+fn topology_err_object_count() {
+    let mut level = Level::new();
+    // Add too many polygons
+    for _ in 0..255 {
+        level.objects.push(Object::new());
+    }
+    assert_eq!(level.check_topology().unwrap_err(), TopologyError::MaxObjects(5));
+}
+
+#[test]
+fn topology_err_picture_count() {
+    let mut level = Level::new();
+    // Add too many polygons
+    for _ in 0..5005 {
+        level.pictures.push(Picture::new());
+    }
+    assert_eq!(level.check_topology().unwrap_err(), TopologyError::MaxPictures(5));
+}
+
+// TODO: AppleInsideGround(usize)
+// TODO: IntersectingPolygons

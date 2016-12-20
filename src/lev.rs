@@ -705,7 +705,7 @@ impl Level {
 
     pub fn check_objects(&self) -> Result<(), TopologyError> {
         if *&self.polygons.len() > 1000 {
-            return Err(TopologyError::MaxPolygons(&self.objects.len() - 1000))
+            return Err(TopologyError::MaxPolygons(&self.polygons.len() - 1000))
         }
 
         if *&self.objects.len() > 252 {
@@ -713,7 +713,7 @@ impl Level {
         }
 
         if *&self.pictures.len() > 5000 {
-            return Err(TopologyError::MaxPictures(&self.objects.len() - 5000))
+            return Err(TopologyError::MaxPictures(&self.pictures.len() - 5000))
         }
 
         let player_count = *&self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Player { total + 1} else { total });
