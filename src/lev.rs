@@ -12,6 +12,7 @@ use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, Elma
 #[derive(Debug, PartialEq)]
 pub enum TopologyError {
     AppleInsideGround(usize),
+    IntersectingPolygons,
     MaxObjects(usize),
     MaxPictures(usize),
     MaxPolygons(usize),
@@ -79,8 +80,10 @@ pub struct Object {
 
 impl Object {
     pub fn new() -> Self {
-        Object { position: Position { x: 0_f64, y: 0_f64 },
-                 object_type: ObjectType::default() }
+        Object {
+            position: Position { x: 0_f64, y: 0_f64 },
+            object_type: ObjectType::default()
+        }
     }
 }
 
