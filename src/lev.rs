@@ -25,10 +25,6 @@ pub enum TopologyError {
 pub trait BoundingBox {
     /// Bounding box of `&self`, going from top-left, top-right, bottom-left to bottom-right.
     fn bounding_box(&self) -> [Position<f64>;4];
-    /// Bounding box width.
-    fn width(&self) -> f64;
-    /// Bounding box height.
-    fn height(&self) -> f64;
 }
 
 /// Game version.
@@ -114,16 +110,6 @@ impl BoundingBox for Polygon {
          Position { x: max_x, y: max_y },
          Position { x: min_x, y: min_y },
          Position { x: max_x, y: min_y }]
-    }
-
-    fn width(&self) -> f64 {
-        let poly_box = &self.bounding_box();
-        (poly_box[0].x + poly_box[1].x).abs()
-    }
-
-    fn height(&self) -> f64 {
-        let poly_box = &self.bounding_box();
-        (poly_box[2].y + poly_box[0].y).abs()
     }
 }
 
@@ -269,16 +255,6 @@ impl BoundingBox for Level {
          Position { x: max_x, y: max_y },
          Position { x: min_x, y: min_y },
          Position { x: max_x, y: min_y }]
-    }
-
-    fn width(&self) -> f64 {
-        let level_box = &self.bounding_box();
-        (level_box[0].x + level_box[1].x).abs()
-    }
-
-    fn height(&self) -> f64 {
-        let level_box = &self.bounding_box();
-        (level_box[2].y + level_box[0].y).abs()
     }
 }
 
@@ -703,6 +679,16 @@ impl Level {
         // Encrypt the data before writing.
         bytes.extend_from_slice(&crypt_top10(&top10_bytes));
         Ok(bytes)
+    }
+
+    pub fn width(&self) -> f64 {
+        let level_box = &self.bounding_box();
+        (level_box[0].x + level_box[1].x).abs()
+    }
+
+    pub fn height(&self) -> f64 {
+        let level_box = &self.bounding_box();
+        (level_box[2].y + level_box[0].y).abs()
     }
 
     /// Check topology of level.
