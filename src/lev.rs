@@ -12,7 +12,8 @@ use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, Elma
 #[derive(Debug, PartialEq)]
 pub enum TopologyError {
     AppleInsideGround(usize),
-    IntersectingPolygons,
+    IntersectingPolygons(Vec<usize>),
+    InvalidVertexCount(Vec<usize>),
     MaxObjects(usize),
     MaxPictures(usize),
     MaxPolygons(usize),
@@ -696,14 +697,31 @@ impl Level {
         &self.check_objects()?;
         if *&self.width() > 188_f64 { return Err(TopologyError::TooWide(*&self.width() - 188_f64)) }
         if *&self.height() > 188_f64 { return Err(TopologyError::TooHigh(*&self.height() - 188_f64)) }
+        &self.check_vertex_count()?;
+        &self.check_overlapping_polygons()?;
         // TODO: check line segment overlaps
-        // TODO: make this return a Result with problematic polygons/vertices.
         // TODO: check if head inside ground
         // TODO: check if apples fully inside ground
         Ok(())
     }
 
-    pub fn check_objects(&self) -> Result<(), TopologyError> {
+    /// Returns a vector with the indexes of polygons containing too few vertices.
+    fn check_vertex_count(&self) -> Result<(), TopologyError> {
+        let mut error_polygons = vec![];
+        for (n, polygon) in self.polygons.iter().enumerate() {
+            if polygon.vertices.len() < 3 {
+                error_polygons.push(n);
+            }
+        }
+
+        if !error_polygons.is_empty() {
+            return Err(TopologyError::InvalidVertexCount(error_polygons));
+        }
+
+        Ok(())
+    }
+
+    fn check_objects(&self) -> Result<(), TopologyError> {
         if *&self.polygons.len() > 1000 {
             return Err(TopologyError::MaxPolygons(&self.polygons.len() - 1000))
         }
@@ -729,7 +747,12 @@ impl Level {
         Ok(())
     }
 
-    pub fn check_overlapping_polygons(&self) -> Result<(), TopologyError> {
+    fn check_overlapping_polygons(&self) -> Result<(), TopologyError> {
+        for poly_base in &self.polygons {
+            if poly_base.grass { break; } // ignore anything involving grass polygons
+            // first check overlapping lines within base polygon
+
+        }
         Ok(())
     }
 

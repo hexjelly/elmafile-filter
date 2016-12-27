@@ -84,7 +84,7 @@ fn topology_err_polygon_count() {
 #[test]
 fn topology_err_object_count() {
     let mut level = Level::new();
-    // Add too many polygons
+    // Add too many objects
     for _ in 0..255 {
         level.objects.push(Object::new());
     }
@@ -94,11 +94,37 @@ fn topology_err_object_count() {
 #[test]
 fn topology_err_picture_count() {
     let mut level = Level::new();
-    // Add too many polygons
+    // Add too many pictures
     for _ in 0..5005 {
         level.pictures.push(Picture::new());
     }
     assert_eq!(level.check_topology().unwrap_err(), TopologyError::MaxPictures(5));
+}
+
+#[test]
+fn topology_err_invalid_vertex_count() {
+    let mut level = Level::new();
+    // Add three polygons, two with less than three vertices, with one valid in between.
+    level.polygons.push(Polygon {
+        grass: false,
+        vertices: vec![
+            Position { x: 1_f64, y: 12_f64 },
+            Position { x: 138_f64, y: 118_f64 }]
+    });
+    level.polygons.push(Polygon {
+        grass: false,
+        vertices: vec![
+            Position { x: 1_f64, y: 12_f64 },
+            Position { x: 138_f64, y: 118_f64 },
+            Position { x: 18_f64, y: 28_f64 }]
+    });
+    level.polygons.push(Polygon {
+        grass: false,
+        vertices: vec![
+            Position { x: 12_f64, y: 32_f64 },
+            Position { x: 7_f64, y: 83_f64 }]
+    });
+    assert_eq!(level.check_topology().unwrap_err(), TopologyError::InvalidVertexCount(vec![1, 3]));
 }
 
 // TODO: AppleInsideGround(usize)
