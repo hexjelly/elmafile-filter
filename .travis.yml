@@ -13,7 +13,6 @@ addons:
       - kalakris-cmake
 rust:
   - nightly
-  - beta
   - stable
 
 before_script: |
@@ -23,8 +22,7 @@ before_script: |
 script: |
   cargo build &&
   cargo test &&
-  cargo bench &&
-  cargo doc --no-deps
+  cargo bench
 
 after_success:
   - cargo coveralls
