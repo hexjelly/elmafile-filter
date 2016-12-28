@@ -1,18 +1,48 @@
-/// Read and write Elasto Mania level files.
-
 use std::io::{ Read, Write };
 use std::fs::File;
 use std::path::Path;
 use std::cmp::Ordering;
-use std::str;
 use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
 use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, ElmaError, OBJECT_RADIUS };
 
+/// Topology related errors.
+#[derive(Debug, PartialEq)]
+pub enum TopologyError {
+    /// Apple is fully inside ground, with list of erroneous objects' indexes.
+    AppleInsideGround(Vec<usize>),
+    /// Intersecting polygons, with list of erroneous polygons' indexes.
+    IntersectingPolygons(Vec<usize>),
+    /// Polygon has too few or too many vertices, with list of erroneous polygons' indexes.
+    InvalidVertexCount(Vec<usize>),
+    /// Too many objects, with number of excess object count.
+    MaxObjects(usize),
+    /// Too many pictures, with number of excess picture count.
+    MaxPictures(usize),
+    /// Too many polygons, with number of excess polygon count.
+    MaxPolygons(usize),
+    /// Too many players/starts, with number of excess player count.
+    InvalidPlayerCount(usize),
+    /// Missing exit/flower.
+    MissingExit,
+    /// Level is too wide, with excess width.
+    TooWide(f64),
+    /// Level is too high, with excess height.
+    TooHigh(f64),
+}
+
+/// This trait specifies something having a rectangle bounding box.
+pub trait BoundingBox {
+    /// Bounding box of `&self`, going from top-left, top-right, bottom-left to bottom-right.
+    fn bounding_box(&self) -> [Position<f64>;4];
+}
+
 /// Game version.
 #[derive(Debug, PartialEq)]
 pub enum Version {
+    /// Action SuperCross, older version of Elma.
     Across,
+    /// Elasto Mania, current active version.
     Elma
 }
 
@@ -23,9 +53,18 @@ impl Default for Version {
 /// Type of object.
 #[derive(Debug, PartialEq)]
 pub enum ObjectType {
-    Apple { gravity: Direction, animation: u8 },
+    /// Apple.
+    Apple {
+        /// Gravity change.
+        gravity: Direction,
+        /// Animation number.
+        animation: i32
+    },
+    /// Flower/exit.
     Exit,
+    /// Killer.
     Killer,
+    /// Player/start.
     Player
 }
 
@@ -36,10 +75,15 @@ impl Default for ObjectType {
 /// Apple direction object.
 #[derive(Debug, PartialEq)]
 pub enum Direction {
+    /// No gravity change.
     Normal,
+    /// Gravity up.
     Up,
+    /// Gravity down.
     Down,
+    /// Gravity left.
     Left,
+    /// Gravity right.
     Right
 }
 
@@ -57,9 +101,12 @@ pub struct Object {
 }
 
 impl Object {
+    /// Create a new `Object`.
     pub fn new() -> Self {
-        Object { position: Position { x: 0_f64, y: 0_f64 },
-                 object_type: ObjectType::default() }
+        Object {
+            position: Position { x: 0_f64, y: 0_f64 },
+            object_type: ObjectType::default()
+        }
     }
 }
 
@@ -72,19 +119,45 @@ pub struct Polygon {
     pub vertices: Vec<Position<f64>>
 }
 
+impl BoundingBox for Polygon {
+    fn bounding_box(&self) -> [Position<f64>; 4] {
+        let mut max_x = 0_f64;
+        let mut max_y = 0_f64;
+        let mut min_x = 0_f64;
+        let mut min_y = 0_f64;
+
+        for vertex in &self.vertices {
+            if vertex.x > max_x { max_x = vertex.x }
+            if vertex.x < min_x { min_x = vertex.x }
+            if vertex.y > max_y { max_y = vertex.y }
+            if vertex.y < min_y { min_y = vertex.y }
+        }
+
+        [Position { x: min_x, y: max_y },
+         Position { x: max_x, y: max_y },
+         Position { x: min_x, y: min_y },
+         Position { x: max_x, y: min_y }]
+    }
+}
+
 impl Polygon {
     /// Create a new empty polygon.
     pub fn new () -> Self {
-        Polygon { grass: false,
-                  vertices: vec![] }
+        Polygon {
+            grass: false,
+            vertices: vec![]
+        }
     }
 }
 
 /// Picture clipping.
 #[derive(Debug, PartialEq)]
 pub enum Clip {
+    /// No clipping.
     Unclipped,
+    /// Ground clipping.
     Ground,
+    /// Sky clipping.
     Sky
 }
 
@@ -112,12 +185,14 @@ pub struct Picture {
 impl Picture {
     /// Creates a new picture with default values.
     pub fn new () -> Self {
-        Picture { name: String::from("barrel"),
-                  texture: String::new(),
-                  mask: String::new(),
-                  position: Position { x: 0_f64, y: 0_f64 },
-                  distance: 600,
-                  clip: Clip::default() }
+        Picture {
+            name: String::from("barrel"),
+            texture: String::new(),
+            mask: String::new(),
+            position: Position { x: 0_f64, y: 0_f64 },
+            distance: 600,
+            clip: Clip::default()
+        }
     }
 }
 
@@ -145,10 +220,13 @@ impl PartialOrd for ListEntry {
 }
 
 impl ListEntry {
+    /// Creates a new ListEntry.
     pub fn new () -> Self {
-        ListEntry { name_1: String::from("Player1"),
-                    name_2: String::from("Player2"),
-                    time: 100000 }
+        ListEntry {
+            name_1: String::from("Player1"),
+            name_2: String::from("Player2"),
+            time: 100000
+        }
     }
 }
 
@@ -187,6 +265,30 @@ impl Default for Level {
     fn default() -> Level { Level::new() }
 }
 
+impl BoundingBox for Level {
+    fn bounding_box(&self) -> [Position<f64>; 4] {
+        let mut max_x = 0_f64;
+        let mut max_y = 0_f64;
+        let mut min_x = 0_f64;
+        let mut min_y = 0_f64;
+
+        for polygon in &self.polygons {
+            let polygon_box = polygon.bounding_box();
+            for vertex in &polygon_box {
+                if vertex.x > max_x { max_x = vertex.x }
+                if vertex.x < min_x { min_x = vertex.x }
+                if vertex.y > max_y { max_y = vertex.y }
+                if vertex.y < min_y { min_y = vertex.y }
+            }
+        }
+
+        [Position { x: min_x, y: max_y },
+         Position { x: max_x, y: max_y },
+         Position { x: min_x, y: min_y },
+         Position { x: max_x, y: min_y }]
+    }
+}
+
 impl Level {
     /// Returns a new `Level` struct.
     ///
@@ -196,24 +298,28 @@ impl Level {
     /// let level = elma::lev::Level::new();
     /// ```
     pub fn new () -> Self {
-        Level { raw: vec![],
-                version: Version::Elma,
-                link: random::<u32>(),
-                integrity: [0f64; 4],
-                name: String::new(),
-                lgr: String::from("default"),
-                ground: String::from("ground"),
-                sky: String::from("sky"),
-                polygons: vec![Polygon { grass: false, vertices: vec![Position { x: 10., y: 0. },
-                                                                      Position { x: 10., y: 7. },
-                                                                      Position { x: 0., y: 7. },
-                                                                      Position { x: 0., y: 0. }]
-                                        }],
-                objects: vec![Object { position: Position { x: 2., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Player },
-                              Object { position: Position { x: 8., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Exit }],
-                pictures: vec![],
-                top10_single: vec![],
-                top10_multi: vec![] }
+        Level {
+            raw: vec![],
+            version: Version::Elma,
+            link: random::<u32>(),
+            integrity: [0f64; 4],
+            name: String::new(),
+            lgr: String::from("default"),
+            ground: String::from("ground"),
+            sky: String::from("sky"),
+            polygons: vec![Polygon {
+                                grass: false,
+                                vertices: vec![Position { x: 10., y: 0. },
+                                               Position { x: 10., y: 7. },
+                                               Position { x: 0., y: 7. },
+                                               Position { x: 0., y: 0. }]
+                                }],
+            objects: vec![Object { position: Position { x: 2., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Player },
+                          Object { position: Position { x: 8., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Exit }],
+            pictures: vec![],
+            top10_single: vec![],
+            top10_multi: vec![]
+        }
     }
 
     /// Loads a level file and returns a `Level` struct.
@@ -221,7 +327,7 @@ impl Level {
     /// # Examples
     ///
     /// ```
-    /// let level = elma::lev::Level::load("tests/levels/test_1.lev").unwrap();
+    /// let level = elma::lev::Level::load("tests/assets/levels/test_1.lev").unwrap();
     /// ```
     pub fn load<P: AsRef<Path>> (filename: P) -> Result<Self, ElmaError> {
         let mut level = Level::new();
@@ -239,9 +345,9 @@ impl Level {
 
         // Version.
         let (version, remaining) = remaining.split_at(5);
-        self.version = match str::from_utf8(version)? {
-            "POT14" => Version::Elma,
-            "POT06" => return Err(ElmaError::AcrossUnsupported),
+        self.version = match version {
+            b"POT14" => Version::Elma,
+            b"POT06" => return Err(ElmaError::AcrossUnsupported),
             _ => return Err(ElmaError::InvalidLevelFile)
         };
 
@@ -345,15 +451,15 @@ impl Level {
                 2 => Direction::Down,
                 3 => Direction::Left,
                 4 => Direction::Right,
-                _ => return Err(ElmaError::InvalidGravity)
+                other => return Err(ElmaError::InvalidGravity(other))
             };
-            let animation = (buffer.read_i32::<LittleEndian>()? + 1) as u8;
+            let animation = buffer.read_i32::<LittleEndian>()? + 1;
             let object = match object_type {
                 1 => ObjectType::Exit,
                 2 => ObjectType::Apple { gravity: gravity_direction, animation: animation },
                 3 => ObjectType::Killer,
                 4 => ObjectType::Player,
-                _ => return Err(ElmaError::InvalidObject)
+                other => return Err(ElmaError::InvalidObject(other))
             };
 
             objects.push(Object {
@@ -382,7 +488,7 @@ impl Level {
                 0 => Clip::Unclipped,
                 1 => Clip::Ground,
                 2 => Clip::Sky,
-                _ => return Err(ElmaError::InvalidClipping)
+                other => return Err(ElmaError::InvalidClipping(other))
             };
 
             pictures.push(Picture {
@@ -408,7 +514,7 @@ impl Level {
     /// # Examples
     ///
     /// ```
-    /// let mut level = elma::lev::Level::load("tests/levels/test_1.lev").unwrap();
+    /// let mut level = elma::lev::Level::load("tests/assets/levels/test_1.lev").unwrap();
     /// level.pictures = vec![]; // Let's just delete all pictures
     /// level.update(false);
     /// ```
@@ -606,16 +712,80 @@ impl Level {
         Ok(bytes)
     }
 
+    /// Width of level based on left- and right-most vertices.
+    pub fn width(&self) -> f64 {
+        let level_box = &self.bounding_box();
+        (level_box[0].x + level_box[1].x).abs()
+    }
+
+    /// Height of level based on top and bottom-most vertices.
+    pub fn height(&self) -> f64 {
+        let level_box = &self.bounding_box();
+        (level_box[2].y + level_box[0].y).abs()
+    }
+
     /// Check topology of level.
-    // TODO: make this return a Result with problematic polygons/vertices.
-    pub fn topology_check (&self) -> bool {
-        // TODO: check max polygons
-        // TODO: check max objects
-        // TODO: check max pictures
+    pub fn check_topology (&self) -> Result<(), TopologyError>  {
+        &self.check_objects()?;
+        if *&self.width() > 188_f64 { return Err(TopologyError::TooWide(*&self.width() - 188_f64)) }
+        if *&self.height() > 188_f64 { return Err(TopologyError::TooHigh(*&self.height() - 188_f64)) }
+        &self.check_vertex_count()?;
+        &self.check_overlapping_polygons()?;
         // TODO: check line segment overlaps
-        // TODO: check if player and at least one exit object
         // TODO: check if head inside ground
-        unimplemented!();
+        // TODO: check if apples fully inside ground
+        Ok(())
+    }
+
+    /// Returns a vector with the indexes of polygons containing too few vertices.
+    fn check_vertex_count(&self) -> Result<(), TopologyError> {
+        let mut error_polygons = vec![];
+        for (n, polygon) in self.polygons.iter().enumerate() {
+            if polygon.vertices.len() < 3 {
+                error_polygons.push(n);
+            }
+        }
+
+        if !error_polygons.is_empty() {
+            return Err(TopologyError::InvalidVertexCount(error_polygons));
+        }
+
+        Ok(())
+    }
+
+    fn check_objects(&self) -> Result<(), TopologyError> {
+        if *&self.polygons.len() > 1000 {
+            return Err(TopologyError::MaxPolygons(&self.polygons.len() - 1000))
+        }
+
+        if *&self.objects.len() > 252 {
+            return Err(TopologyError::MaxObjects(&self.objects.len() - 252))
+        }
+
+        if *&self.pictures.len() > 5000 {
+            return Err(TopologyError::MaxPictures(&self.pictures.len() - 5000))
+        }
+
+        let player_count = *&self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Player { total + 1} else { total });
+        if player_count != 1 {
+            return Err(TopologyError::InvalidPlayerCount(player_count))
+        }
+
+        let exit_count = *&self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Exit { total + 1} else { total });
+        if exit_count < 1 {
+            return Err(TopologyError::MissingExit)
+        }
+
+        Ok(())
+    }
+
+    fn check_overlapping_polygons(&self) -> Result<(), TopologyError> {
+        for poly_base in &self.polygons {
+            if poly_base.grass { break; } // ignore anything involving grass polygons
+            // first check overlapping lines within base polygon
+
+        }
+        Ok(())
     }
 
     /// Calculate integrity sums for level.
@@ -747,4 +917,11 @@ pub fn parse_top10 (top10: &[u8]) -> Result<Vec<ListEntry>, ElmaError> {
         });
     }
     Ok(list)
+}
+
+// Original code by Peter Kelley <pgkelley4@gmail.com> from:
+// https://github.com/pgkelley4/line-segments-intersect/blob/39d4425b2868fd8fc26172d94132215568c70523/js/line-segments-intersect.js
+fn do_line_segment_intersect(seg_one_start: Position<f64>, seg_one_end: Position<f64>,
+                             seg_two_start: Position<f64>, seg_two_end: Position<f64>) -> bool {
+    true
 }

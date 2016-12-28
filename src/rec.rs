@@ -1,5 +1,3 @@
-/// Read and write Elasto Mania replay files.
-
 use std::io::{ Read, Write };
 use std::fs::File;
 use std::path::Path;
@@ -68,13 +66,23 @@ pub struct Event {
 #[derive(Debug, PartialEq)]
 /// Type of event.
 pub enum EventType {
-    /// Apple or flower touch, with index of object.
-    Touch { index: i16 },
+    /// Apple or flower touch.
+    Touch {
+        /// Index of touch event.
+        index: i16
+    },
+    /// Bike turn.
     Turn,
+    /// Bike volt right.
     VoltRight,
+    /// Bike volt left.
     VoltLeft,
-    /// Ground touch, for sound effects. Two types; if alternative is true, uses the second type.
-    Ground { alternative: bool }
+    /// Ground touch, for sound effects. Two types.
+    // TODO: consider making two separate enums instead?
+    Ground {
+        /// If alternative is true, uses the second type.
+        alternative: bool
+    }
 }
 
 impl Default for EventType {
@@ -149,7 +157,7 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let rec = elma::rec::Replay::load("tests/replays/test_1.rec").unwrap();
+    /// let rec = elma::rec::Replay::load("tests/assets/replays/test_1.rec").unwrap();
     /// ```
     pub fn load<P: AsRef<Path>> (filename: P) -> Result<Self, ElmaError> {
         let mut replay = Replay::new();
@@ -265,7 +273,7 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let replay = elma::rec::Replay::load("tests/replays/test_1.rec").unwrap();
+    /// let replay = elma::rec::Replay::load("tests/assets/replays/test_1.rec").unwrap();
     /// let (time, finished) = replay.get_time_ms();
     /// assert_eq!(time, 14649);
     /// assert_eq!(finished, true);
@@ -317,7 +325,7 @@ impl Replay {
     /// # Examples
     ///
     /// ```
-    /// let replay = elma::rec::Replay::load("tests/replays/test_1.rec").unwrap();
+    /// let replay = elma::rec::Replay::load("tests/assets/replays/test_1.rec").unwrap();
     /// let (time, finished) = replay.get_time_hs();
     /// assert_eq!(time, 1464);
     /// assert_eq!(finished, true);

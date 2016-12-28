@@ -1,6 +1,7 @@
 #![doc(html_root_url = "https://hexjelly.github.io/elma-rust/")]
+#![deny(missing_docs)]
 
-/// Library for reading and writing Elasto Mania files.
+//! Library for reading and writing Elasto Mania files.
 
 extern crate byteorder;
 extern crate rand;
@@ -8,44 +9,53 @@ extern crate rand;
 use std::{io, str, string};
 use std::ascii::AsciiExt;
 
+/// Read and write Elasto Mania level files.
 pub mod lev;
+/// Read and write Elasto Mania replay files.
 pub mod rec;
 
-// Errors.
-#[derive(Debug)]
+/// General errors.
+#[derive(Debug, PartialEq)]
 pub enum ElmaError {
+    /// Across files are not supported.
     AcrossUnsupported,
+    /// Not a level file.
     InvalidLevelFile,
-    InvalidGravity,
-    InvalidObject,
-    InvalidClipping,
+    /// Invalid gravity value.
+    InvalidGravity(i32),
+    /// Invalid object value.
+    InvalidObject(i32),
+    /// Invalid clipping value.
+    InvalidClipping(i32),
+    /// End-of-data marker mismatch.
     EODMismatch,
+    /// End-of-file marker mismatch.
     EOFMismatch,
+    /// Invalid event value.
     InvalidEvent(u8),
+    /// End-of-replay marker mismatch.
     EORMismatch,
+    /// Invalid time format.
     InvalidTimeFormat,
+    /// Too short padding.
     PaddingTooShort(isize),
+    /// String contains non-ASCII characters.
     NonASCII,
-    Io(io::Error),
-    StringFromUtf8(string::FromUtf8Error),
-    StrUtf8(str::Utf8Error)
+    /// Input/output errors from std::io use.
+    Io(std::io::ErrorKind),
+    /// String errors from std::String.
+    StringFromUtf8(usize),
 }
 
 impl From<io::Error> for ElmaError {
     fn from(err: io::Error) -> ElmaError {
-        ElmaError::Io(err)
+        ElmaError::Io(err.kind())
     }
 }
 
 impl From<string::FromUtf8Error> for ElmaError {
     fn from(err: string::FromUtf8Error) -> ElmaError {
-        ElmaError::StringFromUtf8(err)
-    }
-}
-
-impl From<str::Utf8Error> for ElmaError {
-    fn from(err: str::Utf8Error) -> ElmaError {
-        ElmaError::StrUtf8(err)
+        ElmaError::StringFromUtf8(err.utf8_error().valid_up_to())
     }
 }
 
@@ -147,10 +157,13 @@ pub fn string_null_pad (name: &str, pad: usize) -> Result<Vec<u8>, ElmaError> {
     Ok(bytes)
 }
 
-// Bike diameters and radius.
+/// Diameter of player head.
 pub const HEAD_DIAMETER: f64 = 0.476;
+/// Radius of player head.
 pub const HEAD_RADIUS: f64 = 0.238;
+/// Diameter of objects (and wheels).
 pub const OBJECT_DIAMETER: f64 = 0.8;
+/// Radius of objects (and wheels).
 pub const OBJECT_RADIUS: f64 = 0.4;
 // Magic arbitrary number signifying end-of-data in level file.
 const EOD: i32 = 0x0067103A;
