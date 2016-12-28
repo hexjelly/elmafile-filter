@@ -1,6 +1,7 @@
 #![doc(html_root_url = "https://hexjelly.github.io/elma-rust/")]
+#![deny(missing_docs)]
 
-/// Library for reading and writing Elasto Mania files.
+//! Library for reading and writing Elasto Mania files.
 
 extern crate byteorder;
 extern crate rand;
@@ -8,10 +9,12 @@ extern crate rand;
 use std::{io, str, string};
 use std::ascii::AsciiExt;
 
+/// Read and write Elasto Mania level files.
 pub mod lev;
+/// Read and write Elasto Mania replay files.
 pub mod rec;
 
-// Errors.
+/// General errors.
 #[derive(Debug, PartialEq)]
 pub enum ElmaError {
     /// Across files are not supported.
@@ -38,7 +41,9 @@ pub enum ElmaError {
     PaddingTooShort(isize),
     /// String contains non-ASCII characters.
     NonASCII,
+    /// Input/output errors from std::io use.
     Io(std::io::ErrorKind),
+    /// String errors from std::String.
     StringFromUtf8(usize),
 }
 
@@ -152,10 +157,13 @@ pub fn string_null_pad (name: &str, pad: usize) -> Result<Vec<u8>, ElmaError> {
     Ok(bytes)
 }
 
-// Bike diameters and radius.
+/// Diameter of player head.
 pub const HEAD_DIAMETER: f64 = 0.476;
+/// Radius of player head.
 pub const HEAD_RADIUS: f64 = 0.238;
+/// Diameter of objects (and wheels).
 pub const OBJECT_DIAMETER: f64 = 0.8;
+/// Radius of objects (and wheels).
 pub const OBJECT_RADIUS: f64 = 0.4;
 // Magic arbitrary number signifying end-of-data in level file.
 const EOD: i32 = 0x0067103A;

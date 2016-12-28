@@ -1,5 +1,3 @@
-/// Read and write Elasto Mania level files.
-
 use std::io::{ Read, Write };
 use std::fs::File;
 use std::path::Path;
@@ -8,21 +6,32 @@ use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
 use rand::random;
 use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, ElmaError, OBJECT_RADIUS };
 
-// Errors.
+/// Topology related errors.
 #[derive(Debug, PartialEq)]
 pub enum TopologyError {
-    AppleInsideGround(usize),
+    /// Apple is fully inside ground, with list of erroneous objects' indexes.
+    AppleInsideGround(Vec<usize>),
+    /// Intersecting polygons, with list of erroneous polygons' indexes.
     IntersectingPolygons(Vec<usize>),
+    /// Polygon has too few or too many vertices, with list of erroneous polygons' indexes.
     InvalidVertexCount(Vec<usize>),
+    /// Too many objects, with number of excess object count.
     MaxObjects(usize),
+    /// Too many pictures, with number of excess picture count.
     MaxPictures(usize),
+    /// Too many polygons, with number of excess polygon count.
     MaxPolygons(usize),
+    /// Too many players/starts, with number of excess player count.
     InvalidPlayerCount(usize),
+    /// Missing exit/flower.
     MissingExit,
+    /// Level is too wide, with excess width.
     TooWide(f64),
+    /// Level is too high, with excess height.
     TooHigh(f64),
 }
 
+/// This trait specifies something having a rectangle bounding box.
 pub trait BoundingBox {
     /// Bounding box of `&self`, going from top-left, top-right, bottom-left to bottom-right.
     fn bounding_box(&self) -> [Position<f64>;4];
@@ -31,7 +40,9 @@ pub trait BoundingBox {
 /// Game version.
 #[derive(Debug, PartialEq)]
 pub enum Version {
+    /// Action SuperCross, older version of Elma.
     Across,
+    /// Elasto Mania, current active version.
     Elma
 }
 
@@ -42,9 +53,18 @@ impl Default for Version {
 /// Type of object.
 #[derive(Debug, PartialEq)]
 pub enum ObjectType {
-    Apple { gravity: Direction, animation: i32 },
+    /// Apple.
+    Apple {
+        /// Gravity change.
+        gravity: Direction,
+        /// Animation number.
+        animation: i32
+    },
+    /// Flower/exit.
     Exit,
+    /// Killer.
     Killer,
+    /// Player/start.
     Player
 }
 
@@ -55,10 +75,15 @@ impl Default for ObjectType {
 /// Apple direction object.
 #[derive(Debug, PartialEq)]
 pub enum Direction {
+    /// No gravity change.
     Normal,
+    /// Gravity up.
     Up,
+    /// Gravity down.
     Down,
+    /// Gravity left.
     Left,
+    /// Gravity right.
     Right
 }
 
@@ -76,6 +101,7 @@ pub struct Object {
 }
 
 impl Object {
+    /// Create a new `Object`.
     pub fn new() -> Self {
         Object {
             position: Position { x: 0_f64, y: 0_f64 },
@@ -127,8 +153,11 @@ impl Polygon {
 /// Picture clipping.
 #[derive(Debug, PartialEq)]
 pub enum Clip {
+    /// No clipping.
     Unclipped,
+    /// Ground clipping.
     Ground,
+    /// Sky clipping.
     Sky
 }
 
@@ -191,6 +220,7 @@ impl PartialOrd for ListEntry {
 }
 
 impl ListEntry {
+    /// Creates a new ListEntry.
     pub fn new () -> Self {
         ListEntry {
             name_1: String::from("Player1"),
@@ -682,11 +712,13 @@ impl Level {
         Ok(bytes)
     }
 
+    /// Width of level based on left- and right-most vertices.
     pub fn width(&self) -> f64 {
         let level_box = &self.bounding_box();
         (level_box[0].x + level_box[1].x).abs()
     }
 
+    /// Height of level based on top and bottom-most vertices.
     pub fn height(&self) -> f64 {
         let level_box = &self.bounding_box();
         (level_box[2].y + level_box[0].y).abs()
@@ -885,4 +917,11 @@ pub fn parse_top10 (top10: &[u8]) -> Result<Vec<ListEntry>, ElmaError> {
         });
     }
     Ok(list)
+}
+
+// Original code by Peter Kelley <pgkelley4@gmail.com> from:
+// https://github.com/pgkelley4/line-segments-intersect/blob/39d4425b2868fd8fc26172d94132215568c70523/js/line-segments-intersect.js
+fn do_line_segment_intersect(seg_one_start: Position<f64>, seg_one_end: Position<f64>,
+                             seg_two_start: Position<f64>, seg_two_end: Position<f64>) -> bool {
+    true
 }
