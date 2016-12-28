@@ -1,6 +1,6 @@
 [package]
 name = "elma"
-version = "0.1.3"
+version = "0.1.4-pre"
 authors = ["Roger Andersen <hexjelly@hexjelly.com>"]
 description = "Library for reading and writing Elasto Mania files."
 documentation = "http://hexjelly.github.io/elma-rust/elma/"
