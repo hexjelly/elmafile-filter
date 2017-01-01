@@ -11,5 +11,5 @@ keywords = ["ElastoMania", "Elma"]
 license = "MIT"
 
 [dependencies]
-byteorder = "0.5.3"
+byteorder = "1"
 rand = "0.3.15"
