@@ -5,6 +5,8 @@ use rand::random;
 use byteorder::{ ReadBytesExt, WriteBytesExt, LittleEndian };
 use super::{ Position, trim_string, string_null_pad, EOR, ElmaError };
 
+type LE = LittleEndian;
+
 /// One frame of replay.
 #[derive(Debug, Default, PartialEq)]
 pub struct Frame {
@@ -174,15 +176,15 @@ impl Replay {
         let mut remaining = self.raw.as_slice();
 
         // Frame count.
-        let frame_count = remaining.read_i32::<LittleEndian>()?;
+        let frame_count = remaining.read_i32::<LE>()?;
         // Some unused value, always 0x83.
         let (_, mut remaining) = remaining.split_at(4);
         // Multi-player replay.
-        self.multi = remaining.read_i32::<LittleEndian>()? > 0;
+        self.multi = remaining.read_i32::<LE>()? > 0;
         // Flag-tag replay.
-        self.flag_tag = remaining.read_i32::<LittleEndian>()? > 0;
+        self.flag_tag = remaining.read_i32::<LE>()? > 0;
         // Level link.
-        self.link = remaining.read_u32::<LittleEndian>()?;
+        self.link = remaining.read_u32::<LE>()?;
         // Level file name, including extension.
         let (level, remaining) = remaining.split_at(12);
         self.level = trim_string(level)?;
@@ -192,28 +194,28 @@ impl Replay {
         self.frames = parse_frames(remaining, frame_count)?;
         let (_, mut remaining) = remaining.split_at(27*frame_count as usize);
         // Events.
-        let event_count = remaining.read_i32::<LittleEndian>()?;
+        let event_count = remaining.read_i32::<LE>()?;
         self.events = parse_events(remaining, event_count)?;
         let (_, mut remaining) = remaining.split_at(16*event_count as usize);
         // End of replay marker.
-        let expected = remaining.read_i32::<LittleEndian>()?;
+        let expected = remaining.read_i32::<LE>()?;
         if expected != EOR { return Err(ElmaError::EORMismatch); }
 
         // If multi-rec, parse frame and events, while skipping other fields?
         if self.multi {
             // Frame count.
-            let frame_count = remaining.read_i32::<LittleEndian>()?;
+            let frame_count = remaining.read_i32::<LE>()?;
             // Skip other fields.
             let (_, remaining) = remaining.split_at(32);
             // Frames.
             self.frames_2 = parse_frames(remaining, frame_count)?;
             let (_, mut remaining) = remaining.split_at(27*frame_count as usize);
             // Events.
-            let event_count = remaining.read_i32::<LittleEndian>()?;
+            let event_count = remaining.read_i32::<LE>()?;
             self.events_2 = parse_events(remaining, event_count)?;
             let (_, mut remaining) = remaining.split_at(16*event_count as usize);
             // End of replay marker.
-            let expected = remaining.read_i32::<LittleEndian>()?;
+            let expected = remaining.read_i32::<LE>()?;
             if expected != EOR { return Err(ElmaError::EORMismatch); }
         }
         Ok(())
@@ -224,22 +226,22 @@ impl Replay {
 
         // Number of frames.
         if multi {
-            bytes.write_i32::<LittleEndian>(self.frames_2.len() as i32)?;
+            bytes.write_i32::<LE>(self.frames_2.len() as i32)?;
         } else {
-            bytes.write_i32::<LittleEndian>(self.frames.len() as i32)?;
+            bytes.write_i32::<LE>(self.frames.len() as i32)?;
         }
         // Garbage value.
-        bytes.write_i32::<LittleEndian>(0x83_i32)?;
+        bytes.write_i32::<LE>(0x83_i32)?;
         // Multi-player replay or not.
-        bytes.write_i32::<LittleEndian>(if self.multi { 1_i32 } else { 0_i32 })?;
+        bytes.write_i32::<LE>(if self.multi { 1_i32 } else { 0_i32 })?;
         // Flag-tag replay or not.
-        bytes.write_i32::<LittleEndian>(if self.flag_tag { 1_i32 } else { 0_i32 })?;
+        bytes.write_i32::<LE>(if self.flag_tag { 1_i32 } else { 0_i32 })?;
         // Link.
-        bytes.write_u32::<LittleEndian>(self.link)?;
+        bytes.write_u32::<LE>(self.link)?;
         // Level name.
         bytes.extend_from_slice(&string_null_pad(&self.level, 12)?);
         // Garbage value.
-        bytes.write_i32::<LittleEndian>(0x00_i32)?;
+        bytes.write_i32::<LE>(0x00_i32)?;
 
         // Frames and events.
         if multi {
@@ -251,7 +253,7 @@ impl Replay {
         }
 
         // EOR marker.
-        bytes.write_i32::<LittleEndian>(EOR)?;
+        bytes.write_i32::<LE>(EOR)?;
 
         Ok(bytes)
     }
@@ -356,23 +358,23 @@ fn parse_frames (frame_data: &[u8], frame_count: i32) -> Result<Vec<Frame>, Elma
 
     for _ in 0..frame_count {
         // Bike X and Y.
-        let x = bike_x.read_f32::<LittleEndian>()?;
-        let y = bike_y.read_f32::<LittleEndian>()?;
+        let x = bike_x.read_f32::<LE>()?;
+        let y = bike_y.read_f32::<LE>()?;
         let bike = Position { x: x, y: y };
         // Left wheel X and Y.
-        let x = left_x.read_i16::<LittleEndian>()?;
-        let y = left_y.read_i16::<LittleEndian>()?;
+        let x = left_x.read_i16::<LE>()?;
+        let y = left_y.read_i16::<LE>()?;
         let left_wheel = Position { x: x, y: y };
         // Right wheel X and Y.
-        let x = right_x.read_i16::<LittleEndian>()?;
-        let y = right_y.read_i16::<LittleEndian>()?;
+        let x = right_x.read_i16::<LE>()?;
+        let y = right_y.read_i16::<LE>()?;
         let right_wheel = Position { x: x, y: y };
         // Head X and Y.
-        let x = head_x.read_i16::<LittleEndian>()?;
-        let y = head_y.read_i16::<LittleEndian>()?;
+        let x = head_x.read_i16::<LE>()?;
+        let y = head_y.read_i16::<LE>()?;
         let head = Position { x: x, y: y };
         // Rotations.
-        let rotation = rotation.read_i16::<LittleEndian>()?;
+        let rotation = rotation.read_i16::<LE>()?;
         let left_wheel_rotation = left_rotation.read_u8()?;
         let right_wheel_rotation = right_rotation.read_u8()?;
         // Throttle and turn right.
@@ -380,7 +382,7 @@ fn parse_frames (frame_data: &[u8], frame_count: i32) -> Result<Vec<Frame>, Elma
         let throttle = data & 1 != 0;
         let right = data & (1 << 1) != 0;
         // Sound effect volume.
-        let volume = volume.read_i16::<LittleEndian>()?;
+        let volume = volume.read_i16::<LE>()?;
 
         frames.push(Frame {
             bike: bike,
@@ -405,13 +407,13 @@ fn parse_events (mut event_data: &[u8], event_count: i32) -> Result<Vec<Event>, 
 
     for _ in 0..event_count {
         // Event time
-        let time = event_data.read_f64::<LittleEndian>()?;
+        let time = event_data.read_f64::<LE>()?;
         // Event details
-        let info = event_data.read_i16::<LittleEndian>()?;
+        let info = event_data.read_i16::<LE>()?;
         let event = event_data.read_u8()?;
         // Unknown values
         let _ = event_data.read_u8()?;
-        let _ = event_data.read_f32::<LittleEndian>()?;
+        let _ = event_data.read_f32::<LE>()?;
         let event_type = match event {
             0 => EventType::Touch { index: info },
             1 => EventType::Ground { alternative: false },
@@ -450,19 +452,19 @@ fn write_frames (frame_data: &[Frame]) -> Result<Vec<u8>, ElmaError> {
     let mut volume = vec![];
 
     for frame in frame_data {
-        bike_x.write_f32::<LittleEndian>(frame.bike.x)?;
-        bike_y.write_f32::<LittleEndian>(frame.bike.y)?;
+        bike_x.write_f32::<LE>(frame.bike.x)?;
+        bike_y.write_f32::<LE>(frame.bike.y)?;
 
-        left_x.write_i16::<LittleEndian>(frame.left_wheel.x)?;
-        left_y.write_i16::<LittleEndian>(frame.left_wheel.y)?;
+        left_x.write_i16::<LE>(frame.left_wheel.x)?;
+        left_y.write_i16::<LE>(frame.left_wheel.y)?;
 
-        right_x.write_i16::<LittleEndian>(frame.right_wheel.x)?;
-        right_y.write_i16::<LittleEndian>(frame.right_wheel.y)?;
+        right_x.write_i16::<LE>(frame.right_wheel.x)?;
+        right_y.write_i16::<LE>(frame.right_wheel.y)?;
 
-        head_x.write_i16::<LittleEndian>(frame.head.x)?;
-        head_y.write_i16::<LittleEndian>(frame.head.y)?;
+        head_x.write_i16::<LE>(frame.head.x)?;
+        head_y.write_i16::<LE>(frame.head.y)?;
 
-        rotation.write_i16::<LittleEndian>(frame.rotation)?;
+        rotation.write_i16::<LE>(frame.rotation)?;
         left_rotation.write_u8(frame.left_wheel_rotation)?;
         right_rotation.write_u8(frame.right_wheel_rotation)?;
 
@@ -471,7 +473,7 @@ fn write_frames (frame_data: &[Frame]) -> Result<Vec<u8>, ElmaError> {
         if frame.right { data_temp |= 2; }
         data.write_u8(data_temp)?;
 
-        volume.write_i16::<LittleEndian>(frame.volume)?;
+        volume.write_i16::<LE>(frame.volume)?;
     }
 
     bytes.extend_from_slice(&bike_x);
@@ -496,23 +498,23 @@ fn write_events (event_data: &[Event]) -> Result<Vec<u8>, ElmaError> {
     let mut bytes = vec![];
 
     // Number of events.
-    bytes.write_i32::<LittleEndian>(event_data.len() as i32)?;
+    bytes.write_i32::<LE>(event_data.len() as i32)?;
 
     for event in event_data {
-        bytes.write_f64::<LittleEndian>(event.time)?;
+        bytes.write_f64::<LE>(event.time)?;
         match event.event_type {
-            EventType::Touch { index: info } => { bytes.write_u32::<LittleEndian>(info as u32)?;
-                                                  bytes.write_u32::<LittleEndian>(0 as u32)?; },
-            EventType::Ground { alternative: false } => { bytes.write_u32::<LittleEndian>(131071 as u32)?;
-                                                          bytes.write_u32::<LittleEndian>(1050605825 as u32)?; },
-            EventType::Ground { alternative: true } => { bytes.write_u32::<LittleEndian>(327679 as u32)?;
-                                                          bytes.write_u32::<LittleEndian>(1065185444 as u32)?; },
-            EventType::Turn => { bytes.write_u32::<LittleEndian>(393215 as u32)?;
-                                 bytes.write_u32::<LittleEndian>(1065185444 as u32)?; },
-            EventType::VoltRight => { bytes.write_u32::<LittleEndian>(458751 as u32)?;
-                                      bytes.write_u32::<LittleEndian>(1065185444 as u32)?; },
-            EventType::VoltLeft => { bytes.write_u32::<LittleEndian>(524287 as u32)?;
-                                      bytes.write_u32::<LittleEndian>(1065185444 as u32)?; }
+            EventType::Touch { index: info } => { bytes.write_u32::<LE>(info as u32)?;
+                                                  bytes.write_u32::<LE>(0 as u32)?; },
+            EventType::Ground { alternative: false } => { bytes.write_u32::<LE>(131071 as u32)?;
+                                                          bytes.write_u32::<LE>(1050605825 as u32)?; },
+            EventType::Ground { alternative: true } => { bytes.write_u32::<LE>(327679 as u32)?;
+                                                          bytes.write_u32::<LE>(1065185444 as u32)?; },
+            EventType::Turn => { bytes.write_u32::<LE>(393215 as u32)?;
+                                 bytes.write_u32::<LE>(1065185444 as u32)?; },
+            EventType::VoltRight => { bytes.write_u32::<LE>(458751 as u32)?;
+                                      bytes.write_u32::<LE>(1065185444 as u32)?; },
+            EventType::VoltLeft => { bytes.write_u32::<LE>(524287 as u32)?;
+                                      bytes.write_u32::<LE>(1065185444 as u32)?; }
         }
 
     }
