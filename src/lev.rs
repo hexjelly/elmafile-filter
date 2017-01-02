@@ -105,10 +105,7 @@ pub struct Object {
 impl Object {
     /// Create a new `Object`.
     pub fn new() -> Self {
-        Object {
-            position: Position { x: 0_f64, y: 0_f64 },
-            object_type: ObjectType::default()
-        }
+        Object::default()
     }
 }
 
@@ -189,11 +186,8 @@ impl Picture {
     pub fn new () -> Self {
         Picture {
             name: String::from("barrel"),
-            texture: String::new(),
-            mask: String::new(),
-            position: Position { x: 0_f64, y: 0_f64 },
             distance: 600,
-            clip: Clip::default()
+            ..Default::default()
         }
     }
 }

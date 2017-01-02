@@ -42,16 +42,7 @@ impl Frame {
     /// let frame = elma::rec::Frame::new();
     /// ```
     pub fn new() -> Self {
-        Frame { bike: Position { x: 0_f32, y: 0_f32 },
-                left_wheel: Position { x: 0, y: 0 },
-                right_wheel: Position { x: 0, y: 0 },
-                head: Position { x: 0, y: 0 },
-                rotation: 0,
-                left_wheel_rotation: 0,
-                right_wheel_rotation: 0,
-                throttle: false,
-                right: false,
-                volume: 0 }
+        Frame::default()
     }
 }
 
@@ -100,10 +91,7 @@ impl Event {
     /// let event = elma::rec::Event::new();
     /// ```
     pub fn new() -> Self {
-        Event {
-            time: 0_f64,
-            event_type: EventType::default()
-        }
+        Event::default()
     }
 }
 
