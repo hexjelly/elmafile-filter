@@ -529,7 +529,7 @@ impl Level {
         bytes.write_u32::<LE>(self.link)?;
         // Integrity checksums.
         self.calculate_integrity_sums(true);
-        for sum in self.integrity.into_iter() {
+        for sum in &self.integrity {
             bytes.write_f64::<LE>(*sum)?;
         }
 
@@ -722,11 +722,11 @@ impl Level {
 
     /// Check topology of level.
     pub fn check_topology (&self) -> Result<(), TopologyError>  {
-        &self.check_objects()?;
-        if *&self.width() > 188_f64 { return Err(TopologyError::TooWide(*&self.width() - 188_f64)) }
-        if *&self.height() > 188_f64 { return Err(TopologyError::TooHigh(*&self.height() - 188_f64)) }
-        &self.check_vertex_count()?;
-        &self.check_overlapping_polygons()?;
+        self.check_objects()?;
+        if self.width() > 188_f64 { return Err(TopologyError::TooWide(self.width() - 188_f64)) }
+        if self.height() > 188_f64 { return Err(TopologyError::TooHigh(self.height() - 188_f64)) }
+        self.check_vertex_count()?;
+        self.check_overlapping_polygons()?;
         // TODO: check line segment overlaps
         // TODO: check if head inside ground
         // TODO: check if apples fully inside ground
@@ -750,24 +750,24 @@ impl Level {
     }
 
     fn check_objects(&self) -> Result<(), TopologyError> {
-        if *&self.polygons.len() > 1000 {
+        if self.polygons.len() > 1000 {
             return Err(TopologyError::MaxPolygons(&self.polygons.len() - 1000))
         }
 
-        if *&self.objects.len() > 252 {
+        if self.objects.len() > 252 {
             return Err(TopologyError::MaxObjects(&self.objects.len() - 252))
         }
 
-        if *&self.pictures.len() > 5000 {
+        if self.pictures.len() > 5000 {
             return Err(TopologyError::MaxPictures(&self.pictures.len() - 5000))
         }
 
-        let player_count = *&self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Player { total + 1} else { total });
+        let player_count = self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Player { total + 1} else { total });
         if player_count != 1 {
             return Err(TopologyError::InvalidPlayerCount(player_count))
         }
 
-        let exit_count = *&self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Exit { total + 1} else { total });
+        let exit_count = self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Exit { total + 1} else { total });
         if exit_count < 1 {
             return Err(TopologyError::MissingExit)
         }
