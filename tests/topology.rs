@@ -129,3 +129,191 @@ fn topology_err_invalid_vertex_count() {
 
 // TODO: AppleInsideGround(usize)
 // TODO: IntersectingPolygons
+#[test]
+fn topology_no_intersect() {
+    let one_start = Position { x: 0_f64, y: 1_f64 };
+    let one_end = Position { x: 0_f64, y: 3_f64 };
+    let two_start = Position { x: 1_f64, y: 0_f64 };
+    let two_end = Position { x: 3_f64, y: 0_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).is_ok(), true);
+}
+
+#[test]
+fn topology_intersect() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: 3_f64, y: 3_f64 };
+    let two_start = Position { x: 0_f64, y: 2_f64 };
+    let two_end = Position { x: 2_f64, y: 0_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::Intersect);
+}
+
+#[test]
+fn topology_intersect_negative() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: -3_f64, y: -3_f64 };
+    let two_start = Position { x: 0_f64, y: -2_f64 };
+    let two_end = Position { x: -2_f64, y: 0_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::Intersect);
+}
+
+#[test]
+fn topology_intersect_at_start_point() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: 2_f64, y: 0_f64 };
+    let two_start = Position { x: 0_f64, y: 0_f64 };
+    let two_end = Position { x: 0_f64, y: 2_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::PointTouch);
+}
+
+#[test]
+fn topology_intersect_at_end_point() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: 2_f64, y: 0_f64 };
+    let two_start = Position { x: 3_f64, y: 3_f64 };
+    let two_end = Position { x: 2_f64, y: 0_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::PointTouch);
+}
+
+#[test]
+fn topology_no_intersect_vertically_paralell() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: 0_f64, y: 3_f64 };
+    let two_start = Position { x: 2_f64, y: 0_f64 };
+    let two_end = Position { x: 2_f64, y: 3_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).is_ok(), true);
+}
+
+#[test]
+fn topology_no_intersect_horizontally_paralell() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: 3_f64, y: 0_f64 };
+    let two_start = Position { x: 0_f64, y: 1_f64 };
+    let two_end = Position { x: 3_f64, y: 1_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).is_ok(), true);
+}
+
+#[test]
+fn topology_no_intersect_diagonally_paralell() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: 3_f64, y: 3_f64 };
+    let two_start = Position { x: 1_f64, y: 0_f64 };
+    let two_end = Position { x: 4_f64, y: 3_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).is_ok(), true);
+}
+
+#[test]
+fn topology_intersect_collinear_overlap() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: 3_f64, y: 3_f64 };
+    let two_start = Position { x: 2_f64, y: 2_f64 };
+    let two_end = Position { x: 5_f64, y: 5_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::Collinear);
+}
+
+#[test]
+fn topology_intersect_collinear_overlap_reverse() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: 3_f64, y: 3_f64 };
+    let two_start = Position { x: 5_f64, y: 5_f64 };
+    let two_end = Position { x: 2_f64, y: 2_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::Collinear);
+}
+
+#[test]
+fn topology_intersect_vertically_collinear_overlap_single_point() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: 0_f64, y: 2_f64 };
+    let two_start = Position { x: 0_f64, y: 2_f64 };
+    let two_end = Position { x: 0_f64, y: 4_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::PointTouch);
+}
+
+#[test]
+fn topology_intersect_horizontally_collinear_overlap_single_point() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: 2_f64, y: 0_f64 };
+    let two_start = Position { x: 2_f64, y: 0_f64 };
+    let two_end = Position { x: 4_f64, y: 0_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::PointTouch);
+}
+
+#[test]
+fn topology_intersect_horizontally_collinear_overlap_negative() {
+    let one_start = Position { x: 1_f64, y: 0_f64 };
+    let one_end = Position { x: -1_f64, y: 0_f64 };
+    let two_start = Position { x: 2_f64, y: 0_f64 };
+    let two_end = Position { x: 0_f64, y: 0_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::Collinear);
+}
+
+#[test]
+fn topology_no_intersect_vertically_collinear() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: 0_f64, y: 2_f64 };
+    let two_start = Position { x: 0_f64, y: 3_f64 };
+    let two_end = Position { x: 0_f64, y: 4_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).is_ok(), true);
+}
+
+#[test]
+fn topology_no_intersect_vertically_collinear_reverse_order() {
+    let one_start = Position { x: 0_f64, y: 2_f64 };
+    let one_end = Position { x: 0_f64, y: 3_f64 };
+    let two_start = Position { x: 0_f64, y: 0_f64 };
+    let two_end = Position { x: 0_f64, y: 1_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).is_ok(), true);
+}
+
+#[test]
+fn topology_no_intersect_collinear() {
+    let one_start = Position { x: 0_f64, y: 0_f64 };
+    let one_end = Position { x: 3_f64, y: 3_f64 };
+    let two_start = Position { x: 4_f64, y: 4_f64 };
+    let two_end = Position { x: 6_f64, y: 6_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).is_ok(), true);
+}
+
+#[test]
+fn topology_intersect_collinear_overlap_single_point_negative() {
+    let one_start = Position { x: 0_f64, y: -1_f64 };
+    let one_end = Position { x: 0_f64, y: -2_f64 };
+    let two_start = Position { x: 0_f64, y: -2_f64 };
+    let two_end = Position { x: 0_f64, y: -3_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::PointTouch);
+}
+
+#[test]
+fn topology_intersect_collinear_overlap_single_point_reverse() {
+    let one_start = Position { x: 0_f64, y: 3_f64 };
+    let one_end = Position { x: 0_f64, y: 2_f64 };
+    let two_start = Position { x: 0_f64, y: 2_f64 };
+    let two_end = Position { x: 0_f64, y: 1_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::PointTouch);
+}
+
+#[test]
+fn topology_no_intersect_collinear_single_point_negative() {
+    let one_start = Position { x: 0_f64, y: -1_f64 };
+    let one_end = Position { x: 0_f64, y: -2_f64 };
+    let two_start = Position { x: 0_f64, y: -3_f64 };
+    let two_end = Position { x: 0_f64, y: -4_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).is_ok(), true);
+}
+
+#[test]
+fn topology_intersect_collinear_overlap_negative() {
+    let one_start = Position { x: 0_f64, y: -1_f64 };
+    let one_end = Position { x: 0_f64, y: -3_f64 };
+    let two_start = Position { x: 0_f64, y: -2_f64 };
+    let two_end = Position { x: 0_f64, y: -4_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::Collinear);
+}
+
+#[test]
+fn topology_intersect_one_part_of_two() {
+    let one_start = Position { x: 10_f64, y: 0_f64 };
+    let one_end = Position { x: 40_f64, y: 0_f64 };
+    let two_start = Position { x: 30_f64, y: 0_f64 };
+    let two_end = Position { x: 20_f64, y: 0_f64 };
+    assert_eq!(do_line_segment_intersect(&one_start, &one_end, &two_start, &two_end).unwrap_err(), IntersectError::Collinear);
+}
