@@ -11,6 +11,8 @@ use std::ascii::AsciiExt;
 
 /// Read and write Elasto Mania level files.
 pub mod lev;
+/// Read and write Elasto Mania LGR files.
+pub mod lgr;
 /// Read and write Elasto Mania replay files.
 pub mod rec;
 
