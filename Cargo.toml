@@ -3,7 +3,6 @@ name = "elma"
 version = "0.1.4-pre"
 authors = ["Roger Andersen <hexjelly@hexjelly.com>"]
 description = "Library for reading and writing Elasto Mania files."
-documentation = "http://hexjelly.github.io/elma-rust/elma/"
 homepage = "https://github.com/hexjelly/elma-rust"
 repository = "https://github.com/hexjelly/elma-rust"
 readme = "README.md"
@@ -13,4 +12,3 @@ license = "MIT"
 [dependencies]
 byteorder = "1"
 rand = "0.3.15"
-combine = "3"

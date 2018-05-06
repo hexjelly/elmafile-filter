@@ -1,11 +1,24 @@
-use std::io::{ Read, Write };
+use std::io::{Read, Write};
 use std::fs::File;
 use std::path::Path;
 use rand::random;
-use byteorder::{ ReadBytesExt, WriteBytesExt, LittleEndian };
-use super::{ Position, trim_string, string_null_pad, EOR, ElmaError };
+use byteorder::{LittleEndian as LE, ReadBytesExt, WriteBytesExt};
+use super::{ElmaError, Position, constants::EOR, utils::{string_null_pad, trim_string}};
 
-type LE = LittleEndian;
+/// Bike direction.
+#[derive(Debug, Eq, PartialEq)]
+pub enum Direction {
+    /// Right.
+    Right,
+    /// Left.
+    Left,
+}
+
+impl Default for Direction {
+    fn default() -> Self {
+        Direction::Left
+    }
+}
 
 /// One frame of replay.
 #[derive(Debug, Default, PartialEq)]
@@ -26,11 +39,10 @@ pub struct Frame {
     pub right_wheel_rotation: u8,
     /// Throttle.
     pub throttle: bool,
-    /// Right direction. True = right, False = left.
-    // TODO: consider making right field = direction and enum with right and left?
-    pub right: bool,
+    /// Direction.
+    pub direction: Direction,
     /// Spring sound effect volume.
-    pub volume: i16
+    pub volume: i16,
 }
 
 impl Frame {
@@ -46,24 +58,20 @@ impl Frame {
     }
 }
 
-
 #[derive(Debug, Default, PartialEq)]
 /// Replay events.
 pub struct Event {
     /// Time of event.
     pub time: f64,
     /// Event type.
-    pub event_type: EventType
+    pub event_type: EventType,
 }
 
 #[derive(Debug, PartialEq)]
 /// Type of event.
 pub enum EventType {
-    /// Apple or flower touch.
-    Touch {
-        /// Index of touch event.
-        index: i16
-    },
+    /// Apple or flower touch, with index of event.
+    Touch(i16),
     /// Bike turn.
     Turn,
     /// Bike volt right.
@@ -74,12 +82,14 @@ pub enum EventType {
     // TODO: consider making two separate enums instead?
     Ground {
         /// If alternative is true, uses the second type.
-        alternative: bool
-    }
+        alternative: bool,
+    },
 }
 
 impl Default for EventType {
-    fn default() -> EventType { EventType::Touch { index: 0 } }
+    fn default() -> EventType {
+        EventType::Touch(0)
+    }
 }
 
 impl Event {
@@ -115,11 +125,13 @@ pub struct Replay {
     /// Player two frames.
     pub frames_2: Vec<Frame>,
     /// Player two events.
-    pub events_2: Vec<Event>
+    pub events_2: Vec<Event>,
 }
 
 impl Default for Replay {
-    fn default() -> Replay { Replay::new() }
+    fn default() -> Replay {
+        Replay::new()
+    }
 }
 
 impl Replay {
@@ -131,15 +143,17 @@ impl Replay {
     /// let rec = elma::rec::Replay::new();
     /// ```
     pub fn new() -> Self {
-        Replay { raw: vec![],
-                 multi: false,
-                 flag_tag: false,
-                 link: random::<u32>(),
-                 level: String::new(),
-                 frames: vec![],
-                 events: vec![],
-                 frames_2: vec![],
-                 events_2: vec![] }
+        Replay {
+            raw: vec![],
+            multi: false,
+            flag_tag: false,
+            link: random::<u32>(),
+            level: String::new(),
+            frames: vec![],
+            events: vec![],
+            frames_2: vec![],
+            events_2: vec![],
+        }
     }
 
     /// Loads a replay file and returns a Replay struct.
@@ -149,7 +163,7 @@ impl Replay {
     /// ```
     /// let rec = elma::rec::Replay::load("tests/assets/replays/test_1.rec").unwrap();
     /// ```
-    pub fn load<P: AsRef<Path>> (filename: P) -> Result<Self, ElmaError> {
+    pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
         let mut replay = Replay::new();
         let mut file = File::open(filename)?;
         let mut buffer = vec![];
@@ -160,7 +174,7 @@ impl Replay {
     }
 
     /// Parses the raw binary data into Replay struct fields.
-    fn parse_replay (&mut self) -> Result<(), ElmaError> {
+    fn parse_replay(&mut self) -> Result<(), ElmaError> {
         let mut remaining = self.raw.as_slice();
 
         // Frame count.
@@ -180,14 +194,16 @@ impl Replay {
         let (_, remaining) = remaining.split_at(4);
         // Frames.
         self.frames = parse_frames(remaining, frame_count)?;
-        let (_, mut remaining) = remaining.split_at(27*frame_count as usize);
+        let (_, mut remaining) = remaining.split_at(27 * frame_count as usize);
         // Events.
         let event_count = remaining.read_i32::<LE>()?;
         self.events = parse_events(remaining, event_count)?;
-        let (_, mut remaining) = remaining.split_at(16*event_count as usize);
+        let (_, mut remaining) = remaining.split_at(16 * event_count as usize);
         // End of replay marker.
         let expected = remaining.read_i32::<LE>()?;
-        if expected != EOR { return Err(ElmaError::EORMismatch); }
+        if expected != EOR {
+            return Err(ElmaError::EORMismatch);
+        }
 
         // If multi-rec, parse frame and events, while skipping other fields?
         if self.multi {
@@ -197,19 +213,21 @@ impl Replay {
             let (_, remaining) = remaining.split_at(32);
             // Frames.
             self.frames_2 = parse_frames(remaining, frame_count)?;
-            let (_, mut remaining) = remaining.split_at(27*frame_count as usize);
+            let (_, mut remaining) = remaining.split_at(27 * frame_count as usize);
             // Events.
             let event_count = remaining.read_i32::<LE>()?;
             self.events_2 = parse_events(remaining, event_count)?;
-            let (_, mut remaining) = remaining.split_at(16*event_count as usize);
+            let (_, mut remaining) = remaining.split_at(16 * event_count as usize);
             // End of replay marker.
             let expected = remaining.read_i32::<LE>()?;
-            if expected != EOR { return Err(ElmaError::EORMismatch); }
+            if expected != EOR {
+                return Err(ElmaError::EORMismatch);
+            }
         }
         Ok(())
     }
 
-    fn write_rec (&self, multi: bool) -> Result<Vec<u8>, ElmaError> {
+    fn write_rec(&self, multi: bool) -> Result<Vec<u8>, ElmaError> {
         let mut bytes: Vec<u8> = vec![];
 
         // Number of frames.
@@ -247,7 +265,7 @@ impl Replay {
     }
 
     /// Save replay as a file.
-    pub fn save<P: AsRef<Path>> (&self, filename: P) -> Result<(), ElmaError> {
+    pub fn save<P: AsRef<Path>>(&self, filename: P) -> Result<(), ElmaError> {
         let mut bytes = self.write_rec(false)?;
         if self.multi {
             bytes.extend_from_slice(&self.write_rec(true)?);
@@ -268,30 +286,34 @@ impl Replay {
     /// assert_eq!(time, 14649);
     /// assert_eq!(finished, true);
     /// ```
-    pub fn get_time_ms (&self) -> (usize, bool) {
+    pub fn get_time_ms(&self) -> (usize, bool) {
         // First check if last event was a touch event in either event data.
         let last_event_1 = self.events.last();
         let last_event_2 = self.events_2.last();
         let time_1 = match last_event_1 {
-            Some(last_event_1) => { match last_event_1.event_type {
-                                    EventType::Touch { .. } => last_event_1.time,
-                                    _ => 0_f64
-                                }},
-            None => 0_f64
+            Some(last_event_1) => match last_event_1.event_type {
+                EventType::Touch { .. } => last_event_1.time,
+                _ => 0_f64,
+            },
+            None => 0_f64,
         };
 
         let time_2 = match last_event_2 {
-            Some(last_event_2) => { match last_event_2.event_type {
-                                    EventType::Touch { .. } => last_event_2.time,
-                                    _ => 0_f64
-                                }},
-            None => 0_f64
+            Some(last_event_2) => match last_event_2.event_type {
+                EventType::Touch { .. } => last_event_2.time,
+                _ => 0_f64,
+            },
+            None => 0_f64,
         };
 
         // Highest frame time.
         let frames_1_len = self.frames.len();
         let frames_2_len = self.frames_2.len();
-        let frame_time_max = if frames_1_len > frames_2_len { frames_1_len } else { frames_2_len } as f64 * 33.333;
+        let frame_time_max = if frames_1_len > frames_2_len {
+            frames_1_len
+        } else {
+            frames_2_len
+        } as f64 * 33.333;
 
         // If neither had a touch event, return approximate frame time.
         if (time_1 == 0.) && (time_2 == 0.) {
@@ -320,29 +342,29 @@ impl Replay {
     /// assert_eq!(time, 1464);
     /// assert_eq!(finished, true);
     /// ```
-    pub fn get_time_hs (&self) -> (usize, bool) {
+    pub fn get_time_hs(&self) -> (usize, bool) {
         let (time, finished) = self.get_time_ms();
         (time / 10, finished)
     }
 }
 
 /// Function for parsing frame data from either single-player or multi-player replays.
-fn parse_frames (frame_data: &[u8], frame_count: i32) -> Result<Vec<Frame>, ElmaError> {
+fn parse_frames(frame_data: &[u8], frame_count: i32) -> Result<Vec<Frame>, ElmaError> {
     let mut frames: Vec<Frame> = vec![];
 
-    let (mut bike_x, remaining) = frame_data.split_at((frame_count*4) as usize);
-    let (mut bike_y, remaining) = remaining.split_at((frame_count*4) as usize);
-    let (mut left_x, remaining) = remaining.split_at((frame_count*2) as usize);
-    let (mut left_y, remaining) = remaining.split_at((frame_count*2) as usize);
-    let (mut right_x, remaining) = remaining.split_at((frame_count*2) as usize);
-    let (mut right_y, remaining) = remaining.split_at((frame_count*2) as usize);
-    let (mut head_x, remaining) = remaining.split_at((frame_count*2) as usize);
-    let (mut head_y, remaining) = remaining.split_at((frame_count*2) as usize);
-    let (mut rotation, remaining) = remaining.split_at((frame_count*2) as usize);
+    let (mut bike_x, remaining) = frame_data.split_at((frame_count * 4) as usize);
+    let (mut bike_y, remaining) = remaining.split_at((frame_count * 4) as usize);
+    let (mut left_x, remaining) = remaining.split_at((frame_count * 2) as usize);
+    let (mut left_y, remaining) = remaining.split_at((frame_count * 2) as usize);
+    let (mut right_x, remaining) = remaining.split_at((frame_count * 2) as usize);
+    let (mut right_y, remaining) = remaining.split_at((frame_count * 2) as usize);
+    let (mut head_x, remaining) = remaining.split_at((frame_count * 2) as usize);
+    let (mut head_y, remaining) = remaining.split_at((frame_count * 2) as usize);
+    let (mut rotation, remaining) = remaining.split_at((frame_count * 2) as usize);
     let (mut left_rotation, remaining) = remaining.split_at((frame_count) as usize);
     let (mut right_rotation, remaining) = remaining.split_at((frame_count) as usize);
     let (mut data, remaining) = remaining.split_at((frame_count) as usize);
-    let (mut volume, _) = remaining.split_at((frame_count*2) as usize);
+    let (mut volume, _) = remaining.split_at((frame_count * 2) as usize);
 
     for _ in 0..frame_count {
         // Bike X and Y.
@@ -368,21 +390,25 @@ fn parse_frames (frame_data: &[u8], frame_count: i32) -> Result<Vec<Frame>, Elma
         // Throttle and turn right.
         let data = data.read_u8()?;
         let throttle = data & 1 != 0;
-        let right = data & (1 << 1) != 0;
+        let direction = if data & (1 << 1) != 0 {
+            Direction::Right
+        } else {
+            Direction::Left
+        };
         // Sound effect volume.
         let volume = volume.read_i16::<LE>()?;
 
         frames.push(Frame {
-            bike: bike,
-            left_wheel: left_wheel,
-            right_wheel: right_wheel,
-            head: head,
-            rotation: rotation,
-            left_wheel_rotation: left_wheel_rotation,
-            right_wheel_rotation: right_wheel_rotation,
-            throttle: throttle,
-            right: right,
-            volume: volume
+            bike,
+            left_wheel,
+            right_wheel,
+            head,
+            rotation,
+            left_wheel_rotation,
+            right_wheel_rotation,
+            throttle,
+            direction,
+            volume,
         });
     }
 
@@ -390,7 +416,7 @@ fn parse_frames (frame_data: &[u8], frame_count: i32) -> Result<Vec<Frame>, Elma
 }
 
 /// Function for parsing event data from either single-player or multi-player replays.
-fn parse_events (mut event_data: &[u8], event_count: i32) -> Result<Vec<Event>, ElmaError> {
+fn parse_events(mut event_data: &[u8], event_count: i32) -> Result<Vec<Event>, ElmaError> {
     let mut events: Vec<Event> = vec![];
 
     for _ in 0..event_count {
@@ -403,18 +429,18 @@ fn parse_events (mut event_data: &[u8], event_count: i32) -> Result<Vec<Event>, 
         let _ = event_data.read_u8()?;
         let _ = event_data.read_f32::<LE>()?;
         let event_type = match event {
-            0 => EventType::Touch { index: info },
+            0 => EventType::Touch(info),
             1 => EventType::Ground { alternative: false },
             4 => EventType::Ground { alternative: true },
             5 => EventType::Turn,
             6 => EventType::VoltRight,
             7 => EventType::VoltLeft,
-            _ => return Err(ElmaError::InvalidEvent(event))
+            _ => return Err(ElmaError::InvalidEvent(event)),
         };
 
         events.push(Event {
             time: time,
-            event_type: event_type
+            event_type: event_type,
         });
     }
 
@@ -422,7 +448,7 @@ fn parse_events (mut event_data: &[u8], event_count: i32) -> Result<Vec<Event>, 
 }
 
 /// Function for writing frame data.
-fn write_frames (frame_data: &[Frame]) -> Result<Vec<u8>, ElmaError> {
+fn write_frames(frame_data: &[Frame]) -> Result<Vec<u8>, ElmaError> {
     let mut bytes = vec![];
 
     let mut bike_x = vec![];
@@ -457,8 +483,12 @@ fn write_frames (frame_data: &[Frame]) -> Result<Vec<u8>, ElmaError> {
         right_rotation.write_u8(frame.right_wheel_rotation)?;
 
         let mut data_temp = random::<u8>() & 0xFC;
-        if frame.throttle { data_temp |= 1; }
-        if frame.right { data_temp |= 2; }
+        if frame.throttle {
+            data_temp |= 1;
+        }
+        if frame.direction == Direction::Right {
+            data_temp |= 2;
+        }
         data.write_u8(data_temp)?;
 
         volume.write_i16::<LE>(frame.volume)?;
@@ -482,7 +512,7 @@ fn write_frames (frame_data: &[Frame]) -> Result<Vec<u8>, ElmaError> {
 }
 
 /// Function for writing event data.
-fn write_events (event_data: &[Event]) -> Result<Vec<u8>, ElmaError> {
+fn write_events(event_data: &[Event]) -> Result<Vec<u8>, ElmaError> {
     let mut bytes = vec![];
 
     // Number of events.
@@ -491,20 +521,31 @@ fn write_events (event_data: &[Event]) -> Result<Vec<u8>, ElmaError> {
     for event in event_data {
         bytes.write_f64::<LE>(event.time)?;
         match event.event_type {
-            EventType::Touch { index: info } => { bytes.write_u32::<LE>(info as u32)?;
-                                                  bytes.write_u32::<LE>(0 as u32)?; },
-            EventType::Ground { alternative: false } => { bytes.write_u32::<LE>(131071 as u32)?;
-                                                          bytes.write_u32::<LE>(1050605825 as u32)?; },
-            EventType::Ground { alternative: true } => { bytes.write_u32::<LE>(327679 as u32)?;
-                                                          bytes.write_u32::<LE>(1065185444 as u32)?; },
-            EventType::Turn => { bytes.write_u32::<LE>(393215 as u32)?;
-                                 bytes.write_u32::<LE>(1065185444 as u32)?; },
-            EventType::VoltRight => { bytes.write_u32::<LE>(458751 as u32)?;
-                                      bytes.write_u32::<LE>(1065185444 as u32)?; },
-            EventType::VoltLeft => { bytes.write_u32::<LE>(524287 as u32)?;
-                                      bytes.write_u32::<LE>(1065185444 as u32)?; }
+            EventType::Touch(info) => {
+                bytes.write_u32::<LE>(info as u32)?;
+                bytes.write_u32::<LE>(0 as u32)?;
+            }
+            EventType::Ground { alternative: false } => {
+                bytes.write_u32::<LE>(131071 as u32)?;
+                bytes.write_u32::<LE>(1050605825 as u32)?;
+            }
+            EventType::Ground { alternative: true } => {
+                bytes.write_u32::<LE>(327679 as u32)?;
+                bytes.write_u32::<LE>(1065185444 as u32)?;
+            }
+            EventType::Turn => {
+                bytes.write_u32::<LE>(393215 as u32)?;
+                bytes.write_u32::<LE>(1065185444 as u32)?;
+            }
+            EventType::VoltRight => {
+                bytes.write_u32::<LE>(458751 as u32)?;
+                bytes.write_u32::<LE>(1065185444 as u32)?;
+            }
+            EventType::VoltLeft => {
+                bytes.write_u32::<LE>(524287 as u32)?;
+                bytes.write_u32::<LE>(1065185444 as u32)?;
+            }
         }
-
     }
 
     Ok(bytes)

@@ -1,12 +1,10 @@
-use std::io::{ Read, Write };
+use std::io::{Read, Write};
 use std::fs::File;
 use std::path::Path;
-use std::cmp::Ordering;
-use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
+use byteorder::{LittleEndian as LE, ReadBytesExt, WriteBytesExt};
 use rand::random;
-use super::{ Position, trim_string, string_null_pad, EOD, EOF, EMPTY_TOP10, ElmaError, OBJECT_RADIUS };
-
-type LE = LittleEndian;
+use super::{BestTimes, ElmaError, Position, constants::{EMPTY_TOP10, EOD, EOF, OBJECT_RADIUS},
+            utils::{string_null_pad, trim_string, parse_top10, write_top10}};
 
 /// Topology related errors.
 #[derive(Debug, PartialEq)]
@@ -41,13 +39,13 @@ pub enum IntersectError {
     /// Normal intersect.
     Intersect,
     /// Touching points.
-    PointTouch
+    PointTouch,
 }
 
 /// This trait specifies something having a rectangle bounding box.
 pub trait BoundingBox {
     /// Bounding box of `&self`, going from top-left, top-right, bottom-left to bottom-right.
-    fn bounding_box(&self) -> [Position<f64>;4];
+    fn bounding_box(&self) -> [Position<f64>; 4];
 }
 
 /// Game version.
@@ -56,11 +54,13 @@ pub enum Version {
     /// Action SuperCross, older version of Elma.
     Across,
     /// Elasto Mania, current active version.
-    Elma
+    Elma,
 }
 
 impl Default for Version {
-    fn default() -> Version { Version::Elma }
+    fn default() -> Version {
+        Version::Elma
+    }
 }
 
 /// Type of object.
@@ -71,25 +71,30 @@ pub enum ObjectType {
         /// Gravity change.
         gravity: Direction,
         /// Animation number.
-        animation: i32
+        animation: i32,
     },
     /// Flower/exit.
     Exit,
     /// Killer.
     Killer,
     /// Player/start.
-    Player
+    Player,
 }
 
 impl Default for ObjectType {
-    fn default() -> ObjectType { ObjectType::Apple { gravity: Direction::default(), animation: 1 } }
+    fn default() -> ObjectType {
+        ObjectType::Apple {
+            gravity: Direction::default(),
+            animation: 1,
+        }
+    }
 }
 
 /// Apple direction object.
 #[derive(Debug, PartialEq)]
 pub enum Direction {
     /// No gravity change.
-    Normal,
+    None,
     /// Gravity up.
     Up,
     /// Gravity down.
@@ -97,11 +102,13 @@ pub enum Direction {
     /// Gravity left.
     Left,
     /// Gravity right.
-    Right
+    Right,
 }
 
 impl Default for Direction {
-    fn default() -> Direction { Direction::Normal }
+    fn default() -> Direction {
+        Direction::None
+    }
 }
 
 /// Object struct. Every level requires one `ObjectType::Player` Object and at least one `ObjectType::Exit` Object.
@@ -110,7 +117,7 @@ pub struct Object {
     /// Position. See `Position` struct.
     pub position: Position<f64>,
     /// Type of Object, see `ObjectType`.
-    pub object_type: ObjectType
+    pub object_type: ObjectType,
 }
 
 impl Object {
@@ -126,7 +133,7 @@ pub struct Polygon {
     /// Grass polygon.
     pub grass: bool,
     /// Vector with all vertices, see `Position` struct.
-    pub vertices: Vec<Position<f64>>
+    pub vertices: Vec<Position<f64>>,
 }
 
 impl BoundingBox for Polygon {
@@ -137,25 +144,35 @@ impl BoundingBox for Polygon {
         let mut min_y = 0_f64;
 
         for vertex in &self.vertices {
-            if vertex.x > max_x { max_x = vertex.x }
-            if vertex.x < min_x { min_x = vertex.x }
-            if vertex.y > max_y { max_y = vertex.y }
-            if vertex.y < min_y { min_y = vertex.y }
+            if vertex.x > max_x {
+                max_x = vertex.x
+            }
+            if vertex.x < min_x {
+                min_x = vertex.x
+            }
+            if vertex.y > max_y {
+                max_y = vertex.y
+            }
+            if vertex.y < min_y {
+                min_y = vertex.y
+            }
         }
 
-        [Position { x: min_x, y: max_y },
-         Position { x: max_x, y: max_y },
-         Position { x: min_x, y: min_y },
-         Position { x: max_x, y: min_y }]
+        [
+            Position { x: min_x, y: max_y },
+            Position { x: max_x, y: max_y },
+            Position { x: min_x, y: min_y },
+            Position { x: max_x, y: min_y },
+        ]
     }
 }
 
 impl Polygon {
     /// Create a new empty polygon.
-    pub fn new () -> Self {
+    pub fn new() -> Self {
         Polygon {
             grass: false,
-            vertices: vec![]
+            vertices: vec![],
         }
     }
 }
@@ -168,11 +185,13 @@ pub enum Clip {
     /// Ground clipping.
     Ground,
     /// Sky clipping.
-    Sky
+    Sky,
 }
 
 impl Default for Clip {
-    fn default() -> Clip { Clip::Sky }
+    fn default() -> Clip {
+        Clip::Sky
+    }
 }
 
 /// Picture struct.
@@ -189,50 +208,16 @@ pub struct Picture {
     /// Z-distance
     pub distance: i32,
     /// Clipping.
-    pub clip: Clip
+    pub clip: Clip,
 }
 
 impl Picture {
     /// Creates a new picture with default values.
-    pub fn new () -> Self {
+    pub fn new() -> Self {
         Picture {
-            name: String::from("barrel"),
+            name: "barrel".into(),
             distance: 600,
             ..Default::default()
-        }
-    }
-}
-
-/// Top10 list entry struct.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct ListEntry {
-    /// Player 1 name.
-    pub name_1: String,
-    /// Player 2 name.
-    pub name_2: String,
-    /// Time.
-    pub time: i32
-}
-
-impl Ord for ListEntry {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.time.cmp(&other.time)
-    }
-}
-
-impl PartialOrd for ListEntry {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl ListEntry {
-    /// Creates a new ListEntry.
-    pub fn new () -> Self {
-        ListEntry {
-            name_1: String::from("Player1"),
-            name_2: String::from("Player2"),
-            time: 100000
         }
     }
 }
@@ -262,14 +247,14 @@ pub struct Level {
     pub objects: Vec<Object>,
     /// Vector with all pictures (See `Picture`).
     pub pictures: Vec<Picture>,
-    /// Vector of Top10 single-player names and times.
-    pub top10_single: Vec<ListEntry>,
-    /// Vector of Top10 multi-player names and times.
-    pub top10_multi: Vec<ListEntry>
+    /// Best times lists.
+    pub best_times: BestTimes,
 }
 
 impl Default for Level {
-    fn default() -> Level { Level::new() }
+    fn default() -> Level {
+        Level::new()
+    }
 }
 
 impl BoundingBox for Level {
@@ -282,17 +267,27 @@ impl BoundingBox for Level {
         for polygon in &self.polygons {
             let polygon_box = polygon.bounding_box();
             for vertex in &polygon_box {
-                if vertex.x > max_x { max_x = vertex.x }
-                if vertex.x < min_x { min_x = vertex.x }
-                if vertex.y > max_y { max_y = vertex.y }
-                if vertex.y < min_y { min_y = vertex.y }
+                if vertex.x > max_x {
+                    max_x = vertex.x
+                }
+                if vertex.x < min_x {
+                    min_x = vertex.x
+                }
+                if vertex.y > max_y {
+                    max_y = vertex.y
+                }
+                if vertex.y < min_y {
+                    min_y = vertex.y
+                }
             }
         }
 
-        [Position { x: min_x, y: max_y },
-         Position { x: max_x, y: max_y },
-         Position { x: min_x, y: min_y },
-         Position { x: max_x, y: min_y }]
+        [
+            Position { x: min_x, y: max_y },
+            Position { x: max_x, y: max_y },
+            Position { x: min_x, y: min_y },
+            Position { x: max_x, y: min_y },
+        ]
     }
 }
 
@@ -304,28 +299,45 @@ impl Level {
     /// ```
     /// let level = elma::lev::Level::new();
     /// ```
-    pub fn new () -> Self {
+    pub fn new() -> Self {
         Level {
             raw: vec![],
             version: Version::Elma,
             link: random::<u32>(),
             integrity: [0f64; 4],
-            name: String::new(),
-            lgr: String::from("default"),
-            ground: String::from("ground"),
-            sky: String::from("sky"),
-            polygons: vec![Polygon {
-                                grass: false,
-                                vertices: vec![Position { x: 10., y: 0. },
-                                               Position { x: 10., y: 7. },
-                                               Position { x: 0., y: 7. },
-                                               Position { x: 0., y: 0. }]
-                                }],
-            objects: vec![Object { position: Position { x: 2., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Player },
-                          Object { position: Position { x: 8., y: 7. - OBJECT_RADIUS }, object_type: ObjectType::Exit }],
+            name: "".into(),
+            lgr: "default".into(),
+            ground: "ground".into(),
+            sky: "sky".into(),
+            polygons: vec![
+                Polygon {
+                    grass: false,
+                    vertices: vec![
+                        Position { x: 10., y: 0. },
+                        Position { x: 10., y: 7. },
+                        Position { x: 0., y: 7. },
+                        Position { x: 0., y: 0. },
+                    ],
+                },
+            ],
+            objects: vec![
+                Object {
+                    position: Position {
+                        x: 2.,
+                        y: 7. - OBJECT_RADIUS,
+                    },
+                    object_type: ObjectType::Player,
+                },
+                Object {
+                    position: Position {
+                        x: 8.,
+                        y: 7. - OBJECT_RADIUS,
+                    },
+                    object_type: ObjectType::Exit,
+                },
+            ],
             pictures: vec![],
-            top10_single: vec![],
-            top10_multi: vec![]
+            best_times: BestTimes::default(),
         }
     }
 
@@ -336,7 +348,7 @@ impl Level {
     /// ```
     /// let level = elma::lev::Level::load("tests/assets/levels/test_1.lev").unwrap();
     /// ```
-    pub fn load<P: AsRef<Path>> (filename: P) -> Result<Self, ElmaError> {
+    pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
         let mut level = Level::new();
         let mut file = File::open(filename)?;
         let mut buffer = vec![];
@@ -347,7 +359,7 @@ impl Level {
     }
 
     /// Parses the raw binary data into `Level` struct fields.
-    fn parse_level (&mut self) -> Result<(), ElmaError> {
+    fn parse_level(&mut self) -> Result<(), ElmaError> {
         let remaining = self.raw.as_slice();
 
         // Version.
@@ -355,7 +367,7 @@ impl Level {
         self.version = match version {
             b"POT14" => Version::Elma,
             b"POT06" => return Err(ElmaError::AcrossUnsupported),
-            _ => return Err(ElmaError::InvalidLevelFile)
+            _ => return Err(ElmaError::InvalidLevelFile),
         };
 
         // Link.
@@ -388,17 +400,19 @@ impl Level {
 
         // Objects.
         let object_count = (remaining.read_f64::<LE>()? - 0.4643643).round() as usize;
-        let (object_data, mut remaining) = remaining.split_at(object_count*28);
+        let (object_data, mut remaining) = remaining.split_at(object_count * 28);
         self.objects = self.parse_objects(object_data, object_count)?;
 
         // Pictures.
         let picture_count = (remaining.read_f64::<LE>()? - 0.2345672).round() as usize;
-        let (picture_data, mut remaining) = remaining.split_at(picture_count*54);
+        let (picture_data, mut remaining) = remaining.split_at(picture_count * 54);
         self.pictures = self.parse_pictures(picture_data, picture_count)?;
 
         // EOD marker expected at this point.
         let expected = remaining.read_i32::<LE>()?;
-        if expected != EOD { return Err(ElmaError::EODMismatch) }
+        if expected != EOD {
+            return Err(ElmaError::EODMismatch);
+        }
 
         // First decrypt the top10 blocks.
         let (top10, mut remaining) = remaining.split_at(688);
@@ -406,20 +420,26 @@ impl Level {
 
         // Single-player list.
         let single = &decrypted_top10_data[0..344];
-        self.top10_single = parse_top10(single)?;
+        self.best_times.single = parse_top10(single)?;
 
         // Multi-player list.
         let multi = &decrypted_top10_data[344..688];
-        self.top10_multi = parse_top10(multi)?;
+        self.best_times.multi = parse_top10(multi)?;
 
         // EOF marker expected at this point.
         let expected = remaining.read_i32::<LE>()?;
-        if expected != EOF { return Err(ElmaError::EOFMismatch) }
+        if expected != EOF {
+            return Err(ElmaError::EOFMismatch);
+        }
 
         Ok(())
     }
 
-    fn parse_polygons (&self, mut buffer: &[u8], n: usize) -> Result<(Vec<Polygon>, usize), ElmaError> {
+    fn parse_polygons(
+        &self,
+        mut buffer: &[u8],
+        n: usize,
+    ) -> Result<(Vec<Polygon>, usize), ElmaError> {
         let mut polygons = vec![];
         let mut read_bytes = 0;
         for _ in 0..n {
@@ -431,20 +451,17 @@ impl Level {
                 read_bytes += 16;
                 let x = buffer.read_f64::<LE>()?;
                 let y = buffer.read_f64::<LE>()?;
-                vertices.push(Position {
-                    x: x,
-                    y: y
-                });
+                vertices.push(Position { x: x, y: y });
             }
             polygons.push(Polygon {
                 grass: grass,
-                vertices: vertices
+                vertices: vertices,
             });
         }
         Ok((polygons, read_bytes))
     }
 
-    fn parse_objects (&self, mut buffer: &[u8], n: usize) -> Result<Vec<Object>, ElmaError> {
+    fn parse_objects(&self, mut buffer: &[u8], n: usize) -> Result<Vec<Object>, ElmaError> {
         let mut objects = vec![];
         for _ in 0..n {
             let x = buffer.read_f64::<LE>()?;
@@ -453,31 +470,34 @@ impl Level {
             let object_type = buffer.read_i32::<LE>()?;
             let gravity = buffer.read_i32::<LE>()?;
             let gravity_direction = match gravity {
-                0 => Direction::Normal,
+                0 => Direction::None,
                 1 => Direction::Up,
                 2 => Direction::Down,
                 3 => Direction::Left,
                 4 => Direction::Right,
-                other => return Err(ElmaError::InvalidGravity(other))
+                other => return Err(ElmaError::InvalidGravity(other)),
             };
             let animation = buffer.read_i32::<LE>()? + 1;
             let object = match object_type {
                 1 => ObjectType::Exit,
-                2 => ObjectType::Apple { gravity: gravity_direction, animation: animation },
+                2 => ObjectType::Apple {
+                    gravity: gravity_direction,
+                    animation: animation,
+                },
                 3 => ObjectType::Killer,
                 4 => ObjectType::Player,
-                other => return Err(ElmaError::InvalidObject(other))
+                other => return Err(ElmaError::InvalidObject(other)),
             };
 
             objects.push(Object {
                 position: position,
-                object_type: object
+                object_type: object,
             });
         }
         Ok(objects)
     }
 
-    fn parse_pictures (&self, mut buffer: &[u8], n: usize) -> Result<Vec<Picture>, ElmaError> {
+    fn parse_pictures(&self, mut buffer: &[u8], n: usize) -> Result<Vec<Picture>, ElmaError> {
         let mut pictures = vec![];
         for _ in 0..n {
             let (name, temp_remaining) = buffer.split_at(10);
@@ -495,7 +515,7 @@ impl Level {
                 0 => Clip::Unclipped,
                 1 => Clip::Ground,
                 2 => Clip::Sky,
-                other => return Err(ElmaError::InvalidClipping(other))
+                other => return Err(ElmaError::InvalidClipping(other)),
             };
 
             pictures.push(Picture {
@@ -504,7 +524,7 @@ impl Level {
                 mask: mask,
                 position: Position { x: x, y: y },
                 distance: distance,
-                clip: clip
+                clip: clip,
             });
         }
         Ok(pictures)
@@ -525,13 +545,13 @@ impl Level {
     /// level.pictures = vec![]; // Let's just delete all pictures
     /// level.update(false);
     /// ```
-    pub fn update (&mut self, top_10: bool) -> Result<(), ElmaError> {
+    pub fn update(&mut self, top_10: bool) -> Result<(), ElmaError> {
         let mut bytes = vec![];
 
         // Level version.
         match self.version {
             Version::Elma => bytes.extend_from_slice(&[80, 79, 84, 49, 52]),
-            Version::Across => return Err(ElmaError::AcrossUnsupported)
+            Version::Across => return Err(ElmaError::AcrossUnsupported),
         };
 
         // Lower short of link.
@@ -574,9 +594,11 @@ impl Level {
         // Top10 lists.
         if top_10 {
             // Order lists first.
-            self.top10_single.sort();
-            self.top10_multi.sort();
-            bytes = self.write_top10(bytes)?;
+            self.best_times.single.sort();
+            self.best_times.multi.sort();
+            // Encrypt the data before writing.
+            let top10_bytes = write_top10(&self.best_times)?;
+            bytes.extend_from_slice(&crypt_top10(&top10_bytes));
         } else {
             bytes.extend_from_slice(&EMPTY_TOP10);
         }
@@ -588,7 +610,7 @@ impl Level {
         Ok(())
     }
 
-    fn write_polygons (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
+    fn write_polygons(&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
         for poly in &self.polygons {
             // Grass poly.
             bytes.write_i32::<LE>(if poly.grass { 1 } else { 0 })?;
@@ -603,7 +625,7 @@ impl Level {
         Ok(bytes)
     }
 
-    fn write_objects (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
+    fn write_objects(&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
         for obj in &self.objects {
             // Position.
             bytes.write_f64::<LE>(obj.position.x)?;
@@ -613,26 +635,38 @@ impl Level {
                 ObjectType::Exit => 1,
                 ObjectType::Apple { .. } => 2,
                 ObjectType::Killer => 3,
-                ObjectType::Player => 4
+                ObjectType::Player => 4,
             })?;
             // Apple gravity.
             bytes.write_i32::<LE>(match obj.object_type {
-                ObjectType::Apple { gravity: Direction::Up, .. } => 1,
-                ObjectType::Apple { gravity: Direction::Down, .. } => 2,
-                ObjectType::Apple { gravity: Direction::Left, .. } => 3,
-                ObjectType::Apple { gravity: Direction::Right, .. } => 4,
-                _ => 0
+                ObjectType::Apple {
+                    gravity: Direction::Up,
+                    ..
+                } => 1,
+                ObjectType::Apple {
+                    gravity: Direction::Down,
+                    ..
+                } => 2,
+                ObjectType::Apple {
+                    gravity: Direction::Left,
+                    ..
+                } => 3,
+                ObjectType::Apple {
+                    gravity: Direction::Right,
+                    ..
+                } => 4,
+                _ => 0,
             })?;
             // Apple animation.
             bytes.write_i32::<LE>(match obj.object_type {
                 ObjectType::Apple { animation: n, .. } => (n - 1) as i32,
-                _ => 0
+                _ => 0,
             })?;
         }
         Ok(bytes)
     }
 
-    fn write_pictures (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
+    fn write_pictures(&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
         for pic in &self.pictures {
             // Picture name.
             bytes.extend_from_slice(&string_null_pad(&pic.name, 10)?);
@@ -649,73 +683,9 @@ impl Level {
             bytes.write_i32::<LE>(match pic.clip {
                 Clip::Unclipped => 0,
                 Clip::Ground => 1,
-                Clip::Sky => 2
+                Clip::Sky => 2,
             })?;
         }
-        Ok(bytes)
-    }
-
-    fn write_top10 (&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
-        let mut top10_bytes: Vec<u8> = vec![];
-
-        // Single-player times.
-        let single_times = self.top10_single.len();
-        top10_bytes.write_i32::<LE>(if 10 < single_times { 10 } else { single_times } as i32)?;
-        let mut times = [0_i32;10];
-        let mut names_1 = vec![];
-        let mut names_2 = vec![];
-        for (n, entry) in self.top10_single.iter().enumerate() {
-            if n < 10 {
-                times[n] = entry.time;
-                names_1.extend_from_slice(&string_null_pad(&entry.name_1, 15)?);
-                names_2.extend_from_slice(&string_null_pad(&entry.name_2, 15)?);
-            }
-        }
-        // Pad with null bytes if less than 10 entries.
-        if single_times < 10 {
-            for _ in 0..10 - single_times {
-                names_1.extend_from_slice(&[0u8;15]);
-                names_2.extend_from_slice(&[0u8;15]);
-            }
-        }
-
-        for time in &times {
-            top10_bytes.write_i32::<LE>(*time)?;
-        }
-
-        top10_bytes.extend_from_slice(&names_1);
-        top10_bytes.extend_from_slice(&names_2);
-
-        // Multi-player times.
-        let multi_times = self.top10_multi.len();
-        top10_bytes.write_i32::<LE>(if 10 < multi_times { 10 } else { multi_times } as i32)?;
-        let mut times = [0_i32;10];
-        let mut names_1 = vec![];
-        let mut names_2 = vec![];
-        for (n, entry) in self.top10_multi.iter().enumerate() {
-            if n < 10 {
-                times[n] = entry.time;
-                names_1.extend_from_slice(&string_null_pad(&entry.name_1, 15)?);
-                names_2.extend_from_slice(&string_null_pad(&entry.name_2, 15)?);
-            }
-        }
-        // Pad with null bytes if less than 10 entries.
-        if multi_times < 10 {
-            for _ in 0..10 - multi_times {
-                names_1.extend_from_slice(&[0u8;15]);
-                names_2.extend_from_slice(&[0u8;15]);
-            }
-        }
-
-        for time in &times {
-            top10_bytes.write_i32::<LE>(*time)?;
-        }
-
-        top10_bytes.extend_from_slice(&names_1);
-        top10_bytes.extend_from_slice(&names_2);
-
-        // Encrypt the data before writing.
-        bytes.extend_from_slice(&crypt_top10(&top10_bytes));
         Ok(bytes)
     }
 
@@ -732,10 +702,14 @@ impl Level {
     }
 
     /// Check topology of level.
-    pub fn check_topology (&self) -> Result<(), TopologyError>  {
+    pub fn check_topology(&self) -> Result<(), TopologyError> {
         self.check_objects()?;
-        if self.width() > 188_f64 { return Err(TopologyError::TooWide(self.width() - 188_f64)) }
-        if self.height() > 188_f64 { return Err(TopologyError::TooHigh(self.height() - 188_f64)) }
+        if self.width() > 188_f64 {
+            return Err(TopologyError::TooWide(self.width() - 188_f64));
+        }
+        if self.height() > 188_f64 {
+            return Err(TopologyError::TooHigh(self.height() - 188_f64));
+        }
         self.check_vertex_count()?;
         self.check_overlapping_polygons()?;
         // TODO: check line segment overlaps
@@ -762,25 +736,37 @@ impl Level {
 
     fn check_objects(&self) -> Result<(), TopologyError> {
         if self.polygons.len() > 1000 {
-            return Err(TopologyError::MaxPolygons(&self.polygons.len() - 1000))
+            return Err(TopologyError::MaxPolygons(&self.polygons.len() - 1000));
         }
 
         if self.objects.len() > 252 {
-            return Err(TopologyError::MaxObjects(&self.objects.len() - 252))
+            return Err(TopologyError::MaxObjects(&self.objects.len() - 252));
         }
 
         if self.pictures.len() > 5000 {
-            return Err(TopologyError::MaxPictures(&self.pictures.len() - 5000))
+            return Err(TopologyError::MaxPictures(&self.pictures.len() - 5000));
         }
 
-        let player_count = self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Player { total + 1} else { total });
+        let player_count = self.objects.iter().fold(0, |total, object| {
+            if object.object_type == ObjectType::Player {
+                total + 1
+            } else {
+                total
+            }
+        });
         if player_count != 1 {
-            return Err(TopologyError::InvalidPlayerCount(player_count))
+            return Err(TopologyError::InvalidPlayerCount(player_count));
         }
 
-        let exit_count = self.objects.iter().fold(0, |total, object| if object.object_type == ObjectType::Exit { total + 1} else { total });
+        let exit_count = self.objects.iter().fold(0, |total, object| {
+            if object.object_type == ObjectType::Exit {
+                total + 1
+            } else {
+                total
+            }
+        });
         if exit_count < 1 {
-            return Err(TopologyError::MissingExit)
+            return Err(TopologyError::MissingExit);
         }
 
         Ok(())
@@ -788,15 +774,16 @@ impl Level {
 
     fn check_overlapping_polygons(&self) -> Result<(), TopologyError> {
         for poly_base in &self.polygons {
-            if poly_base.grass { break; } // ignore anything involving grass polygons
-            // first check overlapping lines within base polygon
-
+            if poly_base.grass {
+                break;
+            } // ignore anything involving grass polygons
+              // first check overlapping lines within base polygon
         }
         Ok(())
     }
 
     /// Calculate integrity sums for level.
-    fn calculate_integrity_sums (&mut self, valid_topology: bool) {
+    fn calculate_integrity_sums(&mut self, valid_topology: bool) {
         let mut pol_sum = 0_f64;
         let mut obj_sum = 0_f64;
         let mut pic_sum = 0_f64;
@@ -812,7 +799,7 @@ impl Level {
                 ObjectType::Exit => 1,
                 ObjectType::Apple { .. } => 2,
                 ObjectType::Killer => 3,
-                ObjectType::Player => 4
+                ObjectType::Player => 4,
             };
             obj_sum += obj.position.x + obj.position.y + (obj_type as f64);
         }
@@ -844,7 +831,7 @@ impl Level {
     /// let mut level = elma::lev::Level::new();
     /// let raw_bytes = level.get_raw(false).unwrap();
     /// ```
-    pub fn get_raw (&mut self, top10: bool) -> Result<Vec<u8>, ElmaError> {
+    pub fn get_raw(&mut self, top10: bool) -> Result<Vec<u8>, ElmaError> {
         self.update(top10)?;
         Ok(self.raw.clone())
     }
@@ -859,7 +846,7 @@ impl Level {
     /// level.generate_link();
     /// level.save("newlink.lev", false).unwrap();
     /// ```
-    pub fn generate_link (&mut self) {
+    pub fn generate_link(&mut self) {
         self.link = random::<u32>();
     }
 
@@ -876,7 +863,7 @@ impl Level {
     /// let mut level = elma::lev::Level::new();
     /// level.save("newlevel.lev", false).unwrap();
     /// ```
-    pub fn save<P: AsRef<Path>> (&mut self, filename: P, top10: bool) -> Result<(), ElmaError> {
+    pub fn save<P: AsRef<Path>>(&mut self, filename: P, top10: bool) -> Result<(), ElmaError> {
         self.update(top10)?;
         let mut file = File::create(filename)?;
         file.write_all(&self.raw)?;
@@ -885,7 +872,7 @@ impl Level {
 }
 
 /// Decrypt and encrypt top10 list data. Same algorithm for both.
-pub fn crypt_top10 (top10_data: &[u8]) -> Vec<u8> {
+pub fn crypt_top10(top10_data: &[u8]) -> Vec<u8> {
     let mut top10: Vec<u8> = Vec::with_capacity(688);
     top10.extend_from_slice(top10_data);
 
@@ -902,38 +889,19 @@ pub fn crypt_top10 (top10_data: &[u8]) -> Vec<u8> {
     top10
 }
 
-/// Parse top10 lists and return a vector of `ListEntry`s
-pub fn parse_top10 (top10: &[u8]) -> Result<Vec<ListEntry>, ElmaError> {
-    let mut list: Vec<ListEntry> = vec![];
-    let times = LittleEndian::read_i32(&top10[0..4]);
-    for n in 0..times {
-        let time_offset = (4 + n * 4) as usize;
-        let time_end = time_offset + 4;
-        let name_1_offset = (44 + n * 15) as usize;
-        let name_1_end = name_1_offset + 15;
-        let name_2_offset = (194 + n * 15) as usize;
-        let name_2_end = name_2_offset + 15;
-
-        let name_1 = &top10[name_1_offset..name_1_end];
-        let name_2 = &top10[name_2_offset..name_2_end];
-        let time = &top10[time_offset..time_end];
-        list.push(ListEntry {
-            time: LittleEndian::read_i32(time),
-            name_1: trim_string(name_1)?,
-            name_2: trim_string(name_2)?
-        });
-    }
-    Ok(list)
-}
-
 // Original code by Peter Kelley <pgkelley4@gmail.com> from:
 // https://github.com/pgkelley4/line-segments-intersect/blob/39d4425b2868fd8fc26172d94132215568c70523/js/line-segments-intersect.js
 /// Checks if two line segments intersects.
-pub fn do_line_segment_intersect(seg_one_start: &Position<f64>, seg_one_end: &Position<f64>,
-                             seg_two_start: &Position<f64>, seg_two_end: &Position<f64>) -> Result<(), IntersectError> {
+pub fn do_line_segment_intersect(
+    seg_one_start: &Position<f64>,
+    seg_one_end: &Position<f64>,
+    seg_two_start: &Position<f64>,
+    seg_two_end: &Position<f64>,
+) -> Result<(), IntersectError> {
     // do they touch (are any points equal)?
-    if seg_one_start == seg_two_start || seg_one_start == seg_two_end ||
-       seg_one_end == seg_two_start || seg_one_end == seg_two_end {
+    if seg_one_start == seg_two_start || seg_one_start == seg_two_end
+        || seg_one_end == seg_two_start || seg_one_end == seg_two_end
+    {
         return Err(IntersectError::PointTouch);
     }
 
@@ -948,12 +916,18 @@ pub fn do_line_segment_intersect(seg_one_start: &Position<f64>, seg_one_end: &Po
         // do they overlap? (are all the point differences in either direction the same sign)
         let predicate_x = seg_two_start.x - seg_one_start.x < 0_f64;
         let predicate_y = seg_two_start.y - seg_one_start.y < 0_f64;
-        let equal_x = [seg_two_start.x - seg_one_end.x < 0_f64,
-                       seg_two_end.x - seg_one_start.x < 0_f64,
-                       seg_two_end.x - seg_one_end.x < 0_f64].iter().all(|&elem| elem == predicate_x);
-        let equal_y = [seg_two_start.y - seg_one_end.y < 0_f64,
-                       seg_two_end.y - seg_one_start.y < 0_f64,
-                       seg_two_end.y - seg_one_end.y < 0_f64].iter().all(|&elem| elem == predicate_y);
+        let equal_x = [
+            seg_two_start.x - seg_one_end.x < 0_f64,
+            seg_two_end.x - seg_one_start.x < 0_f64,
+            seg_two_end.x - seg_one_end.x < 0_f64,
+        ].iter()
+            .all(|&elem| elem == predicate_x);
+        let equal_y = [
+            seg_two_start.y - seg_one_end.y < 0_f64,
+            seg_two_end.y - seg_one_start.y < 0_f64,
+            seg_two_end.y - seg_one_end.y < 0_f64,
+        ].iter()
+            .all(|&elem| elem == predicate_y);
 
         if !equal_x || !equal_y {
             return Err(IntersectError::Collinear);
@@ -963,7 +937,9 @@ pub fn do_line_segment_intersect(seg_one_start: &Position<f64>, seg_one_end: &Po
     }
 
     // paralell lines
-    if denominator == 0_f64 { return Ok(()); }
+    if denominator == 0_f64 {
+        return Ok(());
+    }
 
     let u = u_numerator / denominator;
     let t = cross_product(&subtract_points(seg_two_start, seg_one_start), &s) / denominator;
@@ -976,7 +952,10 @@ pub fn do_line_segment_intersect(seg_one_start: &Position<f64>, seg_one_end: &Po
 }
 
 fn subtract_points(point_one: &Position<f64>, point_two: &Position<f64>) -> Position<f64> {
-    Position { x: point_one.x - point_two.x, y: point_one.y - point_two.y }
+    Position {
+        x: point_one.x - point_two.x,
+        y: point_one.y - point_two.y,
+    }
 }
 
 fn cross_product(point_one: &Position<f64>, point_two: &Position<f64>) -> f64 {
