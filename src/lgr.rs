@@ -1,7 +1,10 @@
-use std::io::{ Read, Write };
+extern crate combine;
+
+use std::io::{Read, Write};
 use std::fs::File;
+use std::collections::HashMap;
 use std::path::Path;
-use byteorder::{ ByteOrder, ReadBytesExt, WriteBytesExt, LittleEndian };
+use byteorder::{ByteOrder, LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use super::lev::Clip;
 
@@ -14,7 +17,7 @@ pub struct Lgr {
     /// List of pictures.
     pub picture_list: Vec<Picture>,
     /// Picture data.
-    pub picture_data: Vec<PictureData>
+    pub picture_data: HashMap<String, Vec<u8>>,
 }
 
 /// LGR picture structure.
@@ -29,14 +32,6 @@ pub struct Picture {
     pub clipping: Clip,
     /// Transparency.
     pub transparency: Transparency,
-}
-
-/// Picture data.
-pub struct PictureData {
-    /// Picture name.
-    pub name: String,
-    /// Raw byte data.
-    pub data: Vec<u8>,
 }
 
 /// Picture types.
@@ -64,3 +59,33 @@ pub enum Transparency {
     /// Bottom right pixel is transparent color.
     BottomRight,
 }
+
+/// Files that are mandatory for a valid LGR file.
+pub const MANDATORY_FILES: [&'static str; 26] = [
+    "q1body.pcx",
+    "q1thigh.pcx",
+    "q1leg.pcx",
+    "q1bike.pcx",
+    "q1wheel.pcx",
+    "q1susp1.pcx",
+    "q1susp2.pcx",
+    "q1forarm.pcx",
+    "q1up_arm.pcx",
+    "q1head.pcx",
+    "q2body.pcx",
+    "q2thigh.pcx",
+    "q2leg.pcx",
+    "q2bike.pcx",
+    "q2wheel.pcx",
+    "q2susp1.pcx",
+    "q2susp2.pcx",
+    "q2forarm.pcx",
+    "q2up_arm.pcx",
+    "q2head.pcx",
+    "qflag.pcx",
+    "qkiller.pcx",
+    "qexit.pcx",
+    "qframe.pcx",
+    "qcolors.pcx",
+    "qfood1.pcx",
+];
