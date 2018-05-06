@@ -46,6 +46,7 @@ impl<'a> From<&'a str> for Time {
         let parts: Vec<_> = s.split(|c: char| !c.is_numeric())
             .filter(|s| !s.is_empty())
             .map(|s| s.parse::<i32>().unwrap())
+            .inspect(|v| println!("{:?}", v))
             .collect();
         let mut time = 0;
         for (n, val) in parts.iter().rev().enumerate() {
@@ -53,6 +54,8 @@ impl<'a> From<&'a str> for Time {
                 n if n == 0 => time += val,
                 n if n == 1 => time += val * 100,
                 n if n == 2 => time += val * 6000,
+                n if n == 3 => time += val * 360000,
+                n if n == 4 => time += val * 8640000,
                 _ => time = time.saturating_add(i32::MAX),
             }
         }
@@ -88,14 +91,24 @@ impl From<Time> for i32 {
 impl fmt::Display for Time {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let h = self.0 % 100;
-        let s = self.0 % 6000 / 100;
-        let m = self.0 / 6000;
+        let s = (self.0 / 100) % 60;
+        let m = (self.0 / (100 * 60)) % 60;
+        let hr = self.0 / (100 * 60 * 60);
 
         write!(
             f,
-            "{}{:02}:{:02},{:02}",
+            "{}{}{}{:02},{:02}",
             if self.0 < 0 { "-" } else { "" },
-            m,
+            if hr > 0 {
+                format!("{:02}:", hr)
+            } else {
+                "".into()
+            },
+            if m > 0 {
+                format!("{:02}:", m)
+            } else {
+                "".into()
+            },
             s,
             h
         )
