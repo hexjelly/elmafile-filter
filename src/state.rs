@@ -28,20 +28,31 @@ impl State {
         let mut buffer = vec![];
         let mut file = File::open(filename)?;
         file.read_to_end(&mut buffer)?;
-        crypt_state(&mut buffer[4..]);
-
         State::parse(&buffer)
+    }
+
+    /// Load a state.dat file from bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use elma::state::*;
+    /// let state = State::from_bytes(&[0,1,2]).unwrap();
+    /// ```
+    pub fn from_bytes<B: AsRef<[u8]>>(buffer: B) -> Result<Self, ElmaError> {
+        State::parse(buffer.as_ref())
     }
 
     fn parse(buffer: &[u8]) -> Result<Self, ElmaError> {
         let mut state = State::new();
         state.buffer = buffer.to_vec();
+        crypt_state(&mut state.buffer[4..]);
         for n in 1..91 {
             let offset_start = 4 + (688 * (n - 1));
             let offset_end = offset_start + 344;
             let level = BestTimes {
-                single: parse_top10(&buffer[offset_start..offset_end])?,
-                multi: parse_top10(&buffer[offset_start + 344..offset_end + 344])?,
+                single: parse_top10(&state.buffer[offset_start..offset_end])?,
+                multi: parse_top10(&state.buffer[offset_start + 344..offset_end + 344])?,
             };
             state.times.push(level);
         }

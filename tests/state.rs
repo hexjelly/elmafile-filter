@@ -42,3 +42,12 @@ fn load_parse_save_state() {
     assert_eq!(&file_original.len(), &file_saved.len());
     assert_eq!(orig_state, saved_state);
 }
+
+#[test]
+fn load_state_from_bytes() {
+    let state = State::load("tests/assets/state/state.dat").unwrap();
+    let mut file = File::open("tests/assets/state/state.dat").unwrap();
+    let mut buffer = vec![];
+    file.read_to_end(&mut buffer).unwrap();
+    assert_eq!(state, State::from_bytes(&buffer).unwrap());
+}
