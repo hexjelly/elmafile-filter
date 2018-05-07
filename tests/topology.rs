@@ -222,6 +222,3 @@ fn topology_err_invalid_vertex_count() {
         TopologyError::InvalidVertexCount(vec![1, 3])
     );
 }
-
-// TODO: AppleInsideGround(usize)
-// TODO: IntersectingPolygons

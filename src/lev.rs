@@ -9,10 +9,6 @@ use super::{BestTimes, ElmaError, Position, constants::{EMPTY_TOP10, EOD, EOF, O
 /// Topology related errors.
 #[derive(Debug, PartialEq)]
 pub enum TopologyError {
-    /// Apple is fully inside ground, with list of erroneous objects' indexes.
-    AppleInsideGround(Vec<usize>),
-    /// Intersecting polygons, with list of erroneous polygons' indexes.
-    IntersectingPolygons(Vec<usize>),
     /// Polygon has too few or too many vertices, with list of erroneous polygons' indexes.
     InvalidVertexCount(Vec<usize>),
     /// Too many objects, with number of excess object count.
@@ -29,17 +25,6 @@ pub enum TopologyError {
     TooWide(f64),
     /// Level is too high, with excess height.
     TooHigh(f64),
-}
-
-/// Topology related intersection errors.
-#[derive(Debug, PartialEq)]
-pub enum IntersectError {
-    /// Collinear intersect.
-    Collinear,
-    /// Normal intersect.
-    Intersect,
-    /// Touching points.
-    PointTouch,
 }
 
 /// This trait specifies something having a rectangle bounding box.
