@@ -708,7 +708,6 @@ impl Level {
             return Err(TopologyError::TooHigh(self.height() - 188_f64));
         }
         self.check_vertex_count()?;
-        self.check_overlapping_polygons()?;
         // TODO: check line segment overlaps
         // TODO: check if head inside ground
         // TODO: check if apples fully inside ground
@@ -766,16 +765,6 @@ impl Level {
             return Err(TopologyError::MissingExit);
         }
 
-        Ok(())
-    }
-
-    fn check_overlapping_polygons(&self) -> Result<(), TopologyError> {
-        for poly_base in &self.polygons {
-            if poly_base.grass {
-                break;
-            } // ignore anything involving grass polygons
-              // first check overlapping lines within base polygon
-        }
         Ok(())
     }
 
@@ -887,77 +876,4 @@ pub fn crypt_top10(top10_data: &[u8]) -> Vec<u8> {
     }
 
     top10
-}
-
-// Original code by Peter Kelley <pgkelley4@gmail.com> from:
-// https://github.com/pgkelley4/line-segments-intersect/blob/39d4425b2868fd8fc26172d94132215568c70523/js/line-segments-intersect.js
-/// Checks if two line segments intersects.
-pub fn do_line_segment_intersect(
-    seg_one_start: &Position<f64>,
-    seg_one_end: &Position<f64>,
-    seg_two_start: &Position<f64>,
-    seg_two_end: &Position<f64>,
-) -> Result<(), IntersectError> {
-    // do they touch (are any points equal)?
-    if seg_one_start == seg_two_start || seg_one_start == seg_two_end
-        || seg_one_end == seg_two_start || seg_one_end == seg_two_end
-    {
-        return Err(IntersectError::PointTouch);
-    }
-
-    let r = subtract_points(seg_one_end, seg_one_start);
-    let s = subtract_points(seg_two_end, seg_two_start);
-
-    let u_numerator = cross_product(&subtract_points(seg_two_start, seg_one_start), &r);
-    let denominator = cross_product(&r, &s);
-
-    // collinear
-    if u_numerator == 0_f64 && denominator == 0_f64 {
-        // do they overlap? (are all the point differences in either direction the same sign)
-        let predicate_x = seg_two_start.x - seg_one_start.x < 0_f64;
-        let predicate_y = seg_two_start.y - seg_one_start.y < 0_f64;
-        let equal_x = [
-            seg_two_start.x - seg_one_end.x < 0_f64,
-            seg_two_end.x - seg_one_start.x < 0_f64,
-            seg_two_end.x - seg_one_end.x < 0_f64,
-        ].iter()
-            .all(|&elem| elem == predicate_x);
-        let equal_y = [
-            seg_two_start.y - seg_one_end.y < 0_f64,
-            seg_two_end.y - seg_one_start.y < 0_f64,
-            seg_two_end.y - seg_one_end.y < 0_f64,
-        ].iter()
-            .all(|&elem| elem == predicate_y);
-
-        if !equal_x || !equal_y {
-            return Err(IntersectError::Collinear);
-        }
-
-        return Ok(());
-    }
-
-    // paralell lines
-    if denominator == 0_f64 {
-        return Ok(());
-    }
-
-    let u = u_numerator / denominator;
-    let t = cross_product(&subtract_points(seg_two_start, seg_one_start), &s) / denominator;
-
-    if t >= 0_f64 && t <= 1_f64 && u >= 0_f64 && u <= 1_f64 {
-        return Err(IntersectError::Intersect);
-    }
-
-    Ok(())
-}
-
-fn subtract_points(point_one: &Position<f64>, point_two: &Position<f64>) -> Position<f64> {
-    Position {
-        x: point_one.x - point_two.x,
-        y: point_one.y - point_two.y,
-    }
-}
-
-fn cross_product(point_one: &Position<f64>, point_two: &Position<f64>) -> f64 {
-    (point_one.x * point_two.y) - (point_one.y * point_two.x)
 }
