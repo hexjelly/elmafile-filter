@@ -1,33 +1,25 @@
-sudo: false
 language: rust
-
+sudo: required
+dist: trusty
 addons:
   apt:
     packages:
-      - libcurl4-openssl-dev
-      - libelf-dev
-      - libdw-dev
-      - binutils-dev
-      - cmake
-    sources:
-      - kalakris-cmake
+      - libssl-dev
+cache: cargo
 rust:
-  - nightly
   - stable
+  - beta
+  - nightly
+matrix:
+  allow_failures:
+    - rust: nightly
+script:
+- cargo clean
+- cargo build
+- cargo test
 
-before_script: |
-  cargo install cargo-travis &&
-  export PATH=$HOME/.cargo/bin:$PATH
-
-script: |
-  cargo build &&
-  cargo test &&
-  cargo bench
-
-after_success:
-  - cargo coveralls
-
-env:
-  global:
-    - TRAVIS_CARGO_NIGHTLY_FEATURE=""
-    - secure: M+iiny+YDSUyEWvk0mbx1IXUYkDljTjvjehgx9alPiPhR+G/GXbZm0hrzVvrUDxdgFYMRAqR5Y6hCEoYANSpVwSmHBBipnHYgQf32XVG0ODz5ZyFKXYFMk8Ox+MTXyI+w1KGmYD5YZ0Dcv+THbZ4ofqAQMAbWYEDNDhS0MllqcBlYib+4RtzvLgaSAcWN3ArwUftsCJNm0LXyo3034DLDLRSDyfGgVRPZiVZOr3yCUaNDdyFhTmY4TNm5EDvEUwIX0CPG4u/M6KqHeOa3vp4PjraABsTzLfGkruEgWPsfm8VAJmCPfN8CMuETGJXAHEmpuwOLQSJa7uTeCxKVEYpQCjvDR7o8ad0tQpGIPFemVoloBR9CrHgWwPK+a6K6M4tQVTO7s+WfhEpriPJBgExmsOTgwyzC1d7yKn0yFVxCH0JpiLOnboQVIO1Nh78P2mWsvqdz+zlnlcYVyxELlSjauajJKd8ZW4JNysBgwoyfkCQ6zcdDwkDYVd+OMZXXYPJGCYgM3xuAW7s0GbidMNnEpFmwlJfL5+mkl9WI2qzOu0Dzyf1I9ht5nvOcu1dtfSkIe11yLf+A9S8dpQhINzuOu1Gl4uZqV3vOeb+DuI/IIULi7TOsMzk4NJPhUvdq2MQNWQvFixYloEW04+jPZd+gQbfVyIpGFlTADhYS7plotM=
+after_success: |
+  if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
+    bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
+    cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
+  fi
