@@ -305,8 +305,9 @@ impl Level {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let level = elma::lev::Level::new();
+    /// ```rust
+    /// # use elma::lev::*;
+    /// let level = Level::new();
     /// ```
     pub fn new() -> Self {
         Level {
@@ -354,8 +355,9 @@ impl Level {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let level = elma::lev::Level::load("tests/assets/levels/test_1.lev").unwrap();
+    /// ```rust
+    /// # use elma::lev::*;
+    /// let level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     /// ```
     pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
         let mut level = Level::new();
