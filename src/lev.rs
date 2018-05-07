@@ -57,6 +57,15 @@ pub enum Version {
     Elma,
 }
 
+/// Top10 save option.
+#[derive(Debug, PartialEq)]
+pub enum Top10Save {
+    /// Yes. Will save best times into the file's top10 list.
+    Yes,
+    /// No. Will give an empty top10 best times list in level file.
+    No,
+}
+
 impl Default for Version {
     fn default() -> Version {
         Version::Elma
@@ -530,22 +539,7 @@ impl Level {
         Ok(pictures)
     }
 
-    /// Combines the `Level` struct fields to generate the raw binary data, and calculates
-    /// integrity sums. Called automatically when using the `get_raw` or `save` methods,
-    /// and is provided mainly for convinience if you need to use it manually.
-    ///
-    /// # Arguments
-    ///
-    /// * top_10 - Whether to update top10 lists or not.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let mut level = elma::lev::Level::load("tests/assets/levels/test_1.lev").unwrap();
-    /// level.pictures = vec![]; // Let's just delete all pictures
-    /// level.update(false);
-    /// ```
-    pub fn update(&mut self, top_10: bool) -> Result<(), ElmaError> {
+    fn update(&mut self, top_10: Top10Save) -> Result<(), ElmaError> {
         let mut bytes = vec![];
 
         // Level version.
@@ -592,15 +586,16 @@ impl Level {
         bytes.write_i32::<LE>(EOD)?;
 
         // Top10 lists.
-        if top_10 {
-            // Order lists first.
-            self.best_times.single.sort();
-            self.best_times.multi.sort();
-            // Encrypt the data before writing.
-            let top10_bytes = write_top10(&self.best_times)?;
-            bytes.extend_from_slice(&crypt_top10(&top10_bytes));
-        } else {
-            bytes.extend_from_slice(&EMPTY_TOP10);
+        match top_10 {
+            Top10Save::Yes => {
+                // Order lists first.
+                self.best_times.single.sort();
+                self.best_times.multi.sort();
+                // Encrypt the data before writing.
+                let top10_bytes = write_top10(&self.best_times)?;
+                bytes.extend_from_slice(&crypt_top10(&top10_bytes));
+            }
+            Top10Save::No => bytes.extend_from_slice(&EMPTY_TOP10),
         }
 
         // EOF marker.
@@ -827,11 +822,12 @@ impl Level {
     ///
     /// # Examples
     ///
+    /// ```rust
+    /// # use elma::lev::*;
+    /// let mut level = Level::new();
+    /// let raw_bytes = level.to_bytes(Top10Save::No).unwrap();
     /// ```
-    /// let mut level = elma::lev::Level::new();
-    /// let raw_bytes = level.get_raw(false).unwrap();
-    /// ```
-    pub fn get_raw(&mut self, top10: bool) -> Result<Vec<u8>, ElmaError> {
+    pub fn to_bytes(&mut self, top10: Top10Save) -> Result<Vec<u8>, ElmaError> {
         self.update(top10)?;
         Ok(self.raw.clone())
     }
@@ -842,9 +838,10 @@ impl Level {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// let mut level = elma::lev::Level::new();
+    /// # use elma::lev::*;
+    /// let mut level = Level::new();
     /// level.generate_link();
-    /// level.save("newlink.lev", false).unwrap();
+    /// level.save("newlink.lev", Top10Save::No).unwrap();
     /// ```
     pub fn generate_link(&mut self) {
         self.link = random::<u32>();
@@ -860,10 +857,11 @@ impl Level {
     /// # Examples
     ///
     /// ```rust,no_run
-    /// let mut level = elma::lev::Level::new();
-    /// level.save("newlevel.lev", false).unwrap();
+    /// # use elma::lev::*;
+    /// let mut level = Level::new();
+    /// level.save("newlevel.lev", Top10Save::No).unwrap();
     /// ```
-    pub fn save<P: AsRef<Path>>(&mut self, filename: P, top10: bool) -> Result<(), ElmaError> {
+    pub fn save<P: AsRef<Path>>(&mut self, filename: P, top10: Top10Save) -> Result<(), ElmaError> {
         self.update(top10)?;
         let mut file = File::create(filename)?;
         file.write_all(&self.raw)?;

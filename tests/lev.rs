@@ -72,10 +72,10 @@ fn construct_level_and_save() {
         .multi
         .push(TimeEntry::new(("", ""), 100000));
     level.generate_link();
-    let _ = level.get_raw(false).unwrap();
+    let _ = level.to_bytes(Top10Save::No).unwrap();
     let mut dir = env::temp_dir();
     dir.push("constructed.lev");
-    level.save(&dir, true).unwrap();
+    level.save(&dir, Top10Save::Yes).unwrap();
 }
 
 #[test]
@@ -112,7 +112,7 @@ fn overflow_top10_and_sort() {
     // Save and then load it again to see whether it worked.
     let mut dir = env::temp_dir();
     dir.push("top10_overflow_and_sort.lev");
-    level.save(&dir, true).unwrap();
+    level.save(&dir, Top10Save::Yes).unwrap();
     let level = Level::load(&dir).unwrap();
     // Check if we get the expected sorted times.
     let mut expected_single = vec![];
@@ -165,7 +165,7 @@ fn save_across_level_1() {
     let mut dir = env::temp_dir();
     dir.push("save_across_level_1.lev");
     assert_eq!(
-        level.save(&dir, false).unwrap_err(),
+        level.save(&dir, Top10Save::No).unwrap_err(),
         ElmaError::AcrossUnsupported
     );
 }
@@ -387,7 +387,7 @@ fn load_valid_level_1_and_save_with_top10() {
     let mut level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     let mut dir = env::temp_dir();
     dir.push("save_level_1_wtop10.lev");
-    level.save(&dir, true).unwrap();
+    level.save(&dir, Top10Save::Yes).unwrap();
     let level_saved = Level::load(&dir).unwrap();
     assert_eq!(level.name, level_saved.name);
     assert_eq!(level.ground, level_saved.ground);
@@ -404,7 +404,7 @@ fn load_valid_level_1_and_save_without_top10() {
     let mut level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     let mut dir = env::temp_dir();
     dir.push("save_level_1_notop10.lev");
-    level.save(&dir, false).unwrap();
+    level.save(&dir, Top10Save::No).unwrap();
     let level_saved = Level::load(&dir).unwrap();
     assert_eq!(level.name, level_saved.name);
     assert_eq!(level.ground, level_saved.ground);
