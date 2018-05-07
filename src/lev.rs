@@ -219,8 +219,6 @@ impl Picture {
 /// Level struct that contains all level information.
 #[derive(Debug, PartialEq)]
 pub struct Level {
-    /// Raw binary data of a loaded or finalized constructed level.
-    pub raw: Vec<u8>,
     /// Elma or Across level.
     pub version: Version,
     /// Random number that links level file to replay files.
@@ -296,7 +294,6 @@ impl Level {
     /// ```
     pub fn new() -> Self {
         Level {
-            raw: vec![],
             version: Version::Elma,
             link: random::<u32>(),
             integrity: [0f64; 4],
@@ -345,22 +342,18 @@ impl Level {
     /// let level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     /// ```
     pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
-        let mut level = Level::new();
         let mut file = File::open(filename)?;
         let mut buffer = vec![];
         file.read_to_end(&mut buffer)?;
-        level.raw = buffer;
-        level.parse_level()?;
-        Ok(level)
+        Level::parse_level(&buffer)
     }
 
     /// Parses the raw binary data into `Level` struct fields.
-    fn parse_level(&mut self) -> Result<(), ElmaError> {
-        let remaining = self.raw.as_slice();
-
+    fn parse_level(buffer: &[u8]) -> Result<Self, ElmaError> {
+        let mut level = Level::new();
         // Version.
-        let (version, remaining) = remaining.split_at(5);
-        self.version = match version {
+        let (version, remaining) = buffer.split_at(5);
+        level.version = match version {
             b"POT14" => Version::Elma,
             b"POT06" => return Err(ElmaError::AcrossUnsupported),
             _ => return Err(ElmaError::InvalidLevelFile),
@@ -368,41 +361,41 @@ impl Level {
 
         // Link.
         let (_, mut remaining) = remaining.split_at(2); // Never used
-        self.link = remaining.read_u32::<LE>()?;
+        level.link = remaining.read_u32::<LE>()?;
 
         // Integrity checksums.
         for i in 0..4 {
-            self.integrity[i] = remaining.read_f64::<LE>()?;
+            level.integrity[i] = remaining.read_f64::<LE>()?;
         }
 
         // Level name.
         let (name, remaining) = remaining.split_at(51);
-        self.name = trim_string(name)?;
+        level.name = trim_string(name)?;
         // LGR name.
         let (lgr, remaining) = remaining.split_at(16);
-        self.lgr = trim_string(lgr)?;
+        level.lgr = trim_string(lgr)?;
         // Ground texture name.
         let (ground, remaining) = remaining.split_at(10);
-        self.ground = trim_string(ground)?;
+        level.ground = trim_string(ground)?;
         // Sky texture name.
         let (sky, mut remaining) = remaining.split_at(10);
-        self.sky = trim_string(sky)?;
+        level.sky = trim_string(sky)?;
 
         // Polygons.
         let poly_count = (remaining.read_f64::<LE>()? - 0.4643643).round() as usize;
-        let (polygons, read_bytes) = self.parse_polygons(remaining, poly_count)?;
-        self.polygons = polygons;
+        let (polygons, read_bytes) = Level::parse_polygons(remaining, poly_count)?;
+        level.polygons = polygons;
         let (_, mut remaining) = remaining.split_at(read_bytes);
 
         // Objects.
         let object_count = (remaining.read_f64::<LE>()? - 0.4643643).round() as usize;
         let (object_data, mut remaining) = remaining.split_at(object_count * 28);
-        self.objects = self.parse_objects(object_data, object_count)?;
+        level.objects = Level::parse_objects(object_data, object_count)?;
 
         // Pictures.
         let picture_count = (remaining.read_f64::<LE>()? - 0.2345672).round() as usize;
         let (picture_data, mut remaining) = remaining.split_at(picture_count * 54);
-        self.pictures = self.parse_pictures(picture_data, picture_count)?;
+        level.pictures = Level::parse_pictures(picture_data, picture_count)?;
 
         // EOD marker expected at this point.
         let expected = remaining.read_i32::<LE>()?;
@@ -416,11 +409,11 @@ impl Level {
 
         // Single-player list.
         let single = &decrypted_top10_data[0..344];
-        self.best_times.single = parse_top10(single)?;
+        level.best_times.single = parse_top10(single)?;
 
         // Multi-player list.
         let multi = &decrypted_top10_data[344..688];
-        self.best_times.multi = parse_top10(multi)?;
+        level.best_times.multi = parse_top10(multi)?;
 
         // EOF marker expected at this point.
         let expected = remaining.read_i32::<LE>()?;
@@ -428,14 +421,10 @@ impl Level {
             return Err(ElmaError::EOFMismatch);
         }
 
-        Ok(())
+        Ok(level)
     }
 
-    fn parse_polygons(
-        &self,
-        mut buffer: &[u8],
-        n: usize,
-    ) -> Result<(Vec<Polygon>, usize), ElmaError> {
+    fn parse_polygons(mut buffer: &[u8], n: usize) -> Result<(Vec<Polygon>, usize), ElmaError> {
         let mut polygons = vec![];
         let mut read_bytes = 0;
         for _ in 0..n {
@@ -457,7 +446,7 @@ impl Level {
         Ok((polygons, read_bytes))
     }
 
-    fn parse_objects(&self, mut buffer: &[u8], n: usize) -> Result<Vec<Object>, ElmaError> {
+    fn parse_objects(mut buffer: &[u8], n: usize) -> Result<Vec<Object>, ElmaError> {
         let mut objects = vec![];
         for _ in 0..n {
             let x = buffer.read_f64::<LE>()?;
@@ -493,7 +482,7 @@ impl Level {
         Ok(objects)
     }
 
-    fn parse_pictures(&self, mut buffer: &[u8], n: usize) -> Result<Vec<Picture>, ElmaError> {
+    fn parse_pictures(mut buffer: &[u8], n: usize) -> Result<Vec<Picture>, ElmaError> {
         let mut pictures = vec![];
         for _ in 0..n {
             let (name, temp_remaining) = buffer.split_at(10);
@@ -526,101 +515,98 @@ impl Level {
         Ok(pictures)
     }
 
-    fn update(&mut self, top_10: Top10Save) -> Result<(), ElmaError> {
-        let mut bytes = vec![];
+    fn update(&self, top_10: Top10Save) -> Result<Vec<u8>, ElmaError> {
+        let mut buffer = vec![];
 
         // Level version.
         match self.version {
-            Version::Elma => bytes.extend_from_slice(&[80, 79, 84, 49, 52]),
+            Version::Elma => buffer.extend_from_slice(&[80, 79, 84, 49, 52]),
             Version::Across => return Err(ElmaError::AcrossUnsupported),
         };
 
         // Lower short of link.
-        bytes.write_i16::<LE>((self.link & 0xFFFF) as i16)?;
+        buffer.write_i16::<LE>((self.link & 0xFFFF) as i16)?;
         // Link.
-        bytes.write_u32::<LE>(self.link)?;
+        buffer.write_u32::<LE>(self.link)?;
         // Integrity checksums.
-        self.calculate_integrity_sums(true);
-        for sum in &self.integrity {
-            bytes.write_f64::<LE>(*sum)?;
+        for sum in &self.calculate_integrity_sums(true) {
+            buffer.write_f64::<LE>(*sum)?;
         }
 
         // Level name.
-        bytes.extend_from_slice(&string_null_pad(&self.name, 51)?);
+        buffer.extend_from_slice(&string_null_pad(&self.name, 51)?);
         // LGR name.
-        bytes.extend_from_slice(&string_null_pad(&self.lgr, 16)?);
+        buffer.extend_from_slice(&string_null_pad(&self.lgr, 16)?);
         // Ground name.
-        bytes.extend_from_slice(&string_null_pad(&self.ground, 10)?);
+        buffer.extend_from_slice(&string_null_pad(&self.ground, 10)?);
         // Sky name.
-        bytes.extend_from_slice(&string_null_pad(&self.sky, 10)?);
+        buffer.extend_from_slice(&string_null_pad(&self.sky, 10)?);
 
-        // Number of polygons.
-        bytes.write_f64::<LE>(self.polygons.len() as f64 + 0.4643643_f64)?;
         // Polygons.
-        bytes = self.write_polygons(bytes)?;
-
-        // Number of objects.
-        bytes.write_f64::<LE>(self.objects.len() as f64 + 0.4643643_f64)?;
+        buffer.extend_from_slice(&self.write_polygons()?);
         // Objects.
-        bytes = self.write_objects(bytes)?;
-
-        // Number of pictures.
-        bytes.write_f64::<LE>(self.pictures.len() as f64 + 0.2345672_f64)?;
+        buffer.extend_from_slice(&self.write_objects()?);
         // Pictures.
-        bytes = self.write_pictures(bytes)?;
+        buffer.extend_from_slice(&self.write_pictures()?);
 
         // EOD marker.
-        bytes.write_i32::<LE>(EOD)?;
+        buffer.write_i32::<LE>(EOD)?;
 
         // Top10 lists.
         match top_10 {
             Top10Save::Yes => {
                 // Order lists first.
-                self.best_times.single.sort();
-                self.best_times.multi.sort();
+                let mut best_times = self.best_times.clone();
+                best_times.single.sort();
+                best_times.multi.sort();
                 // Encrypt the data before writing.
-                let top10_bytes = write_top10(&self.best_times)?;
-                bytes.extend_from_slice(&crypt_top10(&top10_bytes));
+                let top10_bytes = write_top10(&best_times)?;
+                buffer.extend_from_slice(&crypt_top10(&top10_bytes));
             }
-            Top10Save::No => bytes.extend_from_slice(&EMPTY_TOP10),
+            Top10Save::No => buffer.extend_from_slice(&EMPTY_TOP10),
         }
 
         // EOF marker.
-        bytes.write_i32::<LE>(EOF)?;
+        buffer.write_i32::<LE>(EOF)?;
 
-        self.raw = bytes;
-        Ok(())
+        Ok(buffer)
     }
 
-    fn write_polygons(&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
+    fn write_polygons(&self) -> Result<Vec<u8>, ElmaError> {
+        let mut buffer = vec![];
+        // Number of polygons.
+        buffer.write_f64::<LE>(self.polygons.len() as f64 + 0.4643643_f64)?;
         for poly in &self.polygons {
             // Grass poly.
-            bytes.write_i32::<LE>(if poly.grass { 1 } else { 0 })?;
+            buffer.write_i32::<LE>(if poly.grass { 1 } else { 0 })?;
             // Number of vertices.
-            bytes.write_i32::<LE>(poly.vertices.len() as i32)?;
+            buffer.write_i32::<LE>(poly.vertices.len() as i32)?;
             // Vertices.
             for vertex in &poly.vertices {
-                bytes.write_f64::<LE>(vertex.x)?;
-                bytes.write_f64::<LE>(vertex.y)?;
+                buffer.write_f64::<LE>(vertex.x)?;
+                buffer.write_f64::<LE>(vertex.y)?;
             }
         }
-        Ok(bytes)
+        Ok(buffer)
     }
 
-    fn write_objects(&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
+    fn write_objects(&self) -> Result<Vec<u8>, ElmaError> {
+        let mut buffer = vec![];
+        // Number of objects.
+        buffer.write_f64::<LE>(self.objects.len() as f64 + 0.4643643_f64)?;
         for obj in &self.objects {
             // Position.
-            bytes.write_f64::<LE>(obj.position.x)?;
-            bytes.write_f64::<LE>(obj.position.y)?;
+            buffer.write_f64::<LE>(obj.position.x)?;
+            buffer.write_f64::<LE>(obj.position.y)?;
             // Object type.
-            bytes.write_i32::<LE>(match obj.object_type {
+            buffer.write_i32::<LE>(match obj.object_type {
                 ObjectType::Exit => 1,
                 ObjectType::Apple { .. } => 2,
                 ObjectType::Killer => 3,
                 ObjectType::Player => 4,
             })?;
             // Apple gravity.
-            bytes.write_i32::<LE>(match obj.object_type {
+            buffer.write_i32::<LE>(match obj.object_type {
                 ObjectType::Apple {
                     gravity: Direction::Up,
                     ..
@@ -640,35 +626,38 @@ impl Level {
                 _ => 0,
             })?;
             // Apple animation.
-            bytes.write_i32::<LE>(match obj.object_type {
+            buffer.write_i32::<LE>(match obj.object_type {
                 ObjectType::Apple { animation: n, .. } => (n - 1) as i32,
                 _ => 0,
             })?;
         }
-        Ok(bytes)
+        Ok(buffer)
     }
 
-    fn write_pictures(&self, mut bytes: Vec<u8>) -> Result<Vec<u8>, ElmaError> {
+    fn write_pictures(&self) -> Result<Vec<u8>, ElmaError> {
+        let mut buffer = vec![];
+        // Number of pictures.
+        buffer.write_f64::<LE>(self.pictures.len() as f64 + 0.2345672_f64)?;
         for pic in &self.pictures {
             // Picture name.
-            bytes.extend_from_slice(&string_null_pad(&pic.name, 10)?);
+            buffer.extend_from_slice(&string_null_pad(&pic.name, 10)?);
             // Texture name.
-            bytes.extend_from_slice(&string_null_pad(&pic.texture, 10)?);
+            buffer.extend_from_slice(&string_null_pad(&pic.texture, 10)?);
             // Mask name.
-            bytes.extend_from_slice(&string_null_pad(&pic.mask, 10)?);
+            buffer.extend_from_slice(&string_null_pad(&pic.mask, 10)?);
             // Position.
-            bytes.write_f64::<LE>(pic.position.x)?;
-            bytes.write_f64::<LE>(pic.position.y)?;
+            buffer.write_f64::<LE>(pic.position.x)?;
+            buffer.write_f64::<LE>(pic.position.y)?;
             // Z-distance.
-            bytes.write_i32::<LE>(pic.distance)?;
+            buffer.write_i32::<LE>(pic.distance)?;
             // Clipping.
-            bytes.write_i32::<LE>(match pic.clip {
+            buffer.write_i32::<LE>(match pic.clip {
                 Clip::Unclipped => 0,
                 Clip::Ground => 1,
                 Clip::Sky => 2,
             })?;
         }
-        Ok(bytes)
+        Ok(buffer)
     }
 
     /// Width of level based on left- and right-most vertices.
@@ -754,7 +743,7 @@ impl Level {
     }
 
     /// Calculate integrity sums for level.
-    fn calculate_integrity_sums(&mut self, valid_topology: bool) {
+    fn calculate_integrity_sums(&self, valid_topology: bool) -> [f64; 4] {
         let mut pol_sum = 0_f64;
         let mut obj_sum = 0_f64;
         let mut pic_sum = 0_f64;
@@ -780,14 +769,16 @@ impl Level {
         }
 
         let sum = (pol_sum + obj_sum + pic_sum) * 3247.764325643;
-        self.integrity[0] = sum;
-        self.integrity[1] = (random::<u32>() % 5871) as f64 + 11877. - sum;
-        if valid_topology {
-            self.integrity[2] = (random::<u32>() % 5871) as f64 + 11877. - sum;
-        } else {
-            self.integrity[2] = (random::<u32>() % 4982) as f64 + 20961. - sum;
-        }
-        self.integrity[3] = (random::<u32>() % 6102) as f64 + 12112. - sum;
+        [
+            sum,
+            (random::<u32>() % 5871) as f64 + 11877. - sum,
+            if valid_topology {
+                (random::<u32>() % 5871) as f64 + 11877. - sum
+            } else {
+                (random::<u32>() % 4982) as f64 + 20961. - sum
+            },
+            (random::<u32>() % 6102) as f64 + 12112. - sum,
+        ]
     }
 
     /// Converts all struct fields into raw binary form and returns the raw data.
@@ -803,9 +794,8 @@ impl Level {
     /// let mut level = Level::new();
     /// let raw_bytes = level.to_bytes(Top10Save::No).unwrap();
     /// ```
-    pub fn to_bytes(&mut self, top10: Top10Save) -> Result<Vec<u8>, ElmaError> {
-        self.update(top10)?;
-        Ok(self.raw.clone())
+    pub fn to_bytes(&self, top10: Top10Save) -> Result<Vec<u8>, ElmaError> {
+        self.update(top10)
     }
 
     /// Generate a random link number. When you save a level, it will keep the original link
@@ -837,10 +827,10 @@ impl Level {
     /// let mut level = Level::new();
     /// level.save("newlevel.lev", Top10Save::No).unwrap();
     /// ```
-    pub fn save<P: AsRef<Path>>(&mut self, filename: P, top10: Top10Save) -> Result<(), ElmaError> {
-        self.update(top10)?;
+    pub fn save<P: AsRef<Path>>(&self, filename: P, top10: Top10Save) -> Result<(), ElmaError> {
+        let bytes = self.update(top10)?;
         let mut file = File::create(filename)?;
-        file.write_all(&self.raw)?;
+        file.write_all(&bytes)?;
         Ok(())
     }
 }

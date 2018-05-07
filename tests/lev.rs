@@ -35,7 +35,6 @@ fn level_default_values() {
 /// Generate a level with some arbitrary values and see if it saves.
 fn construct_level_and_save() {
     let mut level = Level {
-        raw: vec![],
         version: Version::default(),
         link: random::<u32>(),
         integrity: [0f64; 4],
@@ -384,7 +383,7 @@ fn load_valid_level_2() {
 
 #[test]
 fn load_valid_level_1_and_save_with_top10() {
-    let mut level = Level::load("tests/assets/levels/test_1.lev").unwrap();
+    let level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     let mut dir = env::temp_dir();
     dir.push("save_level_1_wtop10.lev");
     level.save(&dir, Top10Save::Yes).unwrap();
@@ -401,7 +400,7 @@ fn load_valid_level_1_and_save_with_top10() {
 
 #[test]
 fn load_valid_level_1_and_save_without_top10() {
-    let mut level = Level::load("tests/assets/levels/test_1.lev").unwrap();
+    let level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     let mut dir = env::temp_dir();
     dir.push("save_level_1_notop10.lev");
     level.save(&dir, Top10Save::No).unwrap();
