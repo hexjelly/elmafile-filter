@@ -6,6 +6,8 @@ use elma::lev::*;
 use elma::{BestTimes, ElmaError, TimeEntry};
 use std::env;
 use rand::random;
+use std::fs::File;
+use std::io::Read;
 
 #[test]
 /// Generate random u8 data to simulate top10 lists, encrypting it and decrypting it,
@@ -379,6 +381,15 @@ fn load_valid_level_2() {
     assert_eq!(level.objects.len(), 17);
     assert_eq!(level.pictures.len(), 3);
     assert_eq!(level.best_times.single.len(), 0);
+}
+
+#[test]
+fn load_valid_level_2_from_bytes() {
+    let level = Level::load("tests/assets/levels/test_2.lev").unwrap();
+    let mut file = File::open("tests/assets/levels/test_2.lev").unwrap();
+    let mut buffer = vec![];
+    file.read_to_end(&mut buffer).unwrap();
+    assert_eq!(level, Level::from_bytes(&buffer).unwrap());
 }
 
 #[test]

@@ -348,6 +348,18 @@ impl Level {
         Level::parse_level(&buffer)
     }
 
+    /// Load a level from bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use elma::lev::*;
+    /// let lev = Level::from_bytes(&[0,1,2]).unwrap();
+    /// ```
+    pub fn from_bytes<B: AsRef<[u8]>>(buffer: B) -> Result<Self, ElmaError> {
+        Level::parse_level(buffer.as_ref())
+    }
+
     /// Parses the raw binary data into `Level` struct fields.
     fn parse_level(buffer: &[u8]) -> Result<Self, ElmaError> {
         let mut level = Level::new();
