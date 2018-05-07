@@ -114,18 +114,14 @@ impl fmt::Display for Time {
 
         write!(
             f,
-            "{}{}{}{:02},{:02}",
+            "{}{}{:02}:{:02},{:02}",
             if self.0 < 0 { "-" } else { "" },
             if hr > 0 {
                 format!("{:02}:", hr)
             } else {
                 "".into()
             },
-            if m > 0 {
-                format!("{:02}:", m)
-            } else {
-                "".into()
-            },
+            m,
             s,
             h
         )

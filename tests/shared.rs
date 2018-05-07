@@ -8,9 +8,9 @@ fn correct_time_format() {
     assert_eq!("01:40,21", Time(10021).to_string());
     assert_eq!("01:40,99", Time(10099).to_string());
     assert_eq!("01:38:20,99", Time(590099).to_string());
-    assert_eq!("10,00", Time(1000).to_string());
+    assert_eq!("00:10,00", Time(1000).to_string());
     assert_eq!("10:00,00", Time(60000).to_string());
-    assert_eq!("00,00", Time(0).to_string());
+    assert_eq!("00:00,00", Time(0).to_string());
     assert_eq!("05:20:20,39", Time(1922039).to_string());
 }
 

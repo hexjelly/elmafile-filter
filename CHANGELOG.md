@@ -3,11 +3,17 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## \[0.1.8\] - 2018-05-07
+
+### Fixed
+
+-   `Time` default display format changed to `00:00,00`.
+
 ## \[0.1.7\] - 2018-05-07
 
 ### Fixed
 
--   Time::from() works with &str properly.
+-   `Time::from()` works with `&str`s properly.
 -   Removed a rogue print statement.
 
 ## \[0.1.6\] - 2018-05-07
