@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## \[0.1.7\] - 2018-05-07
+
+### Fixed
+
+-   Time::from() works with &str properly.
+-   Removed a rogue print statement.
+
 ## \[0.1.6\] - 2018-05-07
 
 ### Added
