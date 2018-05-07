@@ -26,8 +26,11 @@ elma = "*"
 
 -   [ ] Across support
 -   [x] Elma support
--   [x] state.dat best times write/read support
--   [ ] full state.dat support
+    -   [x] Level
+    -   [x] Replay
+    -   [ ] LGR
+    -   [x] state.dat best times write/read support
+    -   [ ] full state.dat support
 
 ## Usage examples
 
@@ -41,7 +44,7 @@ use elma::lev::*;
 
 fn main () {
     let mut level = Level::new();
-    level.save("example.lev", false).unwrap();
+    level.save("example.lev", Top10Save::No).unwrap();
 }
 ```
 
