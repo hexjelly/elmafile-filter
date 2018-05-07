@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## \[0.1.4\] - 2018-05-07
+
+### Added
+
+-   Added preliminary state.dat read/write support for best times.
+-   Added `Time` struct with methods for converting string to `i32` represented time, and vice versa.
+
+### Breaking
+
+-   Changed `.get_raw()` to `.to_bytes()` on Level struct.
+
 ## \[0.1.3\] - 2016-12-28
 
 ### Added
