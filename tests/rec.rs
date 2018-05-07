@@ -3,6 +3,8 @@ extern crate elma;
 use elma::Position;
 use elma::rec::*;
 use std::env;
+use std::fs::File;
+use std::io::Read;
 
 #[test]
 // Probably redundant, but maybe some new fields are added in the future.
@@ -37,7 +39,6 @@ fn rec_default_values() {
     assert_eq!(
         replay,
         Replay {
-            raw: vec![],
             multi: false,
             flag_tag: false,
             link: 1239,
@@ -221,6 +222,15 @@ fn load_valid_replay_1_and_save() {
     assert_eq!(replay.events, replay_saved.events);
     assert_eq!(replay.frames_2, replay_saved.frames_2);
     assert_eq!(replay.events_2, replay_saved.events_2);
+}
+
+#[test]
+fn load_valid_replay_1_from_buffer() {
+    let replay = Replay::load("tests/assets/replays/test_1.rec").unwrap();
+    let mut file = File::open("tests/assets/replays/test_1.rec").unwrap();
+    let mut buffer = vec![];
+    file.read_to_end(&mut buffer).unwrap();
+    assert_eq!(replay, Replay::from_bytes(&buffer).unwrap());
 }
 
 #[test]

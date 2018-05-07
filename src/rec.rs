@@ -50,8 +50,9 @@ impl Frame {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let frame = elma::rec::Frame::new();
+    /// ```rust
+    /// # use elma::rec::*;
+    /// let frame = Frame::new();
     /// ```
     pub fn new() -> Self {
         Frame::default()
@@ -97,8 +98,9 @@ impl Event {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let event = elma::rec::Event::new();
+    /// ```rust
+    /// # use elma::rec::*;
+    /// let event = Event::new();
     /// ```
     pub fn new() -> Self {
         Event::default()
@@ -108,8 +110,6 @@ impl Event {
 /// Replay struct
 #[derive(Debug, PartialEq)]
 pub struct Replay {
-    /// Raw binary data.
-    pub raw: Vec<u8>,
     /// Whether replay is multi-player or not.
     pub multi: bool,
     /// Whether replay is flag-tag or not.
@@ -144,7 +144,6 @@ impl Replay {
     /// ```
     pub fn new() -> Self {
         Replay {
-            raw: vec![],
             multi: false,
             flag_tag: false,
             link: random::<u32>(),
@@ -160,44 +159,54 @@ impl Replay {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let rec = elma::rec::Replay::load("tests/assets/replays/test_1.rec").unwrap();
+    /// ```rust
+    /// # use elma::rec::*;
+    /// let rec = Replay::load("tests/assets/replays/test_1.rec").unwrap();
     /// ```
     pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
-        let mut replay = Replay::new();
         let mut file = File::open(filename)?;
         let mut buffer = vec![];
         file.read_to_end(&mut buffer)?;
-        replay.raw = buffer;
-        replay.parse_replay()?;
-        Ok(replay)
+        Replay::parse_replay(&buffer)
+    }
+
+    /// Load a replay from bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use elma::rec::*;
+    /// let rec = Replay::from_bytes(&[0,1,2]).unwrap();
+    /// ```
+    pub fn from_bytes<B: AsRef<[u8]>>(buffer: B) -> Result<Self, ElmaError> {
+        Replay::parse_replay(buffer.as_ref())
     }
 
     /// Parses the raw binary data into Replay struct fields.
-    fn parse_replay(&mut self) -> Result<(), ElmaError> {
-        let mut remaining = self.raw.as_slice();
+    fn parse_replay(mut buffer: &[u8]) -> Result<Self, ElmaError> {
+        let mut replay = Self::new();
 
         // Frame count.
-        let frame_count = remaining.read_i32::<LE>()?;
+        let frame_count = buffer.read_i32::<LE>()?;
         // Some unused value, always 0x83.
-        let (_, mut remaining) = remaining.split_at(4);
+        let (_, mut remaining) = buffer.split_at(4);
         // Multi-player replay.
-        self.multi = remaining.read_i32::<LE>()? > 0;
+        replay.multi = remaining.read_i32::<LE>()? > 0;
         // Flag-tag replay.
-        self.flag_tag = remaining.read_i32::<LE>()? > 0;
+        replay.flag_tag = remaining.read_i32::<LE>()? > 0;
         // Level link.
-        self.link = remaining.read_u32::<LE>()?;
+        replay.link = remaining.read_u32::<LE>()?;
         // Level file name, including extension.
         let (level, remaining) = remaining.split_at(12);
-        self.level = trim_string(level)?;
+        replay.level = trim_string(level)?;
         // Unknown, unused.
         let (_, remaining) = remaining.split_at(4);
         // Frames.
-        self.frames = parse_frames(remaining, frame_count)?;
+        replay.frames = parse_frames(remaining, frame_count)?;
         let (_, mut remaining) = remaining.split_at(27 * frame_count as usize);
         // Events.
         let event_count = remaining.read_i32::<LE>()?;
-        self.events = parse_events(remaining, event_count)?;
+        replay.events = parse_events(remaining, event_count)?;
         let (_, mut remaining) = remaining.split_at(16 * event_count as usize);
         // End of replay marker.
         let expected = remaining.read_i32::<LE>()?;
@@ -206,17 +215,17 @@ impl Replay {
         }
 
         // If multi-rec, parse frame and events, while skipping other fields?
-        if self.multi {
+        if replay.multi {
             // Frame count.
             let frame_count = remaining.read_i32::<LE>()?;
             // Skip other fields.
             let (_, remaining) = remaining.split_at(32);
             // Frames.
-            self.frames_2 = parse_frames(remaining, frame_count)?;
+            replay.frames_2 = parse_frames(remaining, frame_count)?;
             let (_, mut remaining) = remaining.split_at(27 * frame_count as usize);
             // Events.
             let event_count = remaining.read_i32::<LE>()?;
-            self.events_2 = parse_events(remaining, event_count)?;
+            replay.events_2 = parse_events(remaining, event_count)?;
             let (_, mut remaining) = remaining.split_at(16 * event_count as usize);
             // End of replay marker.
             let expected = remaining.read_i32::<LE>()?;
@@ -224,7 +233,7 @@ impl Replay {
                 return Err(ElmaError::EORMismatch);
             }
         }
-        Ok(())
+        Ok(replay)
     }
 
     fn write_rec(&self, multi: bool) -> Result<Vec<u8>, ElmaError> {
@@ -280,8 +289,9 @@ impl Replay {
     /// replay file with a 100% certainty. Merely provided for convinience.
     /// # Examples
     ///
-    /// ```
-    /// let replay = elma::rec::Replay::load("tests/assets/replays/test_1.rec").unwrap();
+    /// ```rust
+    /// # use elma::rec::*;
+    /// let replay = Replay::load("tests/assets/replays/test_1.rec").unwrap();
     /// let (time, finished) = replay.get_time_ms();
     /// assert_eq!(time, 14649);
     /// assert_eq!(finished, true);
@@ -336,8 +346,9 @@ impl Replay {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let replay = elma::rec::Replay::load("tests/assets/replays/test_1.rec").unwrap();
+    /// ```rust
+    /// # use elma::rec::*;
+    /// let replay = Replay::load("tests/assets/replays/test_1.rec").unwrap();
     /// let (time, finished) = replay.get_time_hs();
     /// assert_eq!(time, 1464);
     /// assert_eq!(finished, true);
