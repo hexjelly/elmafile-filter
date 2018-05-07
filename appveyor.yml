@@ -1,34 +1,37 @@
+image: Visual Studio 2015
+
 environment:
   matrix:
-  # Stable channel
-  - TARGET: i686-pc-windows-gnu
-    CHANNEL: stable
-  - TARGET: i686-pc-windows-msvc
-    CHANNEL: stable
-  - TARGET: x86_64-pc-windows-gnu
-    CHANNEL: stable
-  - TARGET: x86_64-pc-windows-msvc
-    CHANNEL: stable
-  # Nightly channel
-  - TARGET: i686-pc-windows-gnu
-    CHANNEL: nightly
-  - TARGET: i686-pc-windows-msvc
-    CHANNEL: nightly
-  - TARGET: x86_64-pc-windows-gnu
-    CHANNEL: nightly
-  - TARGET: x86_64-pc-windows-msvc
-    CHANNEL: nightly
+    - channel: stable
+      target: x86_64-pc-windows-msvc
+    - channel: stable
+      target: i686-pc-windows-msvc
+    - channel: beta
+      target: x86_64-pc-windows-msvc
+    - channel: nightly
+      target: x86_64-pc-windows-msvc
 
-# Install Rust and Cargo
-# (Based on from https://github.com/rust-lang/libc/blob/master/appveyor.yml)
+    - channel: stable
+      target: x86_64-pc-windows-gnu
+    - channel: stable
+      target: i686-pc-windows-gnu
+    - channel: beta
+      target: x86_64-pc-windows-gnu
+    - channel: nightly
+      target: x86_64-pc-windows-gnu
+
+matrix:
+  allow_failures:
+    - channel: nightly
+
 install:
-  - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin;C:\Program Files\Git\mingw64\bin
-  - curl -sSf -o rustup-init.exe https://win.rustup.rs
-  - rustup-init.exe --default-host %TARGET% --default-toolchain %CHANNEL% -y
-  - rustc -Vv
-  - cargo -V
+  - appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
+  - rustup-init -yv --default-toolchain %channel% --default-host %target%
+  - set PATH=%PATH%;%USERPROFILE%\.cargo\bin
+  - rustc -vV
+  - cargo -vV
 
 build: false
 
 test_script:
-  - cargo test --verbose
+  - cargo test --verbose %cargoflags%
