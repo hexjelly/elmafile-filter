@@ -11,4 +11,4 @@ license = "MIT"
 
 [dependencies]
 byteorder = "1"
-rand = "0.3.15"
+rand = "0.4"
