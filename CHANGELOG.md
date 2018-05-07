@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## \[0.1.6\] - 2018-05-07
+
+### Added
+
+-   Added `.from_bytes()` for `Level`, `Replay` and `State` structs.
+
 ## \[0.1.5\] - 2018-05-07
 
 ### Fixed
