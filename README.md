@@ -7,7 +7,7 @@ Very much still a work in progress.
 
 ## Requirements
 
-Rust >1.13
+Until a 1.0 release this will only target the latest stable version of Rust.
 
 ## Installation
 
@@ -26,7 +26,11 @@ elma = "*"
 
 -   [ ] Across support
 -   [x] Elma support
--   [ ] state.dat support
+    -   [x] Level
+    -   [x] Replay
+    -   [ ] LGR
+    -   [x] state.dat best times write/read support
+    -   [ ] full state.dat support
 
 ## Usage examples
 
@@ -40,7 +44,7 @@ use elma::lev::*;
 
 fn main () {
     let mut level = Level::new();
-    level.save("example.lev", false).unwrap();
+    level.save("example.lev", Top10Save::No).unwrap();
 }
 ```
 
