@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## \[0.1.5\] - 2018-05-07
+
+### Fixed
+
+-   No longer necessary to have mutable `Level` in order to use `.save()` method.
+
+### Breaking
+
+-   Removed pub `raw` field from `Level` struct.
+
 ## \[0.1.4\] - 2018-05-07
 
 ### Added
