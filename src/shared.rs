@@ -45,20 +45,19 @@ impl Time {
 
         (hr, m, s, h)
     }
-}
 
-impl From<i32> for Time {
-    fn from(i: i32) -> Self {
-        Time(i)
-    }
-}
-
-impl<'a> From<&'a str> for Time {
-    fn from(s: &'a str) -> Self {
+    /// Creates a `Time` struct from a string
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use elma::Time;
+    /// let time = Time::from("00:00,01");
+    /// ```
+    pub fn from(s: &str) -> Self {
         let parts: Vec<_> = s.split(|c: char| !c.is_numeric())
             .filter(|s| !s.is_empty())
             .map(|s| s.parse::<i32>().unwrap())
-            .inspect(|v| println!("{:?}", v))
             .collect();
         let mut time = 0;
         for (n, val) in parts.iter().rev().enumerate() {
@@ -75,6 +74,12 @@ impl<'a> From<&'a str> for Time {
             time *= -1
         }
         Time(time)
+    }
+}
+
+impl From<i32> for Time {
+    fn from(i: i32) -> Self {
+        Time(i)
     }
 }
 

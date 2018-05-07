@@ -45,6 +45,8 @@ fn string_to_time() {
     assert_eq!(Time::from("00,00:00"), Time(0));
     assert_eq!(Time::from("01:00;00"), Time(6000));
     assert_eq!(Time::from("01:00,00"), Time(6000));
+
+    assert_eq!(Time::from(&"00:08,01".to_string()), Time(801));
 }
 
 #[test]
