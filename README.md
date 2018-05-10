@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/hexjelly/elma-rust.svg?branch=master)](https://travis-ci.org/hexjelly/elma-rust) [![Build status](https://ci.appveyor.com/api/projects/status/0mqnblvhjwlyltkn/branch/master?svg=true)](https://ci.appveyor.com/project/hexjelly/elma-rust/branch/master) [![Coverage Status](https://coveralls.io/repos/github/hexjelly/elma-rust/badge.svg?branch=master)](https://coveralls.io/github/hexjelly/elma-rust?branch=master) [![Docs](https://docs.rs/elma/badge.svg)](https://docs.rs/elma/)
+[![Build Status](https://travis-ci.org/elmadev/elma-rust.svg?branch=master)](https://travis-ci.org/elmadev/elma-rust) [![Build status](https://ci.appveyor.com/api/projects/status/0mqnblvhjwlyltkn/branch/master?svg=true)](https://ci.appveyor.com/project/hexjelly/elma-rust/branch/master) [![Coverage Status](https://coveralls.io/repos/github/elmadev/elma-rust/badge.svg?branch=master)](https://coveralls.io/github/elmadev/elma-rust?branch=master) [![Docs](https://docs.rs/elma/badge.svg)](https://docs.rs/elma/)
 
 # ![logo](http://i.imgur.com/4Pg7LyG.png)
 
