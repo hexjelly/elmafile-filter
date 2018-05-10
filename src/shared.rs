@@ -3,6 +3,23 @@ use std::fmt;
 use std::i32;
 use std::ops::{Add, Sub};
 
+/// Picture clipping.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum Clip {
+    /// No clipping.
+    Unclipped,
+    /// Ground clipping.
+    Ground,
+    /// Sky clipping.
+    Sky,
+}
+
+impl Default for Clip {
+    fn default() -> Clip {
+        Clip::Sky
+    }
+}
+
 /// Best times struct.
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct BestTimes {

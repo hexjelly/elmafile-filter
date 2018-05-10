@@ -13,13 +13,15 @@ pub mod lev;
 pub mod rec;
 /// Read and write Elasto Mania state.dat files.
 pub mod state;
+/// Read and write Elasto Mania LGR files.
+pub mod lgr;
 /// Various constant values used throughout the game and library.
 pub mod constants;
 /// Various utility functions.
 pub mod utils;
 
 mod shared;
-pub use shared::{BestTimes, Position, Time, TimeEntry};
+pub use shared::{BestTimes, Clip, Position, Time, TimeEntry};
 
 /// General errors.
 #[derive(Debug, PartialEq)]
@@ -28,6 +30,8 @@ pub enum ElmaError {
     AcrossUnsupported,
     /// Not a level file.
     InvalidLevelFile,
+    /// Invalid LGR file.
+    InvalidLGRFile,
     /// Invalid gravity value.
     InvalidGravity(i32),
     /// Invalid object value.
