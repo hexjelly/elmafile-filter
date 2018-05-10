@@ -3,7 +3,8 @@ use std::fs::File;
 use std::path::Path;
 use byteorder::{LittleEndian as LE, ReadBytesExt, WriteBytesExt};
 use rand::random;
-use super::{BestTimes, ElmaError, Position, constants::{EMPTY_TOP10, EOD, EOF, OBJECT_RADIUS},
+use super::{BestTimes, Clip, ElmaError, Position,
+            constants::{EMPTY_TOP10, EOD, EOF, OBJECT_RADIUS},
             utils::{string_null_pad, trim_string, parse_top10, write_top10}};
 
 /// Topology related errors.
@@ -168,23 +169,6 @@ impl Polygon {
             grass: false,
             vertices: vec![],
         }
-    }
-}
-
-/// Picture clipping.
-#[derive(Debug, PartialEq)]
-pub enum Clip {
-    /// No clipping.
-    Unclipped,
-    /// Ground clipping.
-    Ground,
-    /// Sky clipping.
-    Sky,
-}
-
-impl Default for Clip {
-    fn default() -> Clip {
-        Clip::Sky
     }
 }
 
