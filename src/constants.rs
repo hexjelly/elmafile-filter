@@ -14,6 +14,10 @@ pub const EOF: i32 = 0x00_84_5D_52;
 pub const EOR: i32 = 0x00_49_2F_75;
 /// Magic arbitrary number to signify start of state.dat file.
 pub const STATE: i32 = 0x2E_78_40_DF;
+/// Magic arbitrary number to signify start of LGR file.
+pub const LGR: i32 = 0x00_00_03_EA;
+/// Magic arbitrary number to signify end of LGR file.
+pub const LGR_EOF: i32 = 0x0B_2E_05_E7;
 /// Empty top10 data.
 pub const EMPTY_TOP10: [u8; 688] = [
     0x15, 0x05, 0x6A, 0xB7, 0x89, 0xED, 0x59, 0xC4, 0x48, 0xFF, 0x8F, 0x73, 0x76, 0xBC, 0x70, 0xC0,
