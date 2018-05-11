@@ -4,14 +4,14 @@ use std::i32;
 use std::ops::{Add, Sub};
 
 /// Picture clipping.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Clip {
     /// No clipping.
-    Unclipped,
+    Unclipped = 0,
     /// Ground clipping.
-    Ground,
+    Ground = 1,
     /// Sky clipping.
-    Sky,
+    Sky = 2,
 }
 
 impl Default for Clip {

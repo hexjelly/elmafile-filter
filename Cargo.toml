@@ -13,4 +13,3 @@ license = "MIT"
 [dependencies]
 byteorder = "1"
 rand = "0.4"
-pcx ="0.2"

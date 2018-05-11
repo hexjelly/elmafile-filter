@@ -7,20 +7,21 @@ extern crate rand;
 
 use std::{io, string};
 
+/// Various constant values used throughout the game and library.
+pub mod constants;
 /// Read and write Elasto Mania level files.
 pub mod lev;
+/// Read and write Elasto Mania LGR files.
+pub mod lgr;
 /// Read and write Elasto Mania replay files.
 pub mod rec;
 /// Read and write Elasto Mania state.dat files.
 pub mod state;
-/// Read and write Elasto Mania LGR files.
-pub mod lgr;
-/// Various constant values used throughout the game and library.
-pub mod constants;
 /// Various utility functions.
 pub mod utils;
 
 mod shared;
+use lgr::LGRError;
 pub use shared::{BestTimes, Clip, Position, Time, TimeEntry};
 
 /// General errors.
@@ -31,7 +32,7 @@ pub enum ElmaError {
     /// Not a level file.
     InvalidLevelFile,
     /// Invalid LGR file.
-    InvalidLGRFile,
+    InvalidLGRFile(LGRError),
     /// Invalid gravity value.
     InvalidGravity(i32),
     /// Invalid object value.
