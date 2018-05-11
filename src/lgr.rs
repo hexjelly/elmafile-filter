@@ -90,7 +90,7 @@ impl Default for Transparency {
 impl LGR {
     /// Creates a new LGR.
     pub fn new() -> Self {
-        LGR::default()
+        Self::default()
     }
 
     /// Loads a LGR from file.
@@ -134,14 +134,30 @@ impl LGR {
 
         // picture.lst section
         let list_len = buffer.read_u32::<LE>()? as usize;
+        lgr.parse_list_data(&buffer, list_len)?;
+        let (_, buffer) = buffer.split_at(26 * list_len);
 
-        let (names, buffer) = buffer.split_at(list_len * 10);
-        let (mut picture_types, buffer) = buffer.split_at(list_len * 4);
-        let (mut distances, buffer) = buffer.split_at(list_len * 4);
-        let (mut clippings, buffer) = buffer.split_at(list_len * 4);
-        let (mut transparencies, buffer) = buffer.split_at(list_len * 4);
+        // pcx data
+        let bytes_read = lgr.parse_picture_data(&buffer, picture_len)?;
 
-        for n in 0..list_len {
+        let (_, mut expected_eof) = buffer.split_at(bytes_read);
+
+        let expected_eof = expected_eof.read_i32::<LE>()?;
+        if expected_eof != constants::LGR_EOF {
+            return Err(ElmaError::EOFMismatch);
+        }
+
+        Ok(lgr)
+    }
+
+    fn parse_list_data(&mut self, buffer: &[u8], len: usize) -> Result<(), ElmaError> {
+        let (names, buffer) = buffer.split_at(len * 10);
+        let (mut picture_types, buffer) = buffer.split_at(len * 4);
+        let (mut distances, buffer) = buffer.split_at(len * 4);
+        let (mut clippings, buffer) = buffer.split_at(len * 4);
+        let (mut transparencies, _) = buffer.split_at(len * 4);
+
+        for n in 0..len {
             let name = trim_string(&names[10 * n..(10 * n) + 10])?;
             let picture_type = match picture_types.read_u32::<LE>()? {
                 100 => PictureType::Normal,
@@ -166,7 +182,7 @@ impl LGR {
                 e => return Err(ElmaError::InvalidLGRFile(LGRError::InvalidTransparency(e))),
             };
 
-            lgr.picture_list.insert(
+            self.picture_list.insert(
                 name,
                 Picture {
                     picture_type,
@@ -176,27 +192,10 @@ impl LGR {
                 },
             );
         }
-
-        // pcx data
-        let (picture_data, bytes_read) = Self::parse_picture_data(&buffer, picture_len)?;
-        lgr.picture_data = picture_data;
-
-        let (_, mut expected_eof) = buffer.split_at(bytes_read);
-
-        let expected_eof = expected_eof.read_i32::<LE>()?;
-        if expected_eof != constants::LGR_EOF {
-            println!("{:x} != {:x}", expected_eof, constants::LGR_EOF);
-            return Err(ElmaError::EOFMismatch);
-        }
-
-        Ok(lgr)
+        Ok(())
     }
 
-    fn parse_picture_data(
-        mut buffer: &[u8],
-        len: usize,
-    ) -> Result<(HashMap<String, Vec<u8>>, usize), ElmaError> {
-        let mut pictures = HashMap::new();
+    fn parse_picture_data(&mut self, mut buffer: &[u8], len: usize) -> Result<usize, ElmaError> {
         let mut bytes_read = 0;
         // pcx data
         for _ in 0..len {
@@ -212,10 +211,10 @@ impl LGR {
             let bytes_len = bytes_len.read_i32::<LE>()? as usize;
             let data = remaining[..bytes_len].to_vec();
 
-            pictures.insert(name, data);
+            self.picture_data.insert(name, data);
             buffer = &buffer[24 + bytes_len..];
             bytes_read += 24 + bytes_len;
         }
-        Ok((pictures, bytes_read))
+        Ok(bytes_read)
     }
 }
