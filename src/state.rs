@@ -1,6 +1,5 @@
 use byteorder::{WriteBytesExt, LE};
-use std::fs::File;
-use std::io::{Read, Write};
+use std::fs;
 use std::path::Path;
 
 use super::{BestTimes, ElmaError, constants::STATE, utils::{parse_top10, write_top10}};
@@ -25,9 +24,7 @@ impl State {
 
     /// Load state.dat file
     pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
-        let mut buffer = vec![];
-        let mut file = File::open(filename)?;
-        file.read_to_end(&mut buffer)?;
+        let buffer = fs::read(filename)?;
         State::parse(&buffer)
     }
 
@@ -82,8 +79,8 @@ impl State {
     pub fn save<P: AsRef<Path>>(&mut self, filename: P) -> Result<(), ElmaError> {
         let mut buffer = self.serialize()?;
         crypt_state(&mut buffer[4..]);
-        let mut file = File::create(filename)?;
-        file.write_all(&buffer)?;
+        fs::write(filename, &buffer)?;
+
         Ok(())
     }
 }

@@ -3,8 +3,7 @@ use super::{BestTimes, Clip, ElmaError, Position, Version,
             utils::{string_null_pad, trim_string, parse_top10, write_top10}};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use rand::random;
-use std::fs::File;
-use std::io::{Read, Write};
+use std::fs;
 use std::path::Path;
 
 /// Topology related errors.
@@ -311,9 +310,7 @@ impl Level {
     /// let level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     /// ```
     pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
-        let mut file = File::open(filename)?;
-        let mut buffer = vec![];
-        file.read_to_end(&mut buffer)?;
+        let buffer = fs::read(filename)?;
         Level::parse_level(&buffer)
     }
 
@@ -496,7 +493,20 @@ impl Level {
         Ok(pictures)
     }
 
-    fn update(&self, top_10: Top10Save) -> Result<Vec<u8>, ElmaError> {
+    /// Converts all struct fields into raw binary form and returns the raw data.
+    ///
+    /// # Arguments
+    ///
+    /// * `top10` - Specifies whether to keep the top10 list (true), or write an empty list (false).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use elma::lev::*;
+    /// let mut level = Level::new();
+    /// let raw_bytes = level.to_bytes(Top10Save::No).unwrap();
+    /// ```
+    pub fn to_bytes(&self, top_10: Top10Save) -> Result<Vec<u8>, ElmaError> {
         let mut buffer = vec![];
 
         // Level version.
@@ -762,23 +772,6 @@ impl Level {
         ]
     }
 
-    /// Converts all struct fields into raw binary form and returns the raw data.
-    ///
-    /// # Arguments
-    ///
-    /// * `top10` - Specifies whether to keep the top10 list (true), or write an empty list (false).
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use elma::lev::*;
-    /// let mut level = Level::new();
-    /// let raw_bytes = level.to_bytes(Top10Save::No).unwrap();
-    /// ```
-    pub fn to_bytes(&self, top10: Top10Save) -> Result<Vec<u8>, ElmaError> {
-        self.update(top10)
-    }
-
     /// Generate a random link number. When you save a level, it will keep the original link
     /// number unless explicitly changed manually or by running this function before saving.
     ///
@@ -809,9 +802,9 @@ impl Level {
     /// level.save("newlevel.lev", Top10Save::No).unwrap();
     /// ```
     pub fn save<P: AsRef<Path>>(&self, filename: P, top10: Top10Save) -> Result<(), ElmaError> {
-        let bytes = self.update(top10)?;
-        let mut file = File::create(filename)?;
-        file.write_all(&bytes)?;
+        let bytes = self.to_bytes(top10)?;
+        fs::write(filename, &bytes)?;
+
         Ok(())
     }
 }

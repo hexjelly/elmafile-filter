@@ -1,8 +1,7 @@
 use super::{ElmaError, Position, constants::EOR, utils::{string_null_pad, trim_string}};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use rand::random;
-use std::fs::File;
-use std::io::{Read, Write};
+use std::fs;
 use std::path::Path;
 
 /// Bike direction.
@@ -164,9 +163,7 @@ impl Replay {
     /// let rec = Replay::load("tests/assets/replays/test_1.rec").unwrap();
     /// ```
     pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
-        let mut file = File::open(filename)?;
-        let mut buffer = vec![];
-        file.read_to_end(&mut buffer)?;
+        let buffer = fs::read(filename)?;
         Replay::parse_replay(&buffer)
     }
 
@@ -279,8 +276,8 @@ impl Replay {
         if self.multi {
             bytes.extend_from_slice(&self.write_rec(true)?);
         }
-        let mut file = File::create(filename)?;
-        file.write_all(&bytes)?;
+        fs::write(filename, &bytes)?;
+
         Ok(())
     }
 
