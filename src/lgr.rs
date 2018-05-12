@@ -204,14 +204,9 @@ impl LGR {
         let mut bytes_read = 0;
         // pcx data
         for _ in 0..len {
-            let (name, remaining) = buffer.split_at(13);
+            let (name, remaining) = buffer.split_at(12);
             let name = trim_string(&name)?;
-            let expected = &[0x95, 0x4C, 0x00, 0x98, 0x95, 0x4C, 0x00];
-            let (buf_val, remaining) = remaining.split_at(7);
-            if expected != buf_val {
-                let e = (name, expected.to_vec(), buf_val.to_vec());
-                return Err(ElmaError::InvalidLGRFile(LGRError::InvalidPCXData(e)));
-            }
+            let (_, remaining) = remaining.split_at(8);
             let (mut bytes_len, remaining) = remaining.split_at(4);
             let bytes_len = bytes_len.read_i32::<LE>()? as usize;
             let data = remaining[..bytes_len].to_vec();
@@ -264,11 +259,9 @@ impl LGR {
 
     fn write_picture_data(&self) -> Result<Vec<u8>, ElmaError> {
         let mut bytes = vec![];
-        let marker = &[0x95, 0x4C, 0x00, 0x98, 0x95, 0x4C, 0x00];
 
         for picture in self.picture_data.iter() {
-            bytes.extend_from_slice(&string_null_pad(&picture.name, 13)?);
-            bytes.extend_from_slice(marker);
+            bytes.extend_from_slice(&string_null_pad(&picture.name, 20)?);
             bytes.write_u32::<LE>(picture.data.len() as u32)?;
             bytes.extend_from_slice(&picture.data);
         }
