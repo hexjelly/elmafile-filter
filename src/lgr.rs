@@ -17,15 +17,11 @@ pub enum LGRError {
     InvalidTransparency(u32),
     /// Error parsing PictureType.
     InvalidPictureType(u32),
-    /// Invalid PCX data.
-    InvalidPCXData((String, Vec<u8>, Vec<u8>)),
 }
 
 /// LGR structure.
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
 pub struct LGR {
-    /// LGR/filename.
-    pub name: String,
     /// List of pictures.
     pub picture_list: Vec<Picture>,
     /// Picture data.
@@ -103,6 +99,13 @@ impl LGR {
     }
 
     /// Loads a LGR from file.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use elma::lgr::*;
+    /// let lgr = LGR::load("default.lgr").unwrap();
+    /// ```
     pub fn load<P: AsRef<Path>>(file: P) -> Result<Self, ElmaError> {
         let buffer = fs::read(file)?;
         Self::parse_lgr(&buffer)
@@ -114,7 +117,8 @@ impl LGR {
     ///
     /// ```rust,no_run
     /// # use elma::lgr::*;
-    /// let lgr = LGR::from_bytes(&[0,1,2]).unwrap();
+    /// let buffer = &[0,1,2,3,4]; // pretend this is an actual lgr file.
+    /// let lgr = LGR::from_bytes(buffer).unwrap();
     /// ```
     pub fn from_bytes<B: AsRef<[u8]>>(buffer: B) -> Result<Self, ElmaError> {
         Self::parse_lgr(buffer.as_ref())
@@ -219,6 +223,14 @@ impl LGR {
     }
 
     /// Returns a Vec with bytes representing the LGR as a buffer.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use elma::lgr::*;
+    /// let lgr = LGR::new();
+    /// let buffer = lgr.to_bytes().unwrap();
+    /// ```
     pub fn to_bytes(&self) -> Result<Vec<u8>, ElmaError> {
         let mut bytes = vec![];
         bytes.extend_from_slice(b"LGR12");
@@ -270,6 +282,14 @@ impl LGR {
     }
 
     /// Save the LGR to a file.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use elma::lgr::*;
+    /// let lgr = LGR::new();
+    /// lgr.save("cool.lgr");
+    /// ```
     pub fn save<P: AsRef<Path>>(&self, filename: P) -> Result<(), ElmaError> {
         let bytes = self.to_bytes()?;
         fs::write(filename, &bytes)?;

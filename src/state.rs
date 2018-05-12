@@ -15,14 +15,23 @@ pub struct State {
 
 impl State {
     /// Create new state.dat
-    pub fn new() -> Self {
+    ///
+    /// **WARNING**: currently will not crate a valid state.dat file until further parsing is finished.
+    fn new() -> Self {
         State {
             buffer: Vec::with_capacity(67910),
             times: Vec::with_capacity(540),
         }
     }
 
-    /// Load state.dat file
+    /// Load a state.dat file.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use elma::state::*;
+    /// let state = State::load("state.dat").unwrap();
+    /// ```
     pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
         let buffer = fs::read(filename)?;
         State::parse(&buffer)
@@ -56,7 +65,16 @@ impl State {
         Ok(state)
     }
 
-    fn serialize(&mut self) -> Result<Vec<u8>, ElmaError> {
+    /// Returns state.dat as a stream of bytes.
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use elma::state::*;
+    /// let mut state = State::load("state.dat").unwrap();
+    /// let buffer = state.to_bytes().unwrap();
+    /// ```
+    pub fn to_bytes(&mut self) -> Result<Vec<u8>, ElmaError> {
         let mut buffer = vec![];
         buffer.write_i32::<LE>(STATE)?;
 
@@ -71,14 +89,22 @@ impl State {
         // TODO: fix when understand rest of state.dat
         let idiot = buffer.len();
         buffer.extend_from_slice(&self.buffer[idiot..]);
+        crypt_state(&mut buffer[4..]);
 
         Ok(buffer)
     }
 
     /// Save state.dat
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use elma::state::*;
+    /// let mut state = State::load("state.dat").unwrap();
+    /// state.save("newstate.dat").unwrap();
+    /// ```
     pub fn save<P: AsRef<Path>>(&mut self, filename: P) -> Result<(), ElmaError> {
-        let mut buffer = self.serialize()?;
-        crypt_state(&mut buffer[4..]);
+        let buffer = self.to_bytes()?;
         fs::write(filename, &buffer)?;
 
         Ok(())

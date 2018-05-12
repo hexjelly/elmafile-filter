@@ -3,8 +3,7 @@ extern crate elma;
 use elma::state::*;
 use elma::{BestTimes, TimeEntry};
 use std::env;
-use std::fs::File;
-use std::io::Read;
+use std::fs;
 
 #[test]
 /// Load state.dat, save it and compare without changes.
@@ -15,12 +14,8 @@ fn load_parse_save_state() {
     let mut state = orig_state.clone();
     state.save(&dir).unwrap();
 
-    let mut file_original = vec![];
-    let mut file = File::open("tests/assets/state/state.dat").unwrap();
-    file.read_to_end(&mut file_original).unwrap();
-    let mut file_saved = vec![];
-    let mut file = File::open(&dir).unwrap();
-    file.read_to_end(&mut file_saved).unwrap();
+    let file_original = fs::read("tests/assets/state/state.dat").unwrap();
+    let file_saved = fs::read(&dir).unwrap();
 
     let saved_state = State::load(&dir).unwrap();
 
@@ -46,8 +41,6 @@ fn load_parse_save_state() {
 #[test]
 fn load_state_from_bytes() {
     let state = State::load("tests/assets/state/state.dat").unwrap();
-    let mut file = File::open("tests/assets/state/state.dat").unwrap();
-    let mut buffer = vec![];
-    file.read_to_end(&mut buffer).unwrap();
+    let buffer = fs::read("tests/assets/state/state.dat").unwrap();
     assert_eq!(state, State::from_bytes(&buffer).unwrap());
 }

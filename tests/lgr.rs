@@ -2,7 +2,6 @@ extern crate elma;
 
 use elma::lgr::*;
 use std::env;
-use std::fs;
 
 #[test]
 fn correctly_loads_lgr_1() {

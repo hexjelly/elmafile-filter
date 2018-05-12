@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## \[0.1.9\] - 2018-05-12
+
+### Added
+
+-   LGR reading and writing.
+-   Impl Deref to i32 for `Time`.
+
 ## \[0.1.8\] - 2018-05-07
 
 ### Fixed
