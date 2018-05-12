@@ -53,6 +53,8 @@ fn string_to_time() {
 fn time_ops_work_correctly() {
     assert_eq!(Time(114832), Time(114801) + Time(31));
     assert_eq!(Time(331), Time::from("00,00:00") + Time(331));
+    assert_eq!(&5_i32, &Time(5) as &i32);
+    assert_eq!(&10_i32, &Time::from("00,10") as &i32);
     assert_eq!(
         Time::from("01,20:01"),
         Time::from("01,20:00") + Time::from("00:01")

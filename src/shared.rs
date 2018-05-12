@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::fmt;
 use std::i32;
-use std::ops::{Add, Sub};
+use std::ops::{Add, Deref, Sub};
 
 /// Game version.
 #[derive(Debug, PartialEq, Eq, Clone, Ord, PartialOrd)]
@@ -19,7 +19,7 @@ impl Default for Version {
 }
 
 /// Picture clipping.
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Clip {
     /// No clipping.
     Unclipped = 0,
@@ -134,6 +134,14 @@ impl Sub for Time {
 impl From<Time> for i32 {
     fn from(t: Time) -> Self {
         t.0
+    }
+}
+
+impl Deref for Time {
+    type Target = i32;
+
+    fn deref(&self) -> &i32 {
+        &self.0
     }
 }
 
