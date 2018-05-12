@@ -3,6 +3,21 @@ use std::fmt;
 use std::i32;
 use std::ops::{Add, Sub};
 
+/// Game version.
+#[derive(Debug, PartialEq, Eq, Clone, Ord, PartialOrd)]
+pub enum Version {
+    /// Action SuperCross, older version of Elma.
+    Across,
+    /// Elasto Mania, current active version.
+    Elma,
+}
+
+impl Default for Version {
+    fn default() -> Version {
+        Version::Elma
+    }
+}
+
 /// Picture clipping.
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Clip {
