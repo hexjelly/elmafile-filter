@@ -1,9 +1,8 @@
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
-use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-use super::{constants, Clip, ElmaError, utils::trim_string};
+use super::{constants, Clip, ElmaError, utils::{string_null_pad, trim_string}};
 
 /// LGR related errors.
 #[derive(Debug, PartialEq, Eq, Clone, Ord, PartialOrd)]
@@ -28,14 +27,16 @@ pub struct LGR {
     /// LGR/filename.
     pub name: String,
     /// List of pictures.
-    pub picture_list: HashMap<String, Picture>,
+    pub picture_list: Vec<Picture>,
     /// Picture data.
-    pub picture_data: HashMap<String, Vec<u8>>,
+    pub picture_data: Vec<PictureData>,
 }
 
 /// LGR picture structure.
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
 pub struct Picture {
+    /// Picture name.
+    pub name: String,
     /// Picture type.
     pub picture_type: PictureType,
     /// Default distance, 1-999.
@@ -46,8 +47,17 @@ pub struct Picture {
     pub transparency: Transparency,
 }
 
+/// LGR picture data structure.
+#[derive(Default, Debug, Clone, Eq, PartialEq)]
+pub struct PictureData {
+    /// Picture name.
+    pub name: String,
+    /// Picture data.
+    pub data: Vec<u8>,
+}
+
 /// Picture types.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum PictureType {
     /// Normal picture.
     Normal = 100,
@@ -64,7 +74,7 @@ impl Default for PictureType {
 }
 
 /// Transparency.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Transparency {
     /// No transparency. Only valid for ´Mask´ picture types.
     Solid = 10,
@@ -179,15 +189,13 @@ impl LGR {
                 e => return Err(ElmaError::InvalidLGRFile(LGRError::InvalidTransparency(e))),
             };
 
-            self.picture_list.insert(
+            self.picture_list.push(Picture {
                 name,
-                Picture {
-                    picture_type,
-                    distance,
-                    clipping,
-                    transparency,
-                },
-            );
+                picture_type,
+                distance,
+                clipping,
+                transparency,
+            });
         }
         Ok(())
     }
@@ -208,7 +216,7 @@ impl LGR {
             let bytes_len = bytes_len.read_i32::<LE>()? as usize;
             let data = remaining[..bytes_len].to_vec();
 
-            self.picture_data.insert(name, data);
+            self.picture_data.push(PictureData { name, data });
             buffer = &buffer[24 + bytes_len..];
             bytes_read += 24 + bytes_len;
         }
@@ -216,26 +224,61 @@ impl LGR {
     }
 
     /// Returns a Vec with bytes representing the LGR as a buffer.
-    pub fn as_bytes(&self) -> Result<Vec<u8>, ElmaError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, ElmaError> {
         let mut bytes = vec![];
-        bytes.extend_from_slice(&self.write_picture_list());
-        bytes.extend_from_slice(&self.write_picture_data());
+        bytes.extend_from_slice(b"LGR12");
+        bytes.write_u32::<LE>(self.picture_data.len() as u32)?;
+        bytes.write_i32::<LE>(constants::LGR)?;
+        bytes.extend_from_slice(&self.write_picture_list()?);
+        bytes.extend_from_slice(&self.write_picture_data()?);
+        bytes.write_i32::<LE>(constants::LGR_EOF)?;
+
         Ok(bytes)
     }
 
-    fn write_picture_list(&self) -> Vec<u8> {
-        let bytes = vec![];
-        bytes
+    fn write_picture_list(&self) -> Result<Vec<u8>, ElmaError> {
+        let mut bytes = vec![];
+        bytes.write_u32::<LE>(self.picture_list.len() as u32)?;
+        let mut names = vec![];
+        let mut picture_types = vec![];
+        let mut distances = vec![];
+        let mut clippings = vec![];
+        let mut transparencies = vec![];
+
+        for picture in self.picture_list.iter() {
+            names.extend_from_slice(&string_null_pad(&picture.name, 10)?);
+            picture_types.write_u32::<LE>(picture.picture_type as u32)?;
+            distances.write_u32::<LE>(picture.distance as u32)?;
+            clippings.write_u32::<LE>(picture.clipping as u32)?;
+            transparencies.write_u32::<LE>(picture.transparency as u32)?;
+        }
+
+        bytes.extend_from_slice(&names);
+        bytes.extend_from_slice(&picture_types);
+        bytes.extend_from_slice(&distances);
+        bytes.extend_from_slice(&clippings);
+        bytes.extend_from_slice(&transparencies);
+
+        Ok(bytes)
     }
 
-    fn write_picture_data(&self) -> Vec<u8> {
-        let bytes = vec![];
-        bytes
+    fn write_picture_data(&self) -> Result<Vec<u8>, ElmaError> {
+        let mut bytes = vec![];
+        let marker = &[0x95, 0x4C, 0x00, 0x98, 0x95, 0x4C, 0x00];
+
+        for picture in self.picture_data.iter() {
+            bytes.extend_from_slice(&string_null_pad(&picture.name, 13)?);
+            bytes.extend_from_slice(marker);
+            bytes.write_u32::<LE>(picture.data.len() as u32)?;
+            bytes.extend_from_slice(&picture.data);
+        }
+
+        Ok(bytes)
     }
 
     /// Save the LGR to a file.
     pub fn save<P: AsRef<Path>>(&self, filename: P) -> Result<(), ElmaError> {
-        let bytes = self.as_bytes()?;
+        let bytes = self.to_bytes()?;
         fs::write(filename, &bytes)?;
 
         Ok(())
