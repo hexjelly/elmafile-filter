@@ -1,7 +1,6 @@
-use byteorder::{LittleEndian as LE, ReadBytesExt, WriteBytesExt};
+use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use std::collections::HashMap;
-use std::fs::read;
-use std::io::{Read, Write};
+use std::fs;
 use std::path::Path;
 
 use super::{constants, Clip, ElmaError, utils::trim_string};
@@ -95,7 +94,7 @@ impl LGR {
 
     /// Loads a LGR from file.
     pub fn load<P: AsRef<Path>>(file: P) -> Result<Self, ElmaError> {
-        let buffer = read(file)?;
+        let buffer = fs::read(file)?;
         Self::parse_lgr(&buffer)
     }
 
@@ -115,14 +114,12 @@ impl LGR {
         let mut lgr = Self::new();
 
         let (version, mut buffer) = buffer.split_at(5);
-        match version {
-            b"LGR12" => {}
-            e => {
-                return Err(ElmaError::InvalidLGRFile(LGRError::InvalidVersion(
-                    e.to_vec(),
-                )))
-            }
-        };
+        // there are no other LGR versions possible, so no need to store it (?)
+        if version != b"LGR12" {
+            return Err(ElmaError::InvalidLGRFile(LGRError::InvalidVersion(
+                version.to_vec(),
+            )));
+        }
 
         let picture_len = buffer.read_u32::<LE>()? as usize;
         let expected_header = buffer.read_i32::<LE>()?;
@@ -216,5 +213,31 @@ impl LGR {
             bytes_read += 24 + bytes_len;
         }
         Ok(bytes_read)
+    }
+
+    /// Returns a Vec with bytes representing the LGR as a buffer.
+    pub fn as_bytes(&self) -> Result<Vec<u8>, ElmaError> {
+        let mut bytes = vec![];
+        bytes.extend_from_slice(&self.write_picture_list());
+        bytes.extend_from_slice(&self.write_picture_data());
+        Ok(bytes)
+    }
+
+    fn write_picture_list(&self) -> Vec<u8> {
+        let bytes = vec![];
+        bytes
+    }
+
+    fn write_picture_data(&self) -> Vec<u8> {
+        let bytes = vec![];
+        bytes
+    }
+
+    /// Save the LGR to a file.
+    pub fn save<P: AsRef<Path>>(&self, filename: P) -> Result<(), ElmaError> {
+        let bytes = self.as_bytes()?;
+        fs::write(filename, &bytes)?;
+
+        Ok(())
     }
 }

@@ -1,7 +1,7 @@
+use byteorder::{WriteBytesExt, LE};
 use std::fs::File;
-use std::path::Path;
 use std::io::{Read, Write};
-use byteorder::{LittleEndian as LE, WriteBytesExt};
+use std::path::Path;
 
 use super::{BestTimes, ElmaError, constants::STATE, utils::{parse_top10, write_top10}};
 

@@ -1,9 +1,9 @@
-use std::io::{Read, Write};
-use std::fs::File;
-use std::path::Path;
-use rand::random;
-use byteorder::{LittleEndian as LE, ReadBytesExt, WriteBytesExt};
 use super::{ElmaError, Position, constants::EOR, utils::{string_null_pad, trim_string}};
+use byteorder::{ReadBytesExt, WriteBytesExt, LE};
+use rand::random;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::Path;
 
 /// Bike direction.
 #[derive(Debug, Eq, PartialEq)]

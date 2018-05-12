@@ -3,9 +3,9 @@ extern crate rand;
 
 use elma::Position;
 use elma::lev::*;
-use elma::{BestTimes, Clip, ElmaError, TimeEntry};
-use std::env;
+use elma::{BestTimes, Clip, ElmaError, TimeEntry, Version};
 use rand::random;
+use std::env;
 use std::fs::File;
 use std::io::Read;
 

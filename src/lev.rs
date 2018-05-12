@@ -1,11 +1,11 @@
-use std::io::{Read, Write};
-use std::fs::File;
-use std::path::Path;
-use byteorder::{LittleEndian as LE, ReadBytesExt, WriteBytesExt};
-use rand::random;
-use super::{BestTimes, Clip, ElmaError, Position,
+use super::{BestTimes, Clip, ElmaError, Position, Version,
             constants::{EMPTY_TOP10, EOD, EOF, OBJECT_RADIUS},
             utils::{string_null_pad, trim_string, parse_top10, write_top10}};
+use byteorder::{ReadBytesExt, WriteBytesExt, LE};
+use rand::random;
+use std::fs::File;
+use std::io::{Read, Write};
+use std::path::Path;
 
 /// Topology related errors.
 #[derive(Debug, PartialEq)]
@@ -34,15 +34,6 @@ pub trait BoundingBox {
     fn bounding_box(&self) -> [Position<f64>; 4];
 }
 
-/// Game version.
-#[derive(Debug, PartialEq)]
-pub enum Version {
-    /// Action SuperCross, older version of Elma.
-    Across,
-    /// Elasto Mania, current active version.
-    Elma,
-}
-
 /// Top10 save option.
 #[derive(Debug, PartialEq)]
 pub enum Top10Save {
@@ -50,12 +41,6 @@ pub enum Top10Save {
     Yes,
     /// No. Will give an empty top10 best times list in level file.
     No,
-}
-
-impl Default for Version {
-    fn default() -> Version {
-        Version::Elma
-    }
 }
 
 /// Type of object.

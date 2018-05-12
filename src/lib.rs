@@ -22,7 +22,7 @@ pub mod utils;
 
 mod shared;
 use lgr::LGRError;
-pub use shared::{BestTimes, Clip, Position, Time, TimeEntry};
+pub use shared::{BestTimes, Clip, Position, Time, TimeEntry, Version};
 
 /// General errors.
 #[derive(Debug, PartialEq)]

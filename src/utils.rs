@@ -1,4 +1,4 @@
-use byteorder::{ByteOrder, LittleEndian as LE, WriteBytesExt};
+use byteorder::{ByteOrder, WriteBytesExt, LE};
 
 use super::{BestTimes, ElmaError, Time, TimeEntry};
 
