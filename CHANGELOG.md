@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## \[0.1.10\] - 2018-05-15
+
+### Breaking
+
+-   `to_parts()` on `Time` now returns tuple with `bool` signifying positive
+or negative number, along with positive integers for all parts.
+
 ## \[0.1.9\] - 2018-05-12
 
 ### Added

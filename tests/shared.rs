@@ -16,14 +16,16 @@ fn correct_time_format() {
 
 #[test]
 fn correct_time_to_parts() {
-    assert_eq!((0, 19, 8, 1), Time(114801).to_parts());
-    assert_eq!((0, 1, 40, 21), Time(10021).to_parts());
-    assert_eq!((0, 1, 40, 99), Time(10099).to_parts());
-    assert_eq!((1, 38, 20, 99), Time(590099).to_parts());
-    assert_eq!((0, 0, 10, 0), Time(1000).to_parts());
-    assert_eq!((0, 10, 0, 0), Time(60000).to_parts());
-    assert_eq!((0, 0, 0, 0), Time(0).to_parts());
-    assert_eq!((5, 20, 20, 39), Time(1922039).to_parts());
+    assert_eq!((false, 0, 19, 8, 1), Time(114801).to_parts());
+    assert_eq!((false, 0, 1, 40, 21), Time(10021).to_parts());
+    assert_eq!((false, 0, 1, 40, 99), Time(10099).to_parts());
+    assert_eq!((false, 1, 38, 20, 99), Time(590099).to_parts());
+    assert_eq!((false, 0, 0, 10, 0), Time(1000).to_parts());
+    assert_eq!((true, 0, 0, 10, 0), Time(-1000).to_parts());
+    assert_eq!((false, 0, 10, 0, 0), Time(60000).to_parts());
+    assert_eq!((false, 0, 0, 0, 0), Time(0).to_parts());
+    assert_eq!((false, 5, 20, 20, 39), Time(1922039).to_parts());
+    assert_eq!((true, 5, 20, 20, 39), Time(-1922039).to_parts());
 }
 
 #[test]

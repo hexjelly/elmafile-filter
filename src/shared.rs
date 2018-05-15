@@ -68,14 +68,14 @@ impl BestTimes {
 pub struct Time(pub i32);
 
 impl Time {
-    /// Returns a tuple with `hours`, `mins`, `secs`, `hundredths`.
-    pub fn to_parts(&self) -> (i32, i32, i32, i32) {
+    /// Returns a tuple with `negative?`, `hours`, `mins`, `secs`, `hundredths`.
+    pub fn to_parts(&self) -> (bool, i32, i32, i32, i32) {
         let h = self.0 % 100;
         let s = (self.0 / 100) % 60;
         let m = (self.0 / (100 * 60)) % 60;
         let hr = self.0 / (100 * 60 * 60);
-
-        (hr, m, s, h)
+        let neg = if self.0 < 0 { true } else { false };
+        (neg, hr.abs(), m.abs(), s.abs(), h.abs())
     }
 
     /// Creates a `Time` struct from a string
