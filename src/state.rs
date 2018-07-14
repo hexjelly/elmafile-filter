@@ -3,6 +3,8 @@ use std::fs;
 use std::path::Path;
 
 use super::{BestTimes, ElmaError, constants::STATE, utils::{parse_top10, write_top10}};
+use constants::TOP10_SIZE;
+use constants::PLAYER_TOP10_SIZE;
 
 /// State.dat struct
 #[derive(Default, Debug, Clone, PartialEq)]
@@ -54,11 +56,11 @@ impl State {
         state.buffer = buffer.to_vec();
         crypt_state(&mut state.buffer[4..]);
         for n in 1..91 {
-            let offset_start = 4 + (688 * (n - 1));
-            let offset_end = offset_start + 344;
+            let offset_start = 4 + (TOP10_SIZE * (n - 1));
+            let offset_end = offset_start + PLAYER_TOP10_SIZE;
             let level = BestTimes {
                 single: parse_top10(&state.buffer[offset_start..offset_end])?,
-                multi: parse_top10(&state.buffer[offset_start + 344..offset_end + 344])?,
+                multi: parse_top10(&state.buffer[offset_start + PLAYER_TOP10_SIZE..offset_end + PLAYER_TOP10_SIZE])?,
             };
             state.times.push(level);
         }

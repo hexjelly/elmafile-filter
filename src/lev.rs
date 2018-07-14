@@ -1,10 +1,12 @@
 use super::{BestTimes, Clip, ElmaError, Position, Version,
-            constants::{EMPTY_TOP10, EOD, EOF, OBJECT_RADIUS},
+            constants::{EOD, EOF, OBJECT_RADIUS},
             utils::{string_null_pad, trim_string, parse_top10, write_top10}};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use rand::random;
 use std::fs;
 use std::path::Path;
+use constants::TOP10_SIZE;
+use constants::PLAYER_TOP10_SIZE;
 
 /// Topology related errors.
 #[derive(Debug, PartialEq)]
@@ -382,15 +384,15 @@ impl Level {
         }
 
         // First decrypt the top10 blocks.
-        let (top10, mut remaining) = remaining.split_at(688);
+        let (top10, mut remaining) = remaining.split_at(TOP10_SIZE);
         let decrypted_top10_data = crypt_top10(top10);
 
         // Single-player list.
-        let single = &decrypted_top10_data[0..344];
+        let single = &decrypted_top10_data[0..PLAYER_TOP10_SIZE];
         level.best_times.single = parse_top10(single)?;
 
         // Multi-player list.
-        let multi = &decrypted_top10_data[344..688];
+        let multi = &decrypted_top10_data[PLAYER_TOP10_SIZE..TOP10_SIZE];
         level.best_times.multi = parse_top10(multi)?;
 
         // EOF marker expected at this point.
@@ -554,7 +556,7 @@ impl Level {
                 let top10_bytes = write_top10(&best_times)?;
                 buffer.extend_from_slice(&crypt_top10(&top10_bytes));
             }
-            Top10Save::No => buffer.extend_from_slice(&EMPTY_TOP10),
+            Top10Save::No => buffer.extend(crypt_top10(&vec![0; TOP10_SIZE])),
         }
 
         // EOF marker.
@@ -811,14 +813,14 @@ impl Level {
 
 /// Decrypt and encrypt top10 list data. Same algorithm for both.
 pub fn crypt_top10(top10_data: &[u8]) -> Vec<u8> {
-    let mut top10: Vec<u8> = Vec::with_capacity(688);
+    let mut top10: Vec<u8> = Vec::with_capacity(TOP10_SIZE);
     top10.extend_from_slice(top10_data);
 
     // Some variable names to match the original c/asm code?
     let mut ebp8: i16 = 0x15;
     let mut ebp10: i16 = 0x2637;
 
-    for mut t in top10.iter_mut().take(688) {
+    for mut t in top10.iter_mut().take(TOP10_SIZE) {
         *t ^= (ebp8 & 0xFF) as u8;
         ebp10 = ebp10.wrapping_add((ebp8.wrapping_rem(0xD3D)).wrapping_mul(0xD3D));
         ebp8 = ebp10.wrapping_mul(0x1F).wrapping_add(0xD3D);
