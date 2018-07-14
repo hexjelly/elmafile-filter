@@ -236,14 +236,7 @@ fn load_valid_replay_1_and_save() {
     dir.push("save_replay_1.rec");
     replay.save(&dir).unwrap();
     let replay_saved = Replay::load(&dir).unwrap();
-    assert_eq!(replay.multi, replay_saved.multi);
-    assert_eq!(replay.flag_tag, replay_saved.flag_tag);
-    assert_eq!(replay.link, replay_saved.link);
-    assert_eq!(replay.level, replay_saved.level);
-    assert_eq!(replay.frames, replay_saved.frames);
-    assert_eq!(replay.events, replay_saved.events);
-    assert_eq!(replay.frames_2, replay_saved.frames_2);
-    assert_eq!(replay.events_2, replay_saved.events_2);
+    assert_eq!(replay, replay_saved);
 }
 
 #[test]
@@ -257,6 +250,20 @@ fn load_valid_replay_1_from_buffer() {
 fn check_save_load_same_replay_1() {
     let replay = Replay::load(PATH_TEST_1).unwrap();
     let buffer = fs::read(PATH_TEST_1).unwrap();
+    assert_eq!(buffer, replay.to_bytes().unwrap());
+}
+
+#[test]
+fn check_save_load_same_replay_2() {
+    let replay = Replay::load(PATH_TEST_2).unwrap();
+    let buffer = fs::read(PATH_TEST_2).unwrap();
+    assert_eq!(buffer, replay.to_bytes().unwrap());
+}
+
+#[test]
+fn check_save_load_same_replay_3() {
+    let replay = Replay::load(PATH_TEST_3).unwrap();
+    let buffer = fs::read(PATH_TEST_3).unwrap();
     assert_eq!(buffer, replay.to_bytes().unwrap());
 }
 
