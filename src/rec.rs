@@ -101,9 +101,9 @@ pub enum EventType {
     Ground(f32),
 }
 
-impl EventType {
-    fn to_u8(&self) -> u8 {
-        match *self {
+impl<'a> From<&'a EventType> for u8 {
+    fn from(event_type: &'a EventType) -> Self {
+        match *event_type {
             EventType::Apple => 4,
             EventType::Ground(_) => 1,
             EventType::ObjectTouch(_) => 0,
@@ -551,7 +551,7 @@ fn write_events(event_data: &[Event]) -> Result<Vec<u8>, ElmaError> {
         bytes.write_f64::<LE>(event.time)?;
         let default_info = -1;
         let default_info2 = 0.99;
-        let event_type = event.event_type.to_u8();
+        let event_type = (&event.event_type).into();
         match event.event_type {
             EventType::ObjectTouch(info) => {
                 bytes.write_i16::<LE>(info)?;
