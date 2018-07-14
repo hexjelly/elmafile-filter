@@ -8,13 +8,14 @@ use rand::random;
 use std::env;
 use std::fs::File;
 use std::io::Read;
+use elma::constants::TOP10_SIZE;
 
 #[test]
 /// Generate random u8 data to simulate top10 lists, encrypting it and decrypting it,
 /// and testing whether it returns the same unencrypted data.
 fn decrypt_encrypt_top10() {
     let mut initial: Vec<u8> = vec![];
-    for _ in 0..688 {
+    for _ in 0..TOP10_SIZE {
         initial.push(random::<u8>());
     }
     let decrypted = crypt_top10(&initial);
