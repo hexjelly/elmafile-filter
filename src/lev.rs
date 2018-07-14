@@ -1,12 +1,14 @@
-use super::{BestTimes, Clip, ElmaError, Position, Version,
-            constants::{EOD, EOF, OBJECT_RADIUS},
-            utils::{string_null_pad, trim_string, parse_top10, write_top10}};
+use super::{constants::{PLAYER_TOP10_SIZE, TOP10_SIZE, EOD, EOF, OBJECT_RADIUS},
+            utils::{parse_top10, string_null_pad, trim_string, write_top10},
+            BestTimes,
+            Clip,
+            ElmaError,
+            Position,
+            Version};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use rand::random;
 use std::fs;
 use std::path::Path;
-use constants::TOP10_SIZE;
-use constants::PLAYER_TOP10_SIZE;
 
 /// Topology related errors.
 #[derive(Debug, PartialEq)]
@@ -271,17 +273,15 @@ impl Level {
             lgr: "default".into(),
             ground: "ground".into(),
             sky: "sky".into(),
-            polygons: vec![
-                Polygon {
-                    grass: false,
-                    vertices: vec![
-                        Position { x: 10., y: 0. },
-                        Position { x: 10., y: 7. },
-                        Position { x: 0., y: 7. },
-                        Position { x: 0., y: 0. },
-                    ],
-                },
-            ],
+            polygons: vec![Polygon {
+                grass: false,
+                vertices: vec![
+                    Position { x: 10., y: 0. },
+                    Position { x: 10., y: 7. },
+                    Position { x: 0., y: 7. },
+                    Position { x: 0., y: 0. },
+                ],
+            }],
             objects: vec![
                 Object {
                     position: Position {

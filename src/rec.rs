@@ -1,4 +1,7 @@
-use super::{ElmaError, Position, constants::EOR, utils::{string_null_pad, trim_string}};
+use super::{constants::EOR,
+            utils::{string_null_pad, trim_string},
+            ElmaError,
+            Position};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use rand::random;
 use std::fs;

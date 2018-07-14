@@ -1,14 +1,12 @@
 extern crate elma;
 extern crate rand;
 
-use elma::Position;
+use elma::constants::TOP10_SIZE;
 use elma::lev::*;
-use elma::{BestTimes, Clip, ElmaError, TimeEntry, Version};
+use elma::{BestTimes, Clip, ElmaError, Position, TimeEntry, Version};
 use rand::random;
 use std::env;
-use std::fs::File;
-use std::io::Read;
-use elma::constants::TOP10_SIZE;
+use std::fs;
 
 #[test]
 /// Generate random u8 data to simulate top10 lists, encrypting it and decrypting it,
@@ -183,7 +181,7 @@ fn load_valid_level_1() {
             -1148375.210607791_f64,
             1164056.210607791_f64,
             1162467.210607791_f64,
-            1162283.210607791_f64
+            1162283.210607791_f64,
         ]
     );
     assert_eq!(level.name, "Rust test");
