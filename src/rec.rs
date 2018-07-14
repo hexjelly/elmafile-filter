@@ -262,7 +262,7 @@ impl Replay {
     }
 
     /// Returns replay data as a buffer of bytes.
-    pub fn as_bytes(&self) -> Result<Vec<u8>, ElmaError> {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, ElmaError> {
         let mut bytes: Vec<u8> = vec![];
 
         // Number of frames.
@@ -306,7 +306,7 @@ impl Replay {
 
     /// Save replay as a file.
     pub fn save<P: AsRef<Path>>(&self, filename: P) -> Result<(), ElmaError> {
-        fs::write(filename, &self.as_bytes()?)?;
+        fs::write(filename, &self.to_bytes()?)?;
         Ok(())
     }
 

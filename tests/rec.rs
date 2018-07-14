@@ -257,7 +257,7 @@ fn load_valid_replay_1_from_buffer() {
 fn check_save_load_same_replay_1() {
     let replay = Replay::load(PATH_TEST_1).unwrap();
     let buffer = fs::read(PATH_TEST_1).unwrap();
-    assert_eq!(buffer, replay.as_bytes().unwrap());
+    assert_eq!(buffer, replay.to_bytes().unwrap());
 }
 
 #[test]
