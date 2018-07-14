@@ -262,15 +262,11 @@ impl Replay {
     }
 
     /// Returns replay data as a buffer of bytes.
-    pub fn write_rec(&self, multi: bool) -> Result<Vec<u8>, ElmaError> {
+    pub fn as_bytes(&self) -> Result<Vec<u8>, ElmaError> {
         let mut bytes: Vec<u8> = vec![];
 
         // Number of frames.
-        if multi {
-            bytes.write_i32::<LE>(self.frames_2.len() as i32)?;
-        } else {
-            bytes.write_i32::<LE>(self.frames.len() as i32)?;
-        }
+        bytes.write_i32::<LE>(self.frames.len() as i32)?;
         // Garbage value.
         bytes.write_i32::<LE>(0x83_i32)?;
         // Multi-player replay or not.
@@ -285,28 +281,32 @@ impl Replay {
         bytes.write_i32::<LE>(0x00_i32)?;
 
         // Frames and events.
-        if multi {
-            bytes.extend_from_slice(&write_frames(&self.frames_2)?);
-            bytes.extend_from_slice(&write_events(&self.events_2)?);
-        } else {
-            bytes.extend_from_slice(&write_frames(&self.frames)?);
-            bytes.extend_from_slice(&write_events(&self.events)?);
-        }
+        bytes.extend_from_slice(&write_frames(&self.frames)?);
+        bytes.extend_from_slice(&write_events(&self.events)?);
 
         // EOR marker.
         bytes.write_i32::<LE>(EOR)?;
+
+        // Repeat above if multi-replay.
+        if self.multi {
+            bytes.write_i32::<LE>(self.frames_2.len() as i32)?;
+            bytes.write_i32::<LE>(0x83_i32)?;
+            bytes.write_i32::<LE>(1_i32)?;
+            bytes.write_i32::<LE>(if self.flag_tag { 1_i32 } else { 0_i32 })?;
+            bytes.write_u32::<LE>(self.link)?;
+            bytes.extend_from_slice(&string_null_pad(&self.level, 12)?);
+            bytes.write_i32::<LE>(0x00_i32)?;
+            bytes.extend_from_slice(&write_frames(&self.frames_2)?);
+            bytes.extend_from_slice(&write_events(&self.events_2)?);
+            bytes.write_i32::<LE>(EOR)?;
+        }
 
         Ok(bytes)
     }
 
     /// Save replay as a file.
     pub fn save<P: AsRef<Path>>(&self, filename: P) -> Result<(), ElmaError> {
-        let mut bytes = self.write_rec(false)?;
-        if self.multi {
-            bytes.extend_from_slice(&self.write_rec(true)?);
-        }
-        fs::write(filename, &bytes)?;
-
+        fs::write(filename, &self.as_bytes()?)?;
         Ok(())
     }
 
