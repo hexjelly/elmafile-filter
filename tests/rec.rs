@@ -21,17 +21,19 @@ fn rec_default_values() {
             rotation: 0,
             left_wheel_rotation: 0,
             right_wheel_rotation: 0,
-            throttle: false,
-            direction: Direction::Left,
-            volume: 0,
+            throttle_and_dir: 0,
+            back_wheel_rot_speed: 0,
+            collision_strength: 0,
         }
     );
+    assert_eq!(frame.throttle(), false);
+    assert_eq!(frame.direction(), Direction::Left);
     let event = Event::new();
     assert_eq!(
         event,
         Event {
             time: 0_f64,
-            event_type: EventType::Touch(0),
+            event_type: EventType::ObjectTouch(0),
         }
     );
     let mut replay = Replay::new();
@@ -82,11 +84,13 @@ fn load_valid_replay_1() {
             rotation: 10000,
             left_wheel_rotation: 250,
             right_wheel_rotation: 0,
-            throttle: true,
-            direction: Direction::Left,
-            volume: 5120,
+            throttle_and_dir: 205,
+            back_wheel_rot_speed: 0,
+            collision_strength: 0,
         }
     );
+    assert_eq!(replay.frames[0].throttle(), true);
+    assert_eq!(replay.frames[0].direction(), Direction::Left);
     assert_eq!(
         replay.frames[100],
         Frame {
@@ -100,11 +104,13 @@ fn load_valid_replay_1() {
             rotation: 9826,
             left_wheel_rotation: 248,
             right_wheel_rotation: 238,
-            throttle: true,
-            direction: Direction::Left,
-            volume: -5398,
+            throttle_and_dir: 173,
+            back_wheel_rot_speed: 114,
+            collision_strength: 0,
         }
     );
+    assert_eq!(replay.frames[100].throttle(), true);
+    assert_eq!(replay.frames[100].direction(), Direction::Left);
     assert_eq!(
         replay.frames[201],
         Frame {
@@ -118,11 +124,13 @@ fn load_valid_replay_1() {
             rotation: 7325,
             left_wheel_rotation: 25,
             right_wheel_rotation: 23,
-            throttle: true,
-            direction: Direction::Left,
-            volume: -5398,
+            throttle_and_dir: 221,
+            back_wheel_rot_speed: 234,
+            collision_strength: 0,
         }
     );
+    assert_eq!(replay.frames[201].throttle(), true);
+    assert_eq!(replay.frames[201].direction(), Direction::Left);
     assert_eq!(
         replay.frames[439],
         Frame {
@@ -136,11 +144,13 @@ fn load_valid_replay_1() {
             rotation: 9047,
             left_wheel_rotation: 73,
             right_wheel_rotation: 163,
-            throttle: true,
-            direction: Direction::Left,
-            volume: 5652,
+            throttle_and_dir: 29,
+            back_wheel_rot_speed: 136,
+            collision_strength: 22,
         }
     );
+    assert_eq!(replay.frames[439].throttle(), true);
+    assert_eq!(replay.frames[439].direction(), Direction::Left);
 
     // Some random event.
     assert_eq!(replay.events.len(), 24);
@@ -155,7 +165,7 @@ fn load_valid_replay_1() {
         replay.events[1],
         Event {
             time: 1.6974048000097273_f64,
-            event_type: EventType::Ground { alternative: false },
+            event_type: EventType::Ground(0.72119284),
         }
     );
     assert_eq!(
@@ -169,7 +179,7 @@ fn load_valid_replay_1() {
         replay.events[23],
         Event {
             time: 6.398683200001716_f64,
-            event_type: EventType::Touch(3),
+            event_type: EventType::ObjectTouch(3),
         }
     );
 }
@@ -195,11 +205,13 @@ fn load_valid_multi_replay_1() {
             rotation: 9047,
             left_wheel_rotation: 73,
             right_wheel_rotation: 163,
-            throttle: true,
-            direction: Direction::Left,
-            volume: 5652,
+            throttle_and_dir: 29,
+            back_wheel_rot_speed: 136,
+            collision_strength: 22,
         }
     );
+    assert_eq!(replay.frames[439].throttle(), true);
+    assert_eq!(replay.frames[439].direction(), Direction::Left);
     assert_eq!(replay.events.len(), 24);
     assert_eq!(replay.frames_2.len(), 441);
     assert_eq!(replay.frames_2[100].bike.x, 27.138593673706_f32);
@@ -231,6 +243,15 @@ fn load_valid_replay_1_from_buffer() {
     let mut buffer = vec![];
     file.read_to_end(&mut buffer).unwrap();
     assert_eq!(replay, Replay::from_bytes(&buffer).unwrap());
+}
+
+#[test]
+fn check_save_load_same_replay_1() {
+    let replay = Replay::load("tests/assets/replays/test_1.rec").unwrap();
+    let mut file = File::open("tests/assets/replays/test_1.rec").unwrap();
+    let mut buffer = vec![];
+    file.read_to_end(&mut buffer).unwrap();
+    assert_eq!(buffer, replay.write_rec(false).unwrap());
 }
 
 #[test]

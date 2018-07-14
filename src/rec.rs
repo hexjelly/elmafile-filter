@@ -36,12 +36,12 @@ pub struct Frame {
     pub left_wheel_rotation: u8,
     /// Right wheel rotation. Range 0..255.
     pub right_wheel_rotation: u8,
-    /// Throttle.
-    pub throttle: bool,
-    /// Direction.
-    pub direction: Direction,
-    /// Spring sound effect volume.
-    pub volume: i16,
+    /// State of throttle and direction.
+    pub throttle_and_dir: u8,
+    /// Rotation speed of back wheel.
+    pub back_wheel_rot_speed: u8,
+    /// Collision strength.
+    pub collision_strength: u8,
 }
 
 impl Frame {
@@ -55,6 +55,20 @@ impl Frame {
     /// ```
     pub fn new() -> Self {
         Frame::default()
+    }
+
+    /// Returns whether throttle is on.
+    pub fn throttle(&self) -> bool {
+        self.throttle_and_dir & 1 != 0
+    }
+
+    /// Returns the current direction.
+    pub fn direction(&self) -> Direction {
+        if self.throttle_and_dir & (1 << 1) != 0 {
+            Direction::Right
+        } else {
+            Direction::Left
+        }
     }
 }
 
@@ -70,25 +84,36 @@ pub struct Event {
 #[derive(Debug, PartialEq)]
 /// Type of event.
 pub enum EventType {
-    /// Apple or flower touch, with index of event.
-    Touch(i16),
+    /// Object touch, with index of the object. The index corresponds to a sorted object array having the order: killers, apples, flowers, start.
+    ObjectTouch(i16),
+    /// Apple take. An apple take in replay always generates 2 events (an ObjectTouch and an AppleTake).
+    Apple,
     /// Bike turn.
     Turn,
     /// Bike volt right.
     VoltRight,
     /// Bike volt left.
     VoltLeft,
-    /// Ground touch, for sound effects. Two types.
-    // TODO: consider making two separate enums instead?
-    Ground {
-        /// If alternative is true, uses the second type.
-        alternative: bool,
-    },
+    /// Ground touch. The float is in range [0, 0.99] and possibly denotes the strength of the touch.
+    Ground(f32),
+}
+
+impl EventType {
+    fn to_u8(&self) -> u8 {
+        match self {
+            &EventType::Apple => 4,
+            &EventType::Ground(_) => 1,
+            &EventType::ObjectTouch(_) => 0,
+            &EventType::Turn => 5,
+            &EventType::VoltLeft => 7,
+            &EventType::VoltRight => 6,
+        }
+    }
 }
 
 impl Default for EventType {
     fn default() -> EventType {
-        EventType::Touch(0)
+        EventType::ObjectTouch(0)
     }
 }
 
@@ -233,7 +258,8 @@ impl Replay {
         Ok(replay)
     }
 
-    fn write_rec(&self, multi: bool) -> Result<Vec<u8>, ElmaError> {
+    /// Returns replay data as a buffer of bytes.
+    pub fn write_rec(&self, multi: bool) -> Result<Vec<u8>, ElmaError> {
         let mut bytes: Vec<u8> = vec![];
 
         // Number of frames.
@@ -299,7 +325,7 @@ impl Replay {
         let last_event_2 = self.events_2.last();
         let time_1 = match last_event_1 {
             Some(last_event_1) => match last_event_1.event_type {
-                EventType::Touch { .. } => last_event_1.time,
+                EventType::ObjectTouch { .. } => last_event_1.time,
                 _ => 0_f64,
             },
             None => 0_f64,
@@ -307,7 +333,7 @@ impl Replay {
 
         let time_2 = match last_event_2 {
             Some(last_event_2) => match last_event_2.event_type {
-                EventType::Touch { .. } => last_event_2.time,
+                EventType::ObjectTouch { .. } => last_event_2.time,
                 _ => 0_f64,
             },
             None => 0_f64,
@@ -372,7 +398,8 @@ fn parse_frames(frame_data: &[u8], frame_count: i32) -> Result<Vec<Frame>, ElmaE
     let (mut left_rotation, remaining) = remaining.split_at((frame_count) as usize);
     let (mut right_rotation, remaining) = remaining.split_at((frame_count) as usize);
     let (mut data, remaining) = remaining.split_at((frame_count) as usize);
-    let (mut volume, _) = remaining.split_at((frame_count * 2) as usize);
+    let (mut back_wheel, remaining) = remaining.split_at((frame_count) as usize);
+    let (mut collision, _) = remaining.split_at((frame_count) as usize);
 
     for _ in 0..frame_count {
         // Bike X and Y.
@@ -395,16 +422,12 @@ fn parse_frames(frame_data: &[u8], frame_count: i32) -> Result<Vec<Frame>, ElmaE
         let rotation = rotation.read_i16::<LE>()?;
         let left_wheel_rotation = left_rotation.read_u8()?;
         let right_wheel_rotation = right_rotation.read_u8()?;
-        // Throttle and turn right.
+        // Throttle and direction.
         let data = data.read_u8()?;
-        let throttle = data & 1 != 0;
-        let direction = if data & (1 << 1) != 0 {
-            Direction::Right
-        } else {
-            Direction::Left
-        };
-        // Sound effect volume.
-        let volume = volume.read_i16::<LE>()?;
+        // Rotation speed of back wheel.
+        let back_wheel_rot_speed = back_wheel.read_u8()?;
+        // Collision strength.
+        let collision_strength = collision.read_u8()?;
 
         frames.push(Frame {
             bike,
@@ -414,9 +437,9 @@ fn parse_frames(frame_data: &[u8], frame_count: i32) -> Result<Vec<Frame>, ElmaE
             rotation,
             left_wheel_rotation,
             right_wheel_rotation,
-            throttle,
-            direction,
-            volume,
+            throttle_and_dir: data,
+            back_wheel_rot_speed,
+            collision_strength,
         });
     }
 
@@ -433,13 +456,12 @@ fn parse_events(mut event_data: &[u8], event_count: i32) -> Result<Vec<Event>, E
         // Event details
         let info = event_data.read_i16::<LE>()?;
         let event = event_data.read_u8()?;
-        // Unknown values
-        let _ = event_data.read_u8()?;
-        let _ = event_data.read_f32::<LE>()?;
+        let _padding = event_data.read_u8()?; // skip padding; it isn't used
+        let info2 = event_data.read_f32::<LE>()?;
         let event_type = match event {
-            0 => EventType::Touch(info),
-            1 => EventType::Ground { alternative: false },
-            4 => EventType::Ground { alternative: true },
+            0 => EventType::ObjectTouch(info),
+            1 => EventType::Ground(info2),
+            4 => EventType::Apple,
             5 => EventType::Turn,
             6 => EventType::VoltRight,
             7 => EventType::VoltLeft,
@@ -471,7 +493,8 @@ fn write_frames(frame_data: &[Frame]) -> Result<Vec<u8>, ElmaError> {
     let mut left_rotation = vec![];
     let mut right_rotation = vec![];
     let mut data = vec![];
-    let mut volume = vec![];
+    let mut back_wheel = vec![];
+    let mut collision = vec![];
 
     for frame in frame_data {
         bike_x.write_f32::<LE>(frame.bike.x)?;
@@ -490,16 +513,10 @@ fn write_frames(frame_data: &[Frame]) -> Result<Vec<u8>, ElmaError> {
         left_rotation.write_u8(frame.left_wheel_rotation)?;
         right_rotation.write_u8(frame.right_wheel_rotation)?;
 
-        let mut data_temp = random::<u8>() & 0xFC;
-        if frame.throttle {
-            data_temp |= 1;
-        }
-        if frame.direction == Direction::Right {
-            data_temp |= 2;
-        }
-        data.write_u8(data_temp)?;
+        data.write_u8(frame.throttle_and_dir)?;
 
-        volume.write_i16::<LE>(frame.volume)?;
+        back_wheel.write_u8(frame.back_wheel_rot_speed)?;
+        collision.write_u8(frame.collision_strength)?;
     }
 
     bytes.extend_from_slice(&bike_x);
@@ -514,7 +531,8 @@ fn write_frames(frame_data: &[Frame]) -> Result<Vec<u8>, ElmaError> {
     bytes.extend_from_slice(&left_rotation);
     bytes.extend_from_slice(&right_rotation);
     bytes.extend_from_slice(&data);
-    bytes.extend_from_slice(&volume);
+    bytes.extend_from_slice(&back_wheel);
+    bytes.extend_from_slice(&collision);
 
     Ok(bytes)
 }
@@ -528,30 +546,27 @@ fn write_events(event_data: &[Event]) -> Result<Vec<u8>, ElmaError> {
 
     for event in event_data {
         bytes.write_f64::<LE>(event.time)?;
+        let default_info = -1;
+        let default_info2 = 0.99;
+        let event_type = event.event_type.to_u8();
         match event.event_type {
-            EventType::Touch(info) => {
-                bytes.write_u32::<LE>(info as u32)?;
-                bytes.write_u32::<LE>(0 as u32)?;
+            EventType::ObjectTouch(info) => {
+                bytes.write_i16::<LE>(info)?;
+                bytes.write_u8(event_type)?;
+                bytes.write_u8(0)?;
+                bytes.write_f32::<LE>(0.0)?; // always 0 for an ObjectTouch event
             }
-            EventType::Ground { alternative: false } => {
-                bytes.write_u32::<LE>(131071 as u32)?;
-                bytes.write_u32::<LE>(1050605825 as u32)?;
+            EventType::Ground(info2) => {
+                bytes.write_i16::<LE>(default_info)?;
+                bytes.write_u8(event_type)?;
+                bytes.write_u8(0)?;
+                bytes.write_f32::<LE>(info2)?;
             }
-            EventType::Ground { alternative: true } => {
-                bytes.write_u32::<LE>(327679 as u32)?;
-                bytes.write_u32::<LE>(1065185444 as u32)?;
-            }
-            EventType::Turn => {
-                bytes.write_u32::<LE>(393215 as u32)?;
-                bytes.write_u32::<LE>(1065185444 as u32)?;
-            }
-            EventType::VoltRight => {
-                bytes.write_u32::<LE>(458751 as u32)?;
-                bytes.write_u32::<LE>(1065185444 as u32)?;
-            }
-            EventType::VoltLeft => {
-                bytes.write_u32::<LE>(524287 as u32)?;
-                bytes.write_u32::<LE>(1065185444 as u32)?;
+            _ => {
+                bytes.write_i16::<LE>(default_info)?;
+                bytes.write_u8(event_type)?;
+                bytes.write_u8(0)?;
+                bytes.write_f32::<LE>(default_info2)?;
             }
         }
     }
