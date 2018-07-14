@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## \[0.1.11\] - 2018-07-14
+
+### Fixed
+
+-   Replays can now be accurately loaded/saved on a byte level thanks to Smibu <3.
+
+### Added
+
+-   Added `.to_bytes()` for `Replay` struct.
+
 ## \[0.1.10\] - 2018-05-15
 
 ### Breaking
