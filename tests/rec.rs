@@ -1,10 +1,20 @@
 extern crate elma;
 
-use elma::Position;
 use elma::rec::*;
+use elma::Position;
 use std::env;
-use std::fs::File;
-use std::io::Read;
+use std::fs;
+
+const PATH_TEST_1: &'static str = "tests/assets/replays/test_1.rec";
+const PATH_TEST_2: &'static str = "tests/assets/replays/test_2.rec";
+const PATH_TEST_3: &'static str = "tests/assets/replays/test_3.rec";
+const PATH_INVALID_EVENT: &'static str = "tests/assets/replays/invalid_event.rec";
+const PATH_UNFINISHED: &'static str = "tests/assets/replays/unfinished.rec";
+const PATH_EVENT_UNFINISHED: &'static str = "tests/assets/replays/event_unfinished.rec";
+const PATH_MULTI_EVENT_UNFINISHED_1: &'static str =
+    "tests/assets/replays/multi_event_unfinished.rec";
+const PATH_MULTI_EVENT_UNFINISHED_2: &'static str =
+    "tests/assets/replays/multi_event_unfinished_2.rec";
 
 #[test]
 // Probably redundant, but maybe some new fields are added in the future.
@@ -63,7 +73,7 @@ fn load_invalid_replay_path() {
 
 #[test]
 fn load_valid_replay_1() {
-    let replay = Replay::load("tests/assets/replays/test_1.rec").unwrap();
+    let replay = Replay::load(PATH_TEST_1).unwrap();
     assert_eq!(replay.multi, false);
     assert_eq!(replay.flag_tag, false);
     assert_eq!(replay.link, 2549082363);
@@ -186,7 +196,7 @@ fn load_valid_replay_1() {
 
 #[test]
 fn load_valid_multi_replay_1() {
-    let replay = Replay::load("tests/assets/replays/test_2.rec").unwrap();
+    let replay = Replay::load(PATH_TEST_2).unwrap();
     assert_eq!(replay.multi, true);
     assert_eq!(replay.flag_tag, false);
     assert_eq!(replay.link, 2549082363);
@@ -221,7 +231,7 @@ fn load_valid_multi_replay_1() {
 
 #[test]
 fn load_valid_replay_1_and_save() {
-    let replay = Replay::load("tests/assets/replays/test_1.rec").unwrap();
+    let replay = Replay::load(PATH_TEST_1).unwrap();
     let mut dir = env::temp_dir();
     dir.push("save_replay_1.rec");
     replay.save(&dir).unwrap();
@@ -238,67 +248,49 @@ fn load_valid_replay_1_and_save() {
 
 #[test]
 fn load_valid_replay_1_from_buffer() {
-    let replay = Replay::load("tests/assets/replays/test_1.rec").unwrap();
-    let mut file = File::open("tests/assets/replays/test_1.rec").unwrap();
-    let mut buffer = vec![];
-    file.read_to_end(&mut buffer).unwrap();
+    let replay = Replay::load(PATH_TEST_1).unwrap();
+    let buffer = fs::read(PATH_TEST_1).unwrap();
     assert_eq!(replay, Replay::from_bytes(&buffer).unwrap());
 }
 
 #[test]
 fn check_save_load_same_replay_1() {
-    let replay = Replay::load("tests/assets/replays/test_1.rec").unwrap();
-    let mut file = File::open("tests/assets/replays/test_1.rec").unwrap();
-    let mut buffer = vec![];
-    file.read_to_end(&mut buffer).unwrap();
-    assert_eq!(buffer, replay.write_rec(false).unwrap());
+    let replay = Replay::load(PATH_TEST_1).unwrap();
+    let buffer = fs::read(PATH_TEST_1).unwrap();
+    assert_eq!(buffer, replay.as_bytes().unwrap());
 }
 
 #[test]
 fn load_valid_replay_2_and_save() {
-    let replay = Replay::load("tests/assets/replays/test_3.rec").unwrap();
+    let replay = Replay::load(PATH_TEST_3).unwrap();
     let mut dir = env::temp_dir();
     dir.push("save_replay_2.rec");
     replay.save(&dir).unwrap();
     let replay_saved = Replay::load(&dir).unwrap();
-    assert_eq!(replay.multi, replay_saved.multi);
-    assert_eq!(replay.flag_tag, replay_saved.flag_tag);
-    assert_eq!(replay.link, replay_saved.link);
-    assert_eq!(replay.level, replay_saved.level);
-    assert_eq!(replay.frames, replay_saved.frames);
-    assert_eq!(replay.events, replay_saved.events);
-    assert_eq!(replay.frames_2, replay_saved.frames_2);
-    assert_eq!(replay.events_2, replay_saved.events_2);
+    assert_eq!(replay, replay_saved);
 }
 
 #[test]
 fn load_valid_multi_replay_1_and_save() {
-    let replay = Replay::load("tests/assets/replays/test_2.rec").unwrap();
+    let replay = Replay::load(PATH_TEST_2).unwrap();
     let mut dir = env::temp_dir();
     dir.push("save_multi_replay_2.rec");
     replay.save(&dir).unwrap();
     let replay_saved = Replay::load(&dir).unwrap();
-    assert_eq!(replay.multi, replay_saved.multi);
-    assert_eq!(replay.flag_tag, replay_saved.flag_tag);
-    assert_eq!(replay.link, replay_saved.link);
-    assert_eq!(replay.level, replay_saved.level);
-    assert_eq!(replay.frames, replay_saved.frames);
-    assert_eq!(replay.events, replay_saved.events);
-    assert_eq!(replay.frames_2, replay_saved.frames_2);
-    assert_eq!(replay.events_2, replay_saved.events_2);
+    assert_eq!(replay, replay_saved);
 }
 
 #[test]
 fn load_invalid_event_replay() {
     assert_eq!(
-        Replay::load("tests/assets/replays/invalid_event.rec").unwrap_err(),
+        Replay::load(PATH_INVALID_EVENT).unwrap_err(),
         elma::ElmaError::InvalidEvent(8)
     );
 }
 
 #[test]
 fn replay_get_time_ms_finished_single() {
-    let replay = Replay::load("tests/assets/replays/test_1.rec").unwrap();
+    let replay = Replay::load(PATH_TEST_1).unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 14649);
     assert_eq!(finished, true);
@@ -306,7 +298,7 @@ fn replay_get_time_ms_finished_single() {
 
 #[test]
 fn replay_get_time_ms_finished_multi() {
-    let replay = Replay::load("tests/assets/replays/test_2.rec").unwrap();
+    let replay = Replay::load(PATH_TEST_2).unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 14671);
     assert_eq!(finished, true);
@@ -314,7 +306,7 @@ fn replay_get_time_ms_finished_multi() {
 
 #[test]
 fn replay_get_time_ms_unfinished_no_event() {
-    let replay = Replay::load("tests/assets/replays/unfinished.rec").unwrap();
+    let replay = Replay::load(PATH_UNFINISHED).unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 533);
     assert_eq!(finished, false);
@@ -322,7 +314,7 @@ fn replay_get_time_ms_unfinished_no_event() {
 
 #[test]
 fn replay_get_time_ms_unfinished_event_single() {
-    let replay = Replay::load("tests/assets/replays/test_3.rec").unwrap();
+    let replay = Replay::load(PATH_TEST_3).unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 4767);
     assert_eq!(finished, false);
@@ -330,7 +322,7 @@ fn replay_get_time_ms_unfinished_event_single() {
 
 #[test]
 fn replay_get_time_ms_unfinished_event_multi() {
-    let replay = Replay::load("tests/assets/replays/multi_event_unfinished.rec").unwrap();
+    let replay = Replay::load(PATH_MULTI_EVENT_UNFINISHED_1).unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 1600);
     assert_eq!(finished, false);
@@ -338,7 +330,7 @@ fn replay_get_time_ms_unfinished_event_multi() {
 
 #[test]
 fn replay_get_time_ms_unfinished_event_multi_2() {
-    let replay = Replay::load("tests/assets/replays/multi_event_unfinished_2.rec").unwrap();
+    let replay = Replay::load(PATH_MULTI_EVENT_UNFINISHED_2).unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 3233);
     assert_eq!(finished, false);
@@ -346,7 +338,7 @@ fn replay_get_time_ms_unfinished_event_multi_2() {
 
 #[test]
 fn replay_get_time_ms_unfinished_event_single_2_frame_diff() {
-    let replay = Replay::load("tests/assets/replays/event_unfinished.rec").unwrap();
+    let replay = Replay::load(PATH_EVENT_UNFINISHED).unwrap();
     let (time, finished) = replay.get_time_ms();
     assert_eq!(time, 8567);
     assert_eq!(finished, false);
@@ -354,7 +346,7 @@ fn replay_get_time_ms_unfinished_event_single_2_frame_diff() {
 
 #[test]
 fn replay_get_time_hs_finished_single() {
-    let replay = Replay::load("tests/assets/replays/test_1.rec").unwrap();
+    let replay = Replay::load(PATH_TEST_1).unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 1464);
     assert_eq!(finished, true);
@@ -362,7 +354,7 @@ fn replay_get_time_hs_finished_single() {
 
 #[test]
 fn replay_get_time_hs_finished_multi() {
-    let replay = Replay::load("tests/assets/replays/test_2.rec").unwrap();
+    let replay = Replay::load(PATH_TEST_2).unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 1467);
     assert_eq!(finished, true);
@@ -370,7 +362,7 @@ fn replay_get_time_hs_finished_multi() {
 
 #[test]
 fn replay_get_time_hs_unfinished_no_event() {
-    let replay = Replay::load("tests/assets/replays/unfinished.rec").unwrap();
+    let replay = Replay::load(PATH_UNFINISHED).unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 53);
     assert_eq!(finished, false);
@@ -378,7 +370,7 @@ fn replay_get_time_hs_unfinished_no_event() {
 
 #[test]
 fn replay_get_time_hs_unfinished_event_single() {
-    let replay = Replay::load("tests/assets/replays/test_3.rec").unwrap();
+    let replay = Replay::load(PATH_TEST_3).unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 476);
     assert_eq!(finished, false);
@@ -386,7 +378,7 @@ fn replay_get_time_hs_unfinished_event_single() {
 
 #[test]
 fn replay_get_time_hs_unfinished_event_multi() {
-    let replay = Replay::load("tests/assets/replays/multi_event_unfinished.rec").unwrap();
+    let replay = Replay::load(PATH_MULTI_EVENT_UNFINISHED_1).unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 160);
     assert_eq!(finished, false);
@@ -394,7 +386,7 @@ fn replay_get_time_hs_unfinished_event_multi() {
 
 #[test]
 fn replay_get_time_hs_unfinished_event_multi_2() {
-    let replay = Replay::load("tests/assets/replays/multi_event_unfinished_2.rec").unwrap();
+    let replay = Replay::load(PATH_MULTI_EVENT_UNFINISHED_2).unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 323);
     assert_eq!(finished, false);
@@ -402,7 +394,7 @@ fn replay_get_time_hs_unfinished_event_multi_2() {
 
 #[test]
 fn replay_get_time_hs_unfinished_event_single_2_frame_diff() {
-    let replay = Replay::load("tests/assets/replays/event_unfinished.rec").unwrap();
+    let replay = Replay::load(PATH_EVENT_UNFINISHED).unwrap();
     let (time, finished) = replay.get_time_hs();
     assert_eq!(time, 856);
     assert_eq!(finished, false);
