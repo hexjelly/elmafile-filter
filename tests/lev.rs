@@ -385,9 +385,7 @@ fn load_valid_level_2() {
 #[test]
 fn load_valid_level_2_from_bytes() {
     let level = Level::load("tests/assets/levels/test_2.lev").unwrap();
-    let mut file = File::open("tests/assets/levels/test_2.lev").unwrap();
-    let mut buffer = vec![];
-    file.read_to_end(&mut buffer).unwrap();
+    let buffer = fs::read("tests/assets/levels/test_2.lev").unwrap();
     assert_eq!(level, Level::from_bytes(&buffer).unwrap());
 }
 
