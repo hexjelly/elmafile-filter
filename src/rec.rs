@@ -103,13 +103,13 @@ pub enum EventType {
 
 impl EventType {
     fn to_u8(&self) -> u8 {
-        match self {
-            &EventType::Apple => 4,
-            &EventType::Ground(_) => 1,
-            &EventType::ObjectTouch(_) => 0,
-            &EventType::Turn => 5,
-            &EventType::VoltLeft => 7,
-            &EventType::VoltRight => 6,
+        match *self {
+            EventType::Apple => 4,
+            EventType::Ground(_) => 1,
+            EventType::ObjectTouch(_) => 0,
+            EventType::Turn => 5,
+            EventType::VoltLeft => 7,
+            EventType::VoltRight => 6,
         }
     }
 }
