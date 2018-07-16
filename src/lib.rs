@@ -4,6 +4,10 @@
 
 extern crate byteorder;
 extern crate rand;
+#[macro_use]
+extern crate nom;
+#[macro_use]
+extern crate itertools;
 
 use std::{io, string};
 
@@ -31,6 +35,8 @@ pub enum ElmaError {
     AcrossUnsupported,
     /// Not a level file.
     InvalidLevelFile,
+    /// Invalid state file.
+    InvalidStateFile,
     /// Invalid LGR file.
     InvalidLGRFile(LGRError),
     /// Invalid gravity value.

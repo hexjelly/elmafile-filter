@@ -12,8 +12,6 @@ pub const EOD: i32 = 0x00_67_10_3A;
 pub const EOF: i32 = 0x00_84_5D_52;
 /// Magic arbitrary number to signify end of replay file.
 pub const EOR: i32 = 0x00_49_2F_75;
-/// Magic arbitrary number to signify start of state.dat file.
-pub const STATE: i32 = 0x2E_78_40_DF;
 /// Magic arbitrary number to signify start of LGR file.
 pub const LGR: i32 = 0x00_00_03_EA;
 /// Magic arbitrary number to signify end of LGR file.
