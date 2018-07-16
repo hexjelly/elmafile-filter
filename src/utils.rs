@@ -132,9 +132,7 @@ pub fn string_null_pad(name: &str, pad: usize) -> Result<Vec<u8>, ElmaError> {
         ));
     }
 
-    let mut bytes = vec![0u8; pad];
-    for (n, char) in name.iter().enumerate() {
-        bytes[n] = *char;
-    }
+    let mut bytes = name.to_vec();
+    bytes.resize(pad, 0);
     Ok(bytes)
 }
