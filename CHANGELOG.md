@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## \[0.1.12\] - 2018-07-17
+
+### Added
+
+-   Added full state.dat support, once again thanks to Smibu <3.
+
 ## \[0.1.11\] - 2018-07-14
 
 ### Fixed
