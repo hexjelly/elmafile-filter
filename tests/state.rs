@@ -72,37 +72,11 @@ fn default_state() {
 }
 
 #[test]
-fn null_pad_string() {
+fn state_5_skips_max_lev_tag() {
+    let state = State::load("tests/assets/state/state_skipped_max_tag.dat").unwrap();
     assert_eq!(
-        null_padded_string(b"Elma\0\0\0\0\0\0", 10),
-        Ok((&[][..], "Elma"))
+        &state.players[0].skipped_internals[..8],
+        &[false, false, true, true, true, true, true, false]
     );
-    assert_eq!(
-        null_padded_string(b"Elma\0\0\0\0\0\0\0\0", 10),
-        Ok((&[0, 0][..], "Elma"))
-    );
-    assert_eq!(
-        null_padded_string(b"\0\0\0\0\0\0\0\0\0\0", 10),
-        Ok((&[][..], ""))
-    );
-    assert_eq!(
-        null_padded_string(b"Elma\0\0\0\0\0", 10),
-        Err(Incomplete(Size(6)))
-    );
-    assert_eq!(
-        null_padded_string(b"\0\0\0\0\0\0\0\0\0", 10),
-        Err(Incomplete(Size(10)))
-    );
-    assert_eq!(
-        null_padded_string(b"ElastoMani", 10),
-        Err(Incomplete(Size(1)))
-    );
-    assert_eq!(
-        null_padded_string(b"ElastoMania", 10),
-        Err(Incomplete(Size(1)))
-    );
-    assert_eq!(
-        null_padded_string(b"ElastoMania\0", 10),
-        Err(Error(Code(&[0][..], CondReduce)))
-    );
+    assert_eq!(state.players[0].last_internal, 8);
 }
