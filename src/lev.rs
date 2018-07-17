@@ -1,14 +1,17 @@
-use super::{constants::{PLAYER_TOP10_SIZE, TOP10_SIZE, EOD, EOF, OBJECT_RADIUS},
-            utils::{parse_top10, string_null_pad, trim_string, write_top10},
-            BestTimes,
-            Clip,
-            ElmaError,
-            Position,
-            Version};
+use super::{
+    constants::{PLAYER_TOP10_SIZE, TOP10_SIZE, OBJECT_RADIUS},
+    utils::{parse_top10, string_null_pad, trim_string, write_top10}, BestTimes, Clip, ElmaError,
+    Position, Version,
+};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use rand::random;
 use std::fs;
 use std::path::Path;
+
+// Magic arbitrary number signifying end-of-data in level file.
+const EOD: i32 = 0x00_67_10_3A;
+// Magic arbitrary number signifying end-of-file in level file.
+const EOF: i32 = 0x00_84_5D_52;
 
 /// Topology related errors.
 #[derive(Debug, PartialEq)]

@@ -1,11 +1,13 @@
-use super::{constants::EOR,
-            utils::{string_null_pad, trim_string},
-            ElmaError,
-            Position};
+use super::{
+    utils::{string_null_pad, trim_string}, ElmaError, Position,
+};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use rand::random;
 use std::fs;
 use std::path::Path;
+
+// Magic arbitrary number to signify end of replay file.
+const EOR: i32 = 0x00_49_2F_75;
 
 /// Bike direction.
 #[derive(Debug, Eq, PartialEq)]

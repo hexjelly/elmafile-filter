@@ -2,7 +2,14 @@ use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use std::fs;
 use std::path::Path;
 
-use super::{constants, Clip, ElmaError, utils::{string_null_pad, trim_string}};
+use super::{
+    utils::{string_null_pad, trim_string}, Clip, ElmaError,
+};
+
+// Magic arbitrary number to signify start of LGR file.
+const LGR: i32 = 0x00_00_03_EA;
+// Magic arbitrary number to signify end of LGR file.
+const LGR_EOF: i32 = 0x0B_2E_05_E7;
 
 /// LGR related errors.
 #[derive(Debug, PartialEq, Eq, Clone, Ord, PartialOrd)]
@@ -137,7 +144,7 @@ impl LGR {
 
         let picture_len = buffer.read_u32::<LE>()? as usize;
         let expected_header = buffer.read_i32::<LE>()?;
-        if expected_header != constants::LGR {
+        if expected_header != LGR {
             return Err(ElmaError::InvalidLGRFile(LGRError::InvalidHeader(
                 expected_header,
             )));
@@ -154,7 +161,7 @@ impl LGR {
         let (_, mut expected_eof) = buffer.split_at(bytes_read);
 
         let expected_eof = expected_eof.read_i32::<LE>()?;
-        if expected_eof != constants::LGR_EOF {
+        if expected_eof != LGR_EOF {
             return Err(ElmaError::EOFMismatch);
         }
 
@@ -235,10 +242,10 @@ impl LGR {
         let mut bytes = vec![];
         bytes.extend_from_slice(b"LGR12");
         bytes.write_u32::<LE>(self.picture_data.len() as u32)?;
-        bytes.write_i32::<LE>(constants::LGR)?;
+        bytes.write_i32::<LE>(LGR)?;
         bytes.extend_from_slice(&self.write_picture_list()?);
         bytes.extend_from_slice(&self.write_picture_data()?);
-        bytes.write_i32::<LE>(constants::LGR_EOF)?;
+        bytes.write_i32::<LE>(LGR_EOF)?;
 
         Ok(bytes)
     }
