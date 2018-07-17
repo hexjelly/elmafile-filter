@@ -1,15 +1,12 @@
-use super::{utils::write_top10, BestTimes, ElmaError};
+use super::{BestTimes, ElmaError};
 use byteorder::{WriteBytesExt, LE};
 use constants::TOP10_SIZE;
-use nom::le_i32;
-use nom::le_u32;
-use nom::le_u8;
-use nom::IResult;
+use nom::{le_i32, le_u32, le_u8};
 use shared::TimeEntry;
 use std::fs;
 use std::path::Path;
 use std::str;
-use utils::string_null_pad;
+use utils::{string_null_pad, write_top10};
 
 const PLAYER_STRUCT_SIZE: usize = 116;
 const PLAYERENTRY_PADDING: usize = 38;
@@ -191,7 +188,7 @@ named!(playerentry<PlayerEntry>,
 );
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-named_args!(_null_padded_string(n: usize)<&str>,
+named_args!(null_padded_string(n: usize)<&str>,
   do_parse!(
     s: map_res!(take_while!(is_nonzero), str::from_utf8) >>
     cond_reduce!(n >= s.len(), take!(n - s.len())) >>
@@ -300,11 +297,6 @@ fn to_bool(i: i32) -> bool {
 
 fn is_nonzero(u: u8) -> bool {
     to_bool(u as i32)
-}
-
-/// Parses a null-padded string of size `n`.
-pub fn null_padded_string(input: &[u8], n: usize) -> IResult<&[u8], &str> {
-    _null_padded_string(input, n)
 }
 
 impl State {
@@ -521,5 +513,50 @@ fn crypt_state(buffer: &mut [u8]) {
         *t ^= (ebp8 & 0xFF) as u8;
         ebp10 = ebp10.wrapping_add((ebp8.wrapping_rem(0xD3F)).wrapping_mul(0xD3F));
         ebp8 = ebp10.wrapping_mul(0x1F).wrapping_add(0xD3F);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::null_padded_string;
+    use nom::simple_errors::Context::Code;
+    use nom::Err::Error;
+    use nom::Err::Incomplete;
+    use nom::ErrorKind::CondReduce;
+    use nom::Needed::Size;
+    #[test]
+    fn null_pad_string() {
+        assert_eq!(
+            null_padded_string(b"Elma\0\0\0\0\0\0", 10),
+            Ok((&[][..], "Elma"))
+        );
+        assert_eq!(
+            null_padded_string(b"Elma\0\0\0\0\0\0\0\0", 10),
+            Ok((&[0, 0][..], "Elma"))
+        );
+        assert_eq!(
+            null_padded_string(b"\0\0\0\0\0\0\0\0\0\0", 10),
+            Ok((&[][..], ""))
+        );
+        assert_eq!(
+            null_padded_string(b"Elma\0\0\0\0\0", 10),
+            Err(Incomplete(Size(6)))
+        );
+        assert_eq!(
+            null_padded_string(b"\0\0\0\0\0\0\0\0\0", 10),
+            Err(Incomplete(Size(10)))
+        );
+        assert_eq!(
+            null_padded_string(b"ElastoMani", 10),
+            Err(Incomplete(Size(1)))
+        );
+        assert_eq!(
+            null_padded_string(b"ElastoMania", 10),
+            Err(Incomplete(Size(1)))
+        );
+        assert_eq!(
+            null_padded_string(b"ElastoMania\0", 10),
+            Err(Error(Code(&[0][..], CondReduce)))
+        );
     }
 }

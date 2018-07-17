@@ -3,11 +3,6 @@ extern crate nom;
 
 use elma::state::*;
 use elma::{BestTimes, TimeEntry};
-use nom::simple_errors::Context::Code;
-use nom::Err::Error;
-use nom::Err::Incomplete;
-use nom::ErrorKind::CondReduce;
-use nom::Needed::Size;
 use std::env;
 use std::fs;
 
