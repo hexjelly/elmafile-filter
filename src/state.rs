@@ -174,7 +174,7 @@ named!(playerentry<PlayerEntry>,
   do_parse!(
     name: apply!(null_padded_string, PLAYERENTRY_NAME_SIZE) >>
     cond_reduce!(!name.is_empty(), take!(0)) >>
-    skipped_internals: fold_many_m_n!(NUM_INTERNALS, NUM_INTERNALS, le_u8, Vec::new(), |mut acc: Vec<_>, item: u8| { acc.push(to_bool(item as i32)); acc }) >>
+    skipped_internals: many_m_n!(NUM_INTERNALS, NUM_INTERNALS, map!(le_u8, |x| to_bool(x as i32))) >>
     take!(PLAYERENTRY_PADDING) >>
     last_internal: le_i32 >>
     selected_internal: le_i32 >>
@@ -199,7 +199,7 @@ named_args!(null_padded_string(n: usize)<&str>,
 #[cfg_attr(rustfmt, rustfmt_skip)]
 named_args!(playernames(num: usize)<Vec<&str>>,
   do_parse!(
-    names: fold_many_m_n!(num, num, apply!(null_padded_string, PLAYER_NAME_SIZE), Vec::new(), |mut acc: Vec<_>, item| { acc.push(item); acc }) >>
+    names: many_m_n!(num, num, apply!(null_padded_string, PLAYER_NAME_SIZE)) >>
     cond_reduce!(num <= TOP10_ENTRIES, count!(apply!(null_padded_string, PLAYER_NAME_SIZE), TOP10_ENTRIES - num)) >>
     (names)
   )
@@ -209,7 +209,7 @@ named_args!(playernames(num: usize)<Vec<&str>>,
 named!(top10part<Vec<TimeEntry>>,
   do_parse!(
     num_times: map!(le_u32, |x| x as usize) >>
-    times: fold_many_m_n!(num_times, num_times, le_i32, Vec::new(), |mut acc: Vec<_>, item: i32| { acc.push(item.into()); acc }) >>
+    times: many_m_n!(num_times, num_times, map!(le_i32, |x| x.into())) >>
     cond_reduce!(num_times <= TOP10_ENTRIES, count!(le_i32, TOP10_ENTRIES - num_times)) >>
     player_a_names: apply!(playernames, num_times) >>
     player_b_names: apply!(playernames, num_times) >>
@@ -238,9 +238,9 @@ named!(boolean<bool>,
 named!(parse_state<State>,
   do_parse!(
     version: verify!(le_u32, |x| x == STATE_START) >>
-    times: fold_many_m_n!(NUM_LEVELS, NUM_LEVELS, top10, Vec::new(), |mut acc: Vec<_>, item| { acc.push(item); acc }) >>
+    times: many_m_n!(NUM_LEVELS, NUM_LEVELS, top10) >>
     // Using 0 here instead of 1 generates a warning. Workaround with map_opt + opt.
-    players: map_opt!(opt!(fold_many_m_n!(1, NUM_PLAYERS, playerentry, Vec::new(), |mut acc: Vec<_>, item| { acc.push(item); acc })), |x: Option<_>| x.or_else(|| Some(vec![]))) >>
+    players: map_opt!(opt!(many_m_n!(1, NUM_PLAYERS, playerentry)), |x: Option<_>| x.or_else(|| Some(vec![]))) >>
     cond_reduce!(players.len() <= NUM_PLAYERS, take!((NUM_PLAYERS - players.len()) * PLAYER_STRUCT_SIZE)) >>
     num_players: le_u32 >>
     cond_reduce!(players.len() == num_players as usize, take!(0)) >>
