@@ -41,7 +41,7 @@ pub trait BoundingBox {
 }
 
 /// Top10 save option.
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Top10Save {
     /// Yes. Will save best times into the file's top10 list.
     Yes,
@@ -365,18 +365,18 @@ impl Level {
         level.sky = trim_string(sky)?;
 
         // Polygons.
-        let poly_count = (remaining.read_f64::<LE>()? - 0.4643643).round() as usize;
+        let poly_count = (remaining.read_f64::<LE>()? - 0.464_364_3).round() as usize;
         let (polygons, read_bytes) = Level::parse_polygons(remaining, poly_count)?;
         level.polygons = polygons;
         let (_, mut remaining) = remaining.split_at(read_bytes);
 
         // Objects.
-        let object_count = (remaining.read_f64::<LE>()? - 0.4643643).round() as usize;
+        let object_count = (remaining.read_f64::<LE>()? - 0.464_364_3).round() as usize;
         let (object_data, mut remaining) = remaining.split_at(object_count * 28);
         level.objects = Level::parse_objects(object_data, object_count)?;
 
         // Pictures.
-        let picture_count = (remaining.read_f64::<LE>()? - 0.2345672).round() as usize;
+        let picture_count = (remaining.read_f64::<LE>()? - 0.234_567_2).round() as usize;
         let (picture_data, mut remaining) = remaining.split_at(picture_count * 54);
         level.pictures = Level::parse_pictures(picture_data, picture_count)?;
 
@@ -419,12 +419,9 @@ impl Level {
                 read_bytes += 16;
                 let x = buffer.read_f64::<LE>()?;
                 let y = buffer.read_f64::<LE>()?;
-                vertices.push(Position { x: x, y: y });
+                vertices.push(Position { x, y });
             }
-            polygons.push(Polygon {
-                grass: grass,
-                vertices: vertices,
-            });
+            polygons.push(Polygon { grass, vertices });
         }
         Ok((polygons, read_bytes))
     }
@@ -434,10 +431,10 @@ impl Level {
         for _ in 0..n {
             let x = buffer.read_f64::<LE>()?;
             let y = buffer.read_f64::<LE>()?;
-            let position = Position { x: x, y: y };
+            let position = Position { x, y };
             let object_type = buffer.read_i32::<LE>()?;
             let gravity = buffer.read_i32::<LE>()?;
-            let gravity_direction = match gravity {
+            let gravity = match gravity {
                 0 => Direction::None,
                 1 => Direction::Up,
                 2 => Direction::Down,
@@ -446,20 +443,17 @@ impl Level {
                 other => return Err(ElmaError::InvalidGravity(other)),
             };
             let animation = buffer.read_i32::<LE>()? + 1;
-            let object = match object_type {
+            let object_type = match object_type {
                 1 => ObjectType::Exit,
-                2 => ObjectType::Apple {
-                    gravity: gravity_direction,
-                    animation: animation,
-                },
+                2 => ObjectType::Apple { gravity, animation },
                 3 => ObjectType::Killer,
                 4 => ObjectType::Player,
                 other => return Err(ElmaError::InvalidObject(other)),
             };
 
             objects.push(Object {
-                position: position,
-                object_type: object,
+                position,
+                object_type,
             });
         }
         Ok(objects)
@@ -487,12 +481,12 @@ impl Level {
             };
 
             pictures.push(Picture {
-                name: name,
-                texture: texture,
-                mask: mask,
-                position: Position { x: x, y: y },
-                distance: distance,
-                clip: clip,
+                name,
+                texture,
+                mask,
+                position: Position { x, y },
+                distance,
+                clip,
             });
         }
         Ok(pictures)
@@ -559,7 +553,7 @@ impl Level {
                 let top10_bytes = write_top10(&best_times)?;
                 buffer.extend_from_slice(&crypt_top10(&top10_bytes));
             }
-            Top10Save::No => buffer.extend(crypt_top10(&vec![0; TOP10_SIZE])),
+            Top10Save::No => buffer.extend(crypt_top10(&[0; TOP10_SIZE])),
         }
 
         // EOF marker.
@@ -571,7 +565,7 @@ impl Level {
     fn write_polygons(&self) -> Result<Vec<u8>, ElmaError> {
         let mut buffer = vec![];
         // Number of polygons.
-        buffer.write_f64::<LE>(self.polygons.len() as f64 + 0.4643643_f64)?;
+        buffer.write_f64::<LE>(self.polygons.len() as f64 + 0.464_364_3_f64)?;
         for poly in &self.polygons {
             // Grass poly.
             buffer.write_i32::<LE>(if poly.grass { 1 } else { 0 })?;
@@ -589,7 +583,7 @@ impl Level {
     fn write_objects(&self) -> Result<Vec<u8>, ElmaError> {
         let mut buffer = vec![];
         // Number of objects.
-        buffer.write_f64::<LE>(self.objects.len() as f64 + 0.4643643_f64)?;
+        buffer.write_f64::<LE>(self.objects.len() as f64 + 0.464_364_3_f64)?;
         for obj in &self.objects {
             // Position.
             buffer.write_f64::<LE>(obj.position.x)?;
@@ -633,7 +627,7 @@ impl Level {
     fn write_pictures(&self) -> Result<Vec<u8>, ElmaError> {
         let mut buffer = vec![];
         // Number of pictures.
-        buffer.write_f64::<LE>(self.pictures.len() as f64 + 0.2345672_f64)?;
+        buffer.write_f64::<LE>(self.pictures.len() as f64 + 0.234_567_2_f64)?;
         for pic in &self.pictures {
             // Picture name.
             buffer.extend_from_slice(&string_null_pad(&pic.name, 10)?);
@@ -757,23 +751,23 @@ impl Level {
                 ObjectType::Killer => 3,
                 ObjectType::Player => 4,
             };
-            obj_sum += obj.position.x + obj.position.y + (obj_type as f64);
+            obj_sum += obj.position.x + obj.position.y + f64::from(obj_type);
         }
 
         for pic in &self.pictures {
             pic_sum += pic.position.x + pic.position.y;
         }
 
-        let sum = (pol_sum + obj_sum + pic_sum) * 3247.764325643;
+        let sum = (pol_sum + obj_sum + pic_sum) * 3_247.764_325_643;
         [
             sum,
-            (random::<u32>() % 5871) as f64 + 11877. - sum,
+            f64::from(random::<u32>() % 5871) + 11877. - sum,
             if valid_topology {
-                (random::<u32>() % 5871) as f64 + 11877. - sum
+                f64::from(random::<u32>() % 5871) + 11877. - sum
             } else {
-                (random::<u32>() % 4982) as f64 + 20961. - sum
+                f64::from(random::<u32>() % 4982) + 20961. - sum
             },
-            (random::<u32>() % 6102) as f64 + 12112. - sum,
+            f64::from(random::<u32>() % 6102) + 12112. - sum,
         ]
     }
 

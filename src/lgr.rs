@@ -259,10 +259,10 @@ impl LGR {
         let mut clippings = vec![];
         let mut transparencies = vec![];
 
-        for picture in self.picture_list.iter() {
+        for picture in &self.picture_list {
             names.extend_from_slice(&string_null_pad(&picture.name, 10)?);
             picture_types.write_u32::<LE>(picture.picture_type as u32)?;
-            distances.write_u32::<LE>(picture.distance as u32)?;
+            distances.write_u32::<LE>(u32::from(picture.distance))?;
             clippings.write_u32::<LE>(picture.clipping as u32)?;
             transparencies.write_u32::<LE>(picture.transparency as u32)?;
         }
@@ -279,7 +279,7 @@ impl LGR {
     fn write_picture_data(&self) -> Result<Vec<u8>, ElmaError> {
         let mut bytes = vec![];
 
-        for picture in self.picture_data.iter() {
+        for picture in &self.picture_data {
             bytes.extend_from_slice(&string_null_pad(&picture.name, 20)?);
             bytes.write_u32::<LE>(picture.data.len() as u32)?;
             bytes.extend_from_slice(&picture.data);

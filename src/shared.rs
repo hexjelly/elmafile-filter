@@ -69,12 +69,12 @@ pub struct Time(pub i32);
 
 impl Time {
     /// Returns a tuple with `negative?`, `hours`, `mins`, `secs`, `hundredths`.
-    pub fn to_parts(&self) -> (bool, i32, i32, i32, i32) {
+    pub fn to_parts(self) -> (bool, i32, i32, i32, i32) {
         let h = self.0 % 100;
         let s = (self.0 / 100) % 60;
         let m = (self.0 / (100 * 60)) % 60;
         let hr = self.0 / (100 * 60 * 60);
-        let neg = if self.0 < 0 { true } else { false };
+        let neg = self.0 < 0;
         (neg, hr.abs(), m.abs(), s.abs(), h.abs())
     }
 
@@ -97,8 +97,8 @@ impl Time {
                 n if n == 0 => time += val,
                 n if n == 1 => time += val * 100,
                 n if n == 2 => time += val * 6000,
-                n if n == 3 => time += val * 360000,
-                n if n == 4 => time += val * 8640000,
+                n if n == 3 => time += val * 360_000,
+                n if n == 4 => time += val * 8_640_000,
                 _ => time = time.saturating_add(i32::MAX),
             }
         }

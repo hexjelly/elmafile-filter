@@ -164,15 +164,11 @@ pub(crate) fn boolean(input: &[u8]) -> IResult<&[u8], bool> {
 }
 
 pub(crate) fn to_bool(i: i32) -> bool {
-    if i == 0 {
-        false
-    } else {
-        true
-    }
+    i != 0
 }
 
 pub(crate) fn is_nonzero(u: u8) -> bool {
-    to_bool(u as i32)
+    to_bool(i32::from(u))
 }
 
 #[cfg(test)]

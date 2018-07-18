@@ -181,7 +181,7 @@ impl Ride {
             },
             None => 0_f64,
         };
-        time * 2289.37728938
+        time * 2_289.377_289_38
     }
 }
 
@@ -285,8 +285,8 @@ named!(event<Event>,
       info: le_i16 >>
       event_type: le_u8 >>
       add_return_error!(
-        ErrorKind::Custom(event_type as u32),
-        cond_reduce!([0, 1, 4, 5, 6, 7].iter().any(|x| *x == event_type as i32), take!(0))) >>
+        ErrorKind::Custom(u32::from(event_type)),
+        cond_reduce!([0, 1, 4, 5, 6, 7].iter().any(|x| *x == i32::from(event_type)), take!(0))) >>
       take!(1) >>
       info2: le_f32 >>
       (Event {
@@ -366,8 +366,8 @@ impl Replay {
     fn parse_replay(buffer: &[u8]) -> Result<Self, ElmaError> {
         match parse_replay(buffer) {
             Ok((_, replay)) => Ok(replay),
-            Err(Failure(List(v))) => match v.as_slice() {
-                &[_, (_, Custom(event_type)), (_, Custom(EVENT_ERROR))] => {
+            Err(Failure(List(v))) => match *v.as_slice() {
+                [_, (_, Custom(event_type)), (_, Custom(EVENT_ERROR))] => {
                     Err(ElmaError::InvalidEvent(event_type as u8))
                 }
                 _ => Err(ElmaError::InvalidReplayFile),

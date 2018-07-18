@@ -20,8 +20,8 @@ const LEVEL_NAME_SIZE: usize = 20;
 const NUM_PLAYERS: usize = 50;
 const NUM_LEVELS: usize = 90;
 const STATE_START: u32 = 200;
-const STATE_END: u32 = 123432221;
-const STATE_END_ALT: u32 = 123432112;
+const STATE_END: u32 = 123_432_221;
+const STATE_END_ALT: u32 = 123_432_112;
 const TOP10_ENTRIES: usize = 10;
 
 #[derive(Debug, Clone, PartialEq, Copy)]
@@ -177,7 +177,7 @@ named!(playerentry<PlayerEntry>,
   do_parse!(
     name: apply!(null_padded_string, PLAYERENTRY_NAME_SIZE) >>
     cond_reduce!(!name.is_empty(), take!(0)) >>
-    skipped_internals: many_m_n!(NUM_INTERNALS, NUM_INTERNALS, map!(le_u8, |x| to_bool(x as i32))) >>
+    skipped_internals: many_m_n!(NUM_INTERNALS, NUM_INTERNALS, map!(le_u8, |x| to_bool(i32::from(x)))) >>
     take!(PLAYERENTRY_PADDING) >>
     last_internal: le_i32 >>
     selected_internal: le_i32 >>
@@ -377,7 +377,7 @@ impl State {
         let mut buffer = vec![];
         buffer.write_u32::<LE>(STATE_START)?;
 
-        for level in self.times.iter() {
+        for level in &self.times {
             let top10_bytes = write_top10(&level)?;
             buffer.extend(top10_bytes);
         }
@@ -408,7 +408,7 @@ impl State {
         buffer.write_i32::<LE>(self.video_detail as i32)?;
         buffer.write_i32::<LE>(self.animated_objects as i32)?;
         buffer.write_i32::<LE>(self.animated_menus as i32)?;
-        for k in [&self.player_a_keys, &self.player_b_keys].iter() {
+        for k in &[&self.player_a_keys, &self.player_b_keys] {
             buffer.write_u32::<LE>(k.throttle)?;
             buffer.write_u32::<LE>(k.brake)?;
             buffer.write_u32::<LE>(k.rotate_right)?;
@@ -476,7 +476,7 @@ fn crypt_whole_state(buf: &mut [u8]) {
         LEVEL_NAME_SIZE,
     ];
     let mut curr = 0;
-    for p in state_pieces.iter() {
+    for p in &state_pieces {
         crypt_state(&mut buf[curr..curr + p]);
         curr += p;
     }
