@@ -5,16 +5,14 @@ use elma::Position;
 use std::env;
 use std::fs;
 
-const PATH_TEST_1: &'static str = "tests/assets/replays/test_1.rec";
-const PATH_TEST_2: &'static str = "tests/assets/replays/test_2.rec";
-const PATH_TEST_3: &'static str = "tests/assets/replays/test_3.rec";
-const PATH_INVALID_EVENT: &'static str = "tests/assets/replays/invalid_event.rec";
-const PATH_UNFINISHED: &'static str = "tests/assets/replays/unfinished.rec";
-const PATH_EVENT_UNFINISHED: &'static str = "tests/assets/replays/event_unfinished.rec";
-const PATH_MULTI_EVENT_UNFINISHED_1: &'static str =
-    "tests/assets/replays/multi_event_unfinished.rec";
-const PATH_MULTI_EVENT_UNFINISHED_2: &'static str =
-    "tests/assets/replays/multi_event_unfinished_2.rec";
+const PATH_TEST_1: &str = "tests/assets/replays/test_1.rec";
+const PATH_TEST_2: &str = "tests/assets/replays/test_2.rec";
+const PATH_TEST_3: &str = "tests/assets/replays/test_3.rec";
+const PATH_INVALID_EVENT: &str = "tests/assets/replays/invalid_event.rec";
+const PATH_UNFINISHED: &str = "tests/assets/replays/unfinished.rec";
+const PATH_EVENT_UNFINISHED: &str = "tests/assets/replays/event_unfinished.rec";
+const PATH_MULTI_EVENT_UNFINISHED_1: &str = "tests/assets/replays/multi_event_unfinished.rec";
+const PATH_MULTI_EVENT_UNFINISHED_2: &str = "tests/assets/replays/multi_event_unfinished_2.rec";
 
 #[test]
 // Probably redundant, but maybe some new fields are added in the future.
@@ -46,19 +44,14 @@ fn rec_default_values() {
             event_type: EventType::ObjectTouch(0),
         }
     );
-    let mut replay = Replay::new();
-    replay.link = 1239;
+    let replay = Replay::new();
     assert_eq!(
         replay,
         Replay {
-            multi: false,
             flag_tag: false,
-            link: 1239,
+            link: 0,
             level: String::new(),
-            frames: vec![],
-            events: vec![],
-            frames_2: vec![],
-            events_2: vec![],
+            rides: vec![],
         }
     );
 }
@@ -74,15 +67,17 @@ fn load_invalid_replay_path() {
 #[test]
 fn load_valid_replay_1() {
     let replay = Replay::load(PATH_TEST_1).unwrap();
-    assert_eq!(replay.multi, false);
+    assert_eq!(replay.is_multi(), false);
     assert_eq!(replay.flag_tag, false);
     assert_eq!(replay.link, 2549082363);
     assert_eq!(replay.level, "tutor14.lev");
 
     // Some random frames.
-    assert_eq!(replay.frames.len(), 440);
+    let frames = &replay.rides[0].frames;
+    let events = &replay.rides[0].events;
+    assert_eq!(frames.len(), 440);
     assert_eq!(
-        replay.frames[0],
+        frames[0],
         Frame {
             bike: Position {
                 x: 34.30250_f32,
@@ -99,10 +94,10 @@ fn load_valid_replay_1() {
             collision_strength: 0,
         }
     );
-    assert_eq!(replay.frames[0].throttle(), true);
-    assert_eq!(replay.frames[0].direction(), Direction::Left);
+    assert_eq!(frames[0].throttle(), true);
+    assert_eq!(frames[0].direction(), Direction::Left);
     assert_eq!(
-        replay.frames[100],
+        frames[100],
         Frame {
             bike: Position {
                 x: 27.142517089844_f32,
@@ -119,10 +114,10 @@ fn load_valid_replay_1() {
             collision_strength: 0,
         }
     );
-    assert_eq!(replay.frames[100].throttle(), true);
-    assert_eq!(replay.frames[100].direction(), Direction::Left);
+    assert_eq!(frames[100].throttle(), true);
+    assert_eq!(frames[100].direction(), Direction::Left);
     assert_eq!(
-        replay.frames[201],
+        frames[201],
         Frame {
             bike: Position {
                 x: 11.07129573822_f32,
@@ -139,10 +134,10 @@ fn load_valid_replay_1() {
             collision_strength: 0,
         }
     );
-    assert_eq!(replay.frames[201].throttle(), true);
-    assert_eq!(replay.frames[201].direction(), Direction::Left);
+    assert_eq!(frames[201].throttle(), true);
+    assert_eq!(frames[201].direction(), Direction::Left);
     assert_eq!(
-        replay.frames[439],
+        frames[439],
         Frame {
             bike: Position {
                 x: -34.779712677002_f32,
@@ -159,34 +154,34 @@ fn load_valid_replay_1() {
             collision_strength: 22,
         }
     );
-    assert_eq!(replay.frames[439].throttle(), true);
-    assert_eq!(replay.frames[439].direction(), Direction::Left);
+    assert_eq!(frames[439].throttle(), true);
+    assert_eq!(frames[439].direction(), Direction::Left);
 
     // Some random event.
-    assert_eq!(replay.events.len(), 24);
+    assert_eq!(events.len(), 24);
     assert_eq!(
-        replay.events[0],
+        events[0],
         Event {
             time: 1.57728480001688_f64,
             event_type: EventType::VoltRight,
         }
     );
     assert_eq!(
-        replay.events[1],
+        events[1],
         Event {
             time: 1.6974048000097273_f64,
             event_type: EventType::Ground(0.72119284),
         }
     );
     assert_eq!(
-        replay.events[11],
+        events[11],
         Event {
             time: 3.9464880000114437_f64,
             event_type: EventType::VoltLeft,
         }
     );
     assert_eq!(
-        replay.events[23],
+        events[23],
         Event {
             time: 6.398683200001716_f64,
             event_type: EventType::ObjectTouch(3),
@@ -197,13 +192,17 @@ fn load_valid_replay_1() {
 #[test]
 fn load_valid_multi_replay_1() {
     let replay = Replay::load(PATH_TEST_2).unwrap();
-    assert_eq!(replay.multi, true);
+    assert_eq!(replay.is_multi(), true);
     assert_eq!(replay.flag_tag, false);
     assert_eq!(replay.link, 2549082363);
     assert_eq!(replay.level, "tutor14.lev");
-    assert_eq!(replay.frames.len(), 440);
+    let frames = &replay.rides[0].frames;
+    let frames_2 = &replay.rides[1].frames;
+    let events = &replay.rides[0].events;
+    let events_2 = &replay.rides[1].events;
+    assert_eq!(frames.len(), 440);
     assert_eq!(
-        replay.frames[439],
+        frames[439],
         Frame {
             bike: Position {
                 x: -34.779712677002_f32,
@@ -220,13 +219,13 @@ fn load_valid_multi_replay_1() {
             collision_strength: 22,
         }
     );
-    assert_eq!(replay.frames[439].throttle(), true);
-    assert_eq!(replay.frames[439].direction(), Direction::Left);
-    assert_eq!(replay.events.len(), 24);
-    assert_eq!(replay.frames_2.len(), 441);
-    assert_eq!(replay.frames_2[100].bike.x, 27.138593673706_f32);
-    assert_eq!(replay.frames_2[0].bike.y, -1.1253118515015_f32);
-    assert_eq!(replay.events_2.len(), 23);
+    assert_eq!(frames[439].throttle(), true);
+    assert_eq!(frames[439].direction(), Direction::Left);
+    assert_eq!(events.len(), 24);
+    assert_eq!(frames_2.len(), 441);
+    assert_eq!(frames_2[100].bike.x, 27.138593673706_f32);
+    assert_eq!(frames_2[0].bike.y, -1.1253118515015_f32);
+    assert_eq!(events_2.len(), 23);
 }
 
 #[test]

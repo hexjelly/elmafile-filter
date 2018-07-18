@@ -33,8 +33,10 @@ pub use shared::{BestTimes, Clip, Position, Time, TimeEntry, Version};
 pub enum ElmaError {
     /// Across files are not supported.
     AcrossUnsupported,
-    /// Not a level file.
+    /// Invalid level file.
     InvalidLevelFile,
+    /// Invalid replay file.
+    InvalidReplayFile,
     /// Invalid state file.
     InvalidStateFile,
     /// Invalid LGR file.
