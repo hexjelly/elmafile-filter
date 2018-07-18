@@ -1,13 +1,25 @@
-use super::{
-    utils::{string_null_pad, trim_string}, ElmaError, Position,
-};
-use byteorder::{ReadBytesExt, WriteBytesExt, LE};
-use rand::random;
+use super::{utils::string_null_pad, ElmaError, Position};
+use byteorder::{WriteBytesExt, LE};
+use nom::le_f32;
+use nom::le_f64;
+use nom::le_i16;
+use nom::le_i32;
+use nom::le_u32;
+use nom::le_u8;
+use nom::verbose_errors::Context::List;
+use nom::Err::Failure;
+use nom::ErrorKind::Custom;
 use std::fs;
 use std::path::Path;
+use utils::boolean;
+use utils::null_padded_string;
 
-// Magic arbitrary number to signify end of replay file.
-const EOR: i32 = 0x00_49_2F_75;
+// Magic arbitrary number to signify end of player data in a replay file.
+const END_OF_PLAYER: i32 = 0x00_49_2F_75;
+// Indicates an Event parsing error.
+const EVENT_ERROR: u32 = 1;
+// Replay version number that all valid replays need to have.
+const REPLAY_VERSION: u32 = 0x83;
 
 /// Bike direction.
 #[derive(Debug, Eq, PartialEq)]
@@ -136,25 +148,61 @@ impl Event {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub(crate) struct ReplayHeader {
+    pub multi: bool,
+    pub flag_tag: bool,
+    pub link: u32,
+    pub level: String,
+}
+
+/// Player ride information (frames and events).
+#[derive(Debug, PartialEq)]
+pub struct Ride {
+    /// Player frames.
+    pub frames: Vec<Frame>,
+    /// Player events.
+    pub events: Vec<Event>,
+}
+
+impl Ride {
+    /// Gets the time based on frame count.
+    pub fn get_frame_time(&self) -> f64 {
+        self.frames.len() as f64 * 33.333
+    }
+
+    /// Gets the time based on last ObjectTouch event or 0 if the last event is not ObjectTouch.
+    pub fn get_time(&self) -> f64 {
+        let last_event = self.events.last();
+        let time = match last_event {
+            Some(e) => match e.event_type {
+                EventType::ObjectTouch { .. } => e.time,
+                _ => 0_f64,
+            },
+            None => 0_f64,
+        };
+        time * 2289.37728938
+    }
+}
+
 /// Replay struct
 #[derive(Debug, PartialEq)]
 pub struct Replay {
-    /// Whether replay is multi-player or not.
-    pub multi: bool,
     /// Whether replay is flag-tag or not.
     pub flag_tag: bool,
     /// Random number to link with level file.
     pub link: u32,
     /// Full level filename.
     pub level: String,
-    /// Player one frames.
-    pub frames: Vec<Frame>,
-    /// Player one events.
-    pub events: Vec<Event>,
-    /// Player two frames.
-    pub frames_2: Vec<Frame>,
-    /// Player two events.
-    pub events_2: Vec<Event>,
+    /// Rides of players.
+    pub rides: Vec<Ride>,
+}
+
+impl Replay {
+    /// Returns whether this is a multiplayer replay.
+    pub fn is_multi(&self) -> bool {
+        self.rides.len() > 1
+    }
 }
 
 impl Default for Replay {
@@ -162,6 +210,115 @@ impl Default for Replay {
         Replay::new()
     }
 }
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+named!(headerandride<(ReplayHeader, Ride)>,
+  do_parse!(
+    frame_count: map!(le_i32, |x| x as usize) >>
+    _version: verify!(le_u32, |x| x == REPLAY_VERSION) >>
+    multi: boolean >>
+    flag_tag: boolean >>
+    link: le_u32 >>
+    level: apply!(null_padded_string, 16) >>
+    bodyx: many_m_n!(frame_count, frame_count, le_f32) >>
+    bodyy: many_m_n!(frame_count, frame_count, le_f32) >>
+    leftwheelx: many_m_n!(frame_count, frame_count, le_i16) >>
+    leftwheely: many_m_n!(frame_count, frame_count, le_i16) >>
+    rightwheelx: many_m_n!(frame_count, frame_count, le_i16) >>
+    rightwheely: many_m_n!(frame_count, frame_count, le_i16) >>
+    headx: many_m_n!(frame_count, frame_count, le_i16) >>
+    heady: many_m_n!(frame_count, frame_count, le_i16) >>
+    rotation: many_m_n!(frame_count, frame_count, le_i16) >>
+    leftwheelrotation: many_m_n!(frame_count, frame_count, le_u8) >>
+    rightwheelrotation: many_m_n!(frame_count, frame_count, le_u8) >>
+    dir_and_throttle: many_m_n!(frame_count, frame_count, le_u8) >>
+    back_wheel: many_m_n!(frame_count, frame_count, le_u8) >>
+    collision_strength: many_m_n!(frame_count, frame_count, le_u8) >>
+    num_events: map!(le_i32, |x| x as usize) >>
+    events: many_m_n!(num_events, num_events, event) >>
+    verify!(le_i32, |x| x == END_OF_PLAYER) >>
+    (ReplayHeader {
+         multi,
+         flag_tag,
+         link,
+         level: level.to_string(),
+     }, Ride {
+           frames: izip!(
+            bodyx,
+            bodyy,
+            leftwheelx,
+            leftwheely,
+            rightwheelx,
+            rightwheely,
+            headx,
+            heady,
+            rotation,
+            leftwheelrotation,
+            rightwheelrotation,
+            dir_and_throttle,
+            back_wheel,
+            collision_strength).map(|(bx, by, lx, ly, rx, ry, hx, hy, r, lr, rr, dt, bw, cs)|
+              Frame {
+                  bike: Position {x: bx, y: by},
+                  left_wheel: Position {x: lx, y: ly},
+                  right_wheel: Position {x: rx, y: ry},
+                  head: Position {x: hx, y: hy},
+                  rotation: r,
+                  left_wheel_rotation: lr,
+                  right_wheel_rotation: rr,
+                  throttle_and_dir: dt,
+                  back_wheel_rot_speed: bw,
+                  collision_strength: cs,
+              }
+            ).collect(),
+           events,
+       }
+    )
+  )
+);
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+named!(event<Event>,
+  return_error!(ErrorKind::Custom(EVENT_ERROR),
+    do_parse!(
+      time: le_f64 >>
+      info: le_i16 >>
+      event_type: le_u8 >>
+      add_return_error!(
+        ErrorKind::Custom(event_type as u32),
+        cond_reduce!([0, 1, 4, 5, 6, 7].iter().any(|x| *x == event_type as i32), take!(0))) >>
+      take!(1) >>
+      info2: le_f32 >>
+      (Event {
+           time,
+           event_type: match event_type {
+              0 => EventType::ObjectTouch(info),
+              1 => EventType::Ground(info2),
+              4 => EventType::Apple,
+              5 => EventType::Turn,
+              6 => EventType::VoltRight,
+              7 => EventType::VoltLeft,
+              _ => unreachable!("parser should have stopped earlier")
+           },
+       }
+      )
+    )
+  )
+);
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+named!(parse_replay<Replay>,
+  do_parse!(
+    players: many_m_n!(1, 2, complete!(headerandride)) >>
+    (Replay {
+         flag_tag: players[0].0.flag_tag,
+         link: players[0].0.link,
+         level: players[0].0.level.to_string(),
+         rides: players.into_iter().map(|x| x.1).collect(),
+     }
+    )
+  )
+);
 
 impl Replay {
     /// Return a new Replay struct.
@@ -173,14 +330,10 @@ impl Replay {
     /// ```
     pub fn new() -> Self {
         Replay {
-            multi: false,
             flag_tag: false,
-            link: random::<u32>(),
+            link: 0,
             level: String::new(),
-            frames: vec![],
-            events: vec![],
-            frames_2: vec![],
-            events_2: vec![],
+            rides: vec![],
         }
     }
 
@@ -210,99 +363,45 @@ impl Replay {
     }
 
     /// Parses the raw binary data into Replay struct fields.
-    fn parse_replay(mut buffer: &[u8]) -> Result<Self, ElmaError> {
-        let mut replay = Self::new();
-
-        // Frame count.
-        let frame_count = buffer.read_i32::<LE>()?;
-        // Some unused value, always 0x83.
-        let (_, mut remaining) = buffer.split_at(4);
-        // Multi-player replay.
-        replay.multi = remaining.read_i32::<LE>()? > 0;
-        // Flag-tag replay.
-        replay.flag_tag = remaining.read_i32::<LE>()? > 0;
-        // Level link.
-        replay.link = remaining.read_u32::<LE>()?;
-        // Level file name, including extension.
-        let (level, remaining) = remaining.split_at(12);
-        replay.level = trim_string(level)?;
-        // Unknown, unused.
-        let (_, remaining) = remaining.split_at(4);
-        // Frames.
-        replay.frames = parse_frames(remaining, frame_count)?;
-        let (_, mut remaining) = remaining.split_at(27 * frame_count as usize);
-        // Events.
-        let event_count = remaining.read_i32::<LE>()?;
-        replay.events = parse_events(remaining, event_count)?;
-        let (_, mut remaining) = remaining.split_at(16 * event_count as usize);
-        // End of replay marker.
-        let expected = remaining.read_i32::<LE>()?;
-        if expected != EOR {
-            return Err(ElmaError::EORMismatch);
+    fn parse_replay(buffer: &[u8]) -> Result<Self, ElmaError> {
+        match parse_replay(buffer) {
+            Ok((_, replay)) => Ok(replay),
+            Err(Failure(List(v))) => match v.as_slice() {
+                &[_, (_, Custom(event_type)), (_, Custom(EVENT_ERROR))] => {
+                    Err(ElmaError::InvalidEvent(event_type as u8))
+                }
+                _ => Err(ElmaError::InvalidReplayFile),
+            },
+            _ => Err(ElmaError::InvalidReplayFile),
         }
-
-        // If multi-rec, parse frame and events, while skipping other fields?
-        if replay.multi {
-            // Frame count.
-            let frame_count = remaining.read_i32::<LE>()?;
-            // Skip other fields.
-            let (_, remaining) = remaining.split_at(32);
-            // Frames.
-            replay.frames_2 = parse_frames(remaining, frame_count)?;
-            let (_, mut remaining) = remaining.split_at(27 * frame_count as usize);
-            // Events.
-            let event_count = remaining.read_i32::<LE>()?;
-            replay.events_2 = parse_events(remaining, event_count)?;
-            let (_, mut remaining) = remaining.split_at(16 * event_count as usize);
-            // End of replay marker.
-            let expected = remaining.read_i32::<LE>()?;
-            if expected != EOR {
-                return Err(ElmaError::EORMismatch);
-            }
-        }
-        Ok(replay)
     }
 
     /// Returns replay data as a buffer of bytes.
     pub fn to_bytes(&self) -> Result<Vec<u8>, ElmaError> {
         let mut bytes: Vec<u8> = vec![];
-
-        // Number of frames.
-        bytes.write_i32::<LE>(self.frames.len() as i32)?;
-        // Garbage value.
-        bytes.write_i32::<LE>(0x83_i32)?;
-        // Multi-player replay or not.
-        bytes.write_i32::<LE>(if self.multi { 1_i32 } else { 0_i32 })?;
-        // Flag-tag replay or not.
-        bytes.write_i32::<LE>(if self.flag_tag { 1_i32 } else { 0_i32 })?;
-        // Link.
-        bytes.write_u32::<LE>(self.link)?;
-        // Level name.
-        bytes.extend_from_slice(&string_null_pad(&self.level, 12)?);
-        // Garbage value.
-        bytes.write_i32::<LE>(0x00_i32)?;
-
-        // Frames and events.
-        bytes.extend_from_slice(&write_frames(&self.frames)?);
-        bytes.extend_from_slice(&write_events(&self.events)?);
-
-        // EOR marker.
-        bytes.write_i32::<LE>(EOR)?;
-
-        // Repeat above if multi-replay.
-        if self.multi {
-            bytes.write_i32::<LE>(self.frames_2.len() as i32)?;
-            bytes.write_i32::<LE>(0x83_i32)?;
-            bytes.write_i32::<LE>(1_i32)?;
+        for r in &self.rides {
+            // Number of frames.
+            bytes.write_i32::<LE>(r.frames.len() as i32)?;
+            // Replay version.
+            bytes.write_u32::<LE>(REPLAY_VERSION)?;
+            // Multi-player replay or not.
+            bytes.write_i32::<LE>(if self.is_multi() { 1_i32 } else { 0_i32 })?;
+            // Flag-tag replay or not.
             bytes.write_i32::<LE>(if self.flag_tag { 1_i32 } else { 0_i32 })?;
+            // Link.
             bytes.write_u32::<LE>(self.link)?;
+            // Level name.
             bytes.extend_from_slice(&string_null_pad(&self.level, 12)?);
+            // Garbage value.
             bytes.write_i32::<LE>(0x00_i32)?;
-            bytes.extend_from_slice(&write_frames(&self.frames_2)?);
-            bytes.extend_from_slice(&write_events(&self.events_2)?);
-            bytes.write_i32::<LE>(EOR)?;
-        }
 
+            // Frames and events.
+            bytes.extend_from_slice(&write_frames(&r.frames)?);
+            bytes.extend_from_slice(&write_events(&r.events)?);
+
+            // End of player marker.
+            bytes.write_i32::<LE>(END_OF_PLAYER)?;
+        }
         Ok(bytes)
     }
 
@@ -314,7 +413,7 @@ impl Replay {
 
     /// Get time of replay. Returns tuple with milliseconds and whether replay was finished,
     /// caveat being that there is no way to tell if a replay was finished or not just from the
-    /// replay file with a 100% certainty. Merely provided for convinience.
+    /// replay file with a 100% certainty. Merely provided for convenience.
     /// # Examples
     ///
     /// ```rust
@@ -326,40 +425,20 @@ impl Replay {
     /// ```
     pub fn get_time_ms(&self) -> (usize, bool) {
         // First check if last event was a touch event in either event data.
-        let last_event_1 = self.events.last();
-        let last_event_2 = self.events_2.last();
-        let time_1 = match last_event_1 {
-            Some(last_event_1) => match last_event_1.event_type {
-                EventType::ObjectTouch { .. } => last_event_1.time,
-                _ => 0_f64,
-            },
-            None => 0_f64,
-        };
-
-        let time_2 = match last_event_2 {
-            Some(last_event_2) => match last_event_2.event_type {
-                EventType::ObjectTouch { .. } => last_event_2.time,
-                _ => 0_f64,
-            },
-            None => 0_f64,
-        };
-
-        // Highest frame time.
-        let frames_1_len = self.frames.len();
-        let frames_2_len = self.frames_2.len();
-        let frame_time_max = if frames_1_len > frames_2_len {
-            frames_1_len
-        } else {
-            frames_2_len
-        } as f64 * 33.333;
+        let times = self.rides
+            .iter()
+            .map(|r| (r.get_time(), r.get_frame_time()))
+            .collect::<Vec<_>>();
+        let (event_time_max, frame_time_max) =
+            times.iter().fold((0_f64, 0_f64), |(acc_a, acc_b), (a, b)| {
+                (a.max(acc_a), b.max(acc_b))
+            });
 
         // If neither had a touch event, return approximate frame time.
-        if (time_1 == 0.) && (time_2 == 0.) {
+        if event_time_max == 0. {
             return (frame_time_max.round() as usize, false);
         }
 
-        // Set to highest event time.
-        let event_time_max = if time_1 > time_2 { time_1 } else { time_2 } * 2289.37728938;
         // If event difference to frame time is >1 frames of time, probably not finished?
         if frame_time_max > (event_time_max + 33.333) {
             return (frame_time_max.round() as usize, false);
@@ -385,101 +464,6 @@ impl Replay {
         let (time, finished) = self.get_time_ms();
         (time / 10, finished)
     }
-}
-
-/// Function for parsing frame data from either single-player or multi-player replays.
-fn parse_frames(frame_data: &[u8], frame_count: i32) -> Result<Vec<Frame>, ElmaError> {
-    let mut frames: Vec<Frame> = vec![];
-
-    let (mut bike_x, remaining) = frame_data.split_at((frame_count * 4) as usize);
-    let (mut bike_y, remaining) = remaining.split_at((frame_count * 4) as usize);
-    let (mut left_x, remaining) = remaining.split_at((frame_count * 2) as usize);
-    let (mut left_y, remaining) = remaining.split_at((frame_count * 2) as usize);
-    let (mut right_x, remaining) = remaining.split_at((frame_count * 2) as usize);
-    let (mut right_y, remaining) = remaining.split_at((frame_count * 2) as usize);
-    let (mut head_x, remaining) = remaining.split_at((frame_count * 2) as usize);
-    let (mut head_y, remaining) = remaining.split_at((frame_count * 2) as usize);
-    let (mut rotation, remaining) = remaining.split_at((frame_count * 2) as usize);
-    let (mut left_rotation, remaining) = remaining.split_at((frame_count) as usize);
-    let (mut right_rotation, remaining) = remaining.split_at((frame_count) as usize);
-    let (mut data, remaining) = remaining.split_at((frame_count) as usize);
-    let (mut back_wheel, remaining) = remaining.split_at((frame_count) as usize);
-    let (mut collision, _) = remaining.split_at((frame_count) as usize);
-
-    for _ in 0..frame_count {
-        // Bike X and Y.
-        let x = bike_x.read_f32::<LE>()?;
-        let y = bike_y.read_f32::<LE>()?;
-        let bike = Position { x: x, y: y };
-        // Left wheel X and Y.
-        let x = left_x.read_i16::<LE>()?;
-        let y = left_y.read_i16::<LE>()?;
-        let left_wheel = Position { x: x, y: y };
-        // Right wheel X and Y.
-        let x = right_x.read_i16::<LE>()?;
-        let y = right_y.read_i16::<LE>()?;
-        let right_wheel = Position { x: x, y: y };
-        // Head X and Y.
-        let x = head_x.read_i16::<LE>()?;
-        let y = head_y.read_i16::<LE>()?;
-        let head = Position { x: x, y: y };
-        // Rotations.
-        let rotation = rotation.read_i16::<LE>()?;
-        let left_wheel_rotation = left_rotation.read_u8()?;
-        let right_wheel_rotation = right_rotation.read_u8()?;
-        // Throttle and direction.
-        let data = data.read_u8()?;
-        // Rotation speed of back wheel.
-        let back_wheel_rot_speed = back_wheel.read_u8()?;
-        // Collision strength.
-        let collision_strength = collision.read_u8()?;
-
-        frames.push(Frame {
-            bike,
-            left_wheel,
-            right_wheel,
-            head,
-            rotation,
-            left_wheel_rotation,
-            right_wheel_rotation,
-            throttle_and_dir: data,
-            back_wheel_rot_speed,
-            collision_strength,
-        });
-    }
-
-    Ok(frames)
-}
-
-/// Function for parsing event data from either single-player or multi-player replays.
-fn parse_events(mut event_data: &[u8], event_count: i32) -> Result<Vec<Event>, ElmaError> {
-    let mut events: Vec<Event> = vec![];
-
-    for _ in 0..event_count {
-        // Event time
-        let time = event_data.read_f64::<LE>()?;
-        // Event details
-        let info = event_data.read_i16::<LE>()?;
-        let event = event_data.read_u8()?;
-        let _padding = event_data.read_u8()?; // skip padding; it isn't used
-        let info2 = event_data.read_f32::<LE>()?;
-        let event_type = match event {
-            0 => EventType::ObjectTouch(info),
-            1 => EventType::Ground(info2),
-            4 => EventType::Apple,
-            5 => EventType::Turn,
-            6 => EventType::VoltRight,
-            7 => EventType::VoltLeft,
-            _ => return Err(ElmaError::InvalidEvent(event)),
-        };
-
-        events.push(Event {
-            time: time,
-            event_type: event_type,
-        });
-    }
-
-    Ok(events)
 }
 
 /// Function for writing frame data.
