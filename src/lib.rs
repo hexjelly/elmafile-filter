@@ -35,6 +35,8 @@ pub enum ElmaError {
     AcrossUnsupported,
     /// Invalid level file.
     InvalidLevelFile,
+    /// Invalid level file name.
+    InvalidLevelFilename,
     /// Invalid replay file.
     InvalidReplayFile,
     /// Invalid state file.

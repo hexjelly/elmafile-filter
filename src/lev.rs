@@ -6,6 +6,7 @@ use super::{
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use rand::random;
 use std::fs;
+use std::io::ErrorKind;
 use std::path::Path;
 
 // Magic arbitrary number signifying end-of-data in level file.
@@ -216,6 +217,8 @@ pub struct Level {
     pub pictures: Vec<Picture>,
     /// Best times lists.
     pub best_times: BestTimes,
+    /// Level file name.
+    pub filename: Option<String>,
 }
 
 impl Default for Level {
@@ -269,6 +272,7 @@ impl Level {
     /// ```
     pub fn new() -> Self {
         Level {
+            filename: None,
             version: Version::Elma,
             link: random::<u32>(),
             integrity: [0f64; 4],
@@ -314,9 +318,17 @@ impl Level {
     /// # use elma::lev::*;
     /// let level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     /// ```
-    pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
-        let buffer = fs::read(filename)?;
-        Level::parse_level(&buffer)
+    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, ElmaError> {
+        let filename_str = path
+            .as_ref()
+            .file_name()
+            .ok_or(ElmaError::Io(ErrorKind::InvalidInput))?
+            .to_string_lossy()
+            .to_string();
+        let buffer = fs::read(path)?;
+        let mut lev = Level::parse_level(&buffer)?;
+        lev.filename = Some(filename_str);
+        Ok(lev)
     }
 
     /// Load a level from bytes.
@@ -790,7 +802,7 @@ impl Level {
     ///
     /// # Arguments
     ///
-    /// * `filename` - Path and filename to save as.
+    /// * `path` - Path to save as.
     /// * `top10` - Specifies whether to keep the top10 list (true), or write an empty list (false).
     ///
     /// # Examples
@@ -800,10 +812,16 @@ impl Level {
     /// let mut level = Level::new();
     /// level.save("newlevel.lev", Top10Save::No).unwrap();
     /// ```
-    pub fn save<P: AsRef<Path>>(&self, filename: P, top10: Top10Save) -> Result<(), ElmaError> {
+    pub fn save<P: AsRef<Path>>(&mut self, path: P, top10: Top10Save) -> Result<(), ElmaError> {
         let bytes = self.to_bytes(top10)?;
-        fs::write(filename, &bytes)?;
-
+        let filename_str = path
+            .as_ref()
+            .file_name()
+            .ok_or(ElmaError::InvalidLevelFilename)?
+            .to_string_lossy()
+            .to_string();
+        fs::write(path, &bytes)?;
+        self.filename = Some(filename_str);
         Ok(())
     }
 }
