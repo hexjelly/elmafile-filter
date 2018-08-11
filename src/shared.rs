@@ -174,7 +174,7 @@ impl fmt::Display for Time {
 /// ```
 /// let vertex = elma::Position { x: 23.1928_f64, y: -199.200019_f64 };
 /// ```
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub struct Position<T> {
     /// X-position.
     pub x: T,
