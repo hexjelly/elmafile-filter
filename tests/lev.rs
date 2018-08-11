@@ -40,7 +40,7 @@ fn construct_level_and_save() {
         version: Version::default(),
         link: random::<u32>(),
         integrity: [0f64; 4],
-        name: String::new(),
+        title: String::new(),
         lgr: String::from("default"),
         ground: String::from("ground"),
         sky: String::from("sky"),
@@ -185,7 +185,7 @@ fn load_valid_level_1() {
             1162283.210607791_f64,
         ]
     );
-    assert_eq!(level.name, "Rust test");
+    assert_eq!(level.title, "Rust test");
     assert_eq!(level.lgr, "default");
     assert_eq!(level.ground, "ground");
     assert_eq!(level.sky, "sky");
@@ -370,7 +370,7 @@ fn load_valid_level_2() {
     let level = Level::load("tests/assets/levels/test_2.lev").unwrap();
     assert_eq!(level.version, Version::Elma);
     assert_eq!(level.link, 1505288190);
-    assert_eq!(level.name, "");
+    assert_eq!(level.title, "");
     assert_eq!(level.ground, "brick");
     assert_eq!(level.sky, "ground");
     assert_eq!(level.polygons.len(), 5);
@@ -399,7 +399,7 @@ fn load_valid_level_1_and_save_with_top10() {
     dir.push("save_level_1_wtop10.lev");
     level.save(&dir, Top10Save::Yes).unwrap();
     let level_saved = Level::load(&dir).unwrap();
-    assert_eq!(level.name, level_saved.name);
+    assert_eq!(level.title, level_saved.title);
     assert_eq!(level.ground, level_saved.ground);
     assert_eq!(level.sky, level_saved.sky);
     assert_eq!(level.polygons, level_saved.polygons);
@@ -416,7 +416,7 @@ fn load_valid_level_1_and_save_without_top10() {
     dir.push("save_level_1_notop10.lev");
     level.save(&dir, Top10Save::No).unwrap();
     let level_saved = Level::load(&dir).unwrap();
-    assert_eq!(level.name, level_saved.name);
+    assert_eq!(level.title, level_saved.title);
     assert_eq!(level.ground, level_saved.ground);
     assert_eq!(level.sky, level_saved.sky);
     assert_eq!(level.polygons, level_saved.polygons);

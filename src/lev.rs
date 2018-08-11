@@ -201,8 +201,8 @@ pub struct Level {
     pub link: u32,
     /// Contains four integrity checks.
     pub integrity: [f64; 4],
-    /// Level name.
-    pub name: String,
+    /// Level title.
+    pub title: String,
     /// LGR file name.
     pub lgr: String,
     /// Ground texture name.
@@ -276,7 +276,7 @@ impl Level {
             version: Version::Elma,
             link: random::<u32>(),
             integrity: [0f64; 4],
-            name: "".into(),
+            title: "".into(),
             lgr: "default".into(),
             ground: "ground".into(),
             sky: "sky".into(),
@@ -365,7 +365,7 @@ impl Level {
 
         // Level name.
         let (name, remaining) = remaining.split_at(51);
-        level.name = trim_string(name)?;
+        level.title = trim_string(name)?;
         // LGR name.
         let (lgr, remaining) = remaining.split_at(16);
         level.lgr = trim_string(lgr)?;
@@ -536,7 +536,7 @@ impl Level {
         }
 
         // Level name.
-        buffer.extend_from_slice(&string_null_pad(&self.name, 51)?);
+        buffer.extend_from_slice(&string_null_pad(&self.title, 51)?);
         // LGR name.
         buffer.extend_from_slice(&string_null_pad(&self.lgr, 16)?);
         // Ground name.
