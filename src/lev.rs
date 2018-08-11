@@ -56,7 +56,7 @@ pub enum ObjectType {
     /// Apple.
     Apple {
         /// Gravity change.
-        gravity: Direction,
+        gravity: GravityDirection,
         /// Animation number.
         animation: i32,
     },
@@ -71,7 +71,7 @@ pub enum ObjectType {
 impl Default for ObjectType {
     fn default() -> ObjectType {
         ObjectType::Apple {
-            gravity: Direction::default(),
+            gravity: GravityDirection::default(),
             animation: 1,
         }
     }
@@ -79,7 +79,7 @@ impl Default for ObjectType {
 
 /// Apple direction object.
 #[derive(Debug, PartialEq)]
-pub enum Direction {
+pub enum GravityDirection {
     /// No gravity change.
     None,
     /// Gravity up.
@@ -92,9 +92,9 @@ pub enum Direction {
     Right,
 }
 
-impl Default for Direction {
-    fn default() -> Direction {
-        Direction::None
+impl Default for GravityDirection {
+    fn default() -> GravityDirection {
+        GravityDirection::None
     }
 }
 
@@ -447,11 +447,11 @@ impl Level {
             let object_type = buffer.read_i32::<LE>()?;
             let gravity = buffer.read_i32::<LE>()?;
             let gravity = match gravity {
-                0 => Direction::None,
-                1 => Direction::Up,
-                2 => Direction::Down,
-                3 => Direction::Left,
-                4 => Direction::Right,
+                0 => GravityDirection::None,
+                1 => GravityDirection::Up,
+                2 => GravityDirection::Down,
+                3 => GravityDirection::Left,
+                4 => GravityDirection::Right,
                 other => return Err(ElmaError::InvalidGravity(other)),
             };
             let animation = buffer.read_i32::<LE>()? + 1;
@@ -610,19 +610,19 @@ impl Level {
             // Apple gravity.
             buffer.write_i32::<LE>(match obj.object_type {
                 ObjectType::Apple {
-                    gravity: Direction::Up,
+                    gravity: GravityDirection::Up,
                     ..
                 } => 1,
                 ObjectType::Apple {
-                    gravity: Direction::Down,
+                    gravity: GravityDirection::Down,
                     ..
                 } => 2,
                 ObjectType::Apple {
-                    gravity: Direction::Left,
+                    gravity: GravityDirection::Left,
                     ..
                 } => 3,
                 ObjectType::Apple {
-                    gravity: Direction::Right,
+                    gravity: GravityDirection::Right,
                     ..
                 } => 4,
                 _ => 0,

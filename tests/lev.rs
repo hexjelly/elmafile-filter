@@ -55,7 +55,7 @@ fn construct_level_and_save() {
     level.objects.push(Object {
         position: Position { x: 0_f64, y: 0_f64 },
         object_type: ObjectType::Apple {
-            gravity: Direction::Down,
+            gravity: GravityDirection::Down,
             animation: 1,
         },
     });
@@ -258,7 +258,7 @@ fn load_valid_level_1() {
                     y: -0.3124543521844827_f64,
                 },
                 object_type: ObjectType::Apple {
-                    gravity: Direction::None,
+                    gravity: GravityDirection::None,
                     animation: 9,
                 },
             },
@@ -268,7 +268,7 @@ fn load_valid_level_1() {
                     y: 0.5277288147929609_f64,
                 },
                 object_type: ObjectType::Apple {
-                    gravity: Direction::Up,
+                    gravity: GravityDirection::Up,
                     animation: 1,
                 },
             },
@@ -278,7 +278,7 @@ fn load_valid_level_1() {
                     y: 0.36348248139887396_f64,
                 },
                 object_type: ObjectType::Apple {
-                    gravity: Direction::Right,
+                    gravity: GravityDirection::Right,
                     animation: 5,
                 },
             },
@@ -288,7 +288,7 @@ fn load_valid_level_1() {
                     y: 0.38243398140588436_f64,
                 },
                 object_type: ObjectType::Apple {
-                    gravity: Direction::Left,
+                    gravity: GravityDirection::Left,
                     animation: 1,
                 },
             },
@@ -298,7 +298,7 @@ fn load_valid_level_1() {
                     y: -0.4387976855645497_f64,
                 },
                 object_type: ObjectType::Apple {
-                    gravity: Direction::Up,
+                    gravity: GravityDirection::Up,
                     animation: 1,
                 },
             },
