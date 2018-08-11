@@ -78,7 +78,7 @@ impl Default for ObjectType {
 }
 
 /// Apple direction object.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum GravityDirection {
     /// No gravity change.
     None,
