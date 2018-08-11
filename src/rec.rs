@@ -166,6 +166,14 @@ pub struct Ride {
 }
 
 impl Ride {
+    /// Creates an empty Ride.
+    pub fn new() -> Self {
+        Ride {
+            frames: vec![],
+            events: vec![],
+        }
+    }
+
     /// Gets the time based on frame count.
     pub fn get_frame_time(&self) -> f64 {
         self.frames.len() as f64 * 33.333
