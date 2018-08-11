@@ -112,6 +112,22 @@ impl Object {
     pub fn new() -> Self {
         Object::default()
     }
+
+    /// Returns whether this object is an Apple.
+    pub fn is_apple(&self) -> bool {
+        match self.object_type {
+            ObjectType::Apple { .. } => true,
+            _ => false,
+        }
+    }
+
+    /// Returns whether this object is Player.
+    pub fn is_player(&self) -> bool {
+        match self.object_type {
+            ObjectType::Player => true,
+            _ => false,
+        }
+    }
 }
 
 /// Polygon struct.
