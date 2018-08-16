@@ -162,10 +162,10 @@ impl BoundingBox for Polygon {
         }
 
         [
-            Position { x: min_x, y: max_y },
-            Position { x: max_x, y: max_y },
-            Position { x: min_x, y: min_y },
-            Position { x: max_x, y: min_y },
+            Position::new(min_x, max_y),
+            Position::new(max_x, max_y),
+            Position::new(min_x, min_y),
+            Position::new(max_x, min_y),
         ]
     }
 }
@@ -269,10 +269,10 @@ impl BoundingBox for Level {
         }
 
         [
-            Position { x: min_x, y: max_y },
-            Position { x: max_x, y: max_y },
-            Position { x: min_x, y: min_y },
-            Position { x: max_x, y: min_y },
+            Position::new(min_x, max_y),
+            Position::new(max_x, max_y),
+            Position::new(min_x, min_y),
+            Position::new(max_x, min_y),
         ]
     }
 }
@@ -299,25 +299,19 @@ impl Level {
             polygons: vec![Polygon {
                 grass: false,
                 vertices: vec![
-                    Position { x: 10., y: 0. },
-                    Position { x: 10., y: 7. },
-                    Position { x: 0., y: 7. },
-                    Position { x: 0., y: 0. },
+                    Position::new(10., 0.),
+                    Position::new(10., 7.),
+                    Position::new(0., 7.),
+                    Position::new(0., 0.),
                 ],
             }],
             objects: vec![
                 Object {
-                    position: Position {
-                        x: 2.,
-                        y: 7. - OBJECT_RADIUS,
-                    },
+                    position: Position::new(2., 7. - OBJECT_RADIUS),
                     object_type: ObjectType::Player,
                 },
                 Object {
-                    position: Position {
-                        x: 8.,
-                        y: 7. - OBJECT_RADIUS,
-                    },
+                    position: Position::new(8., 7. - OBJECT_RADIUS),
                     object_type: ObjectType::Exit,
                 },
             ],
@@ -441,7 +435,7 @@ impl Level {
                 read_bytes += 16;
                 let x = buffer.read_f64::<LE>()?;
                 let y = buffer.read_f64::<LE>()?;
-                vertices.push(Position { x, y: -y });
+                vertices.push(Position::new(x, -y));
             }
             polygons.push(Polygon { grass, vertices });
         }
@@ -453,7 +447,7 @@ impl Level {
         for _ in 0..n {
             let x = buffer.read_f64::<LE>()?;
             let y = buffer.read_f64::<LE>()?;
-            let position = Position { x, y: -y };
+            let position = Position::new(x, -y);
             let object_type = buffer.read_i32::<LE>()?;
             let gravity = buffer.read_i32::<LE>()?;
             let gravity = match gravity {
@@ -506,7 +500,7 @@ impl Level {
                 name,
                 texture,
                 mask,
-                position: Position { x, y: -y },
+                position: Position::new(x, -y),
                 distance,
                 clip,
             });

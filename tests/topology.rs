@@ -1,7 +1,7 @@
 extern crate elma;
 
-use elma::Position;
 use elma::lev::*;
+use elma::Position;
 
 #[test]
 fn topology_ok() {
@@ -9,35 +9,24 @@ fn topology_ok() {
 
     // Add multiple exits.
     level.objects.push(Object {
-        position: Position { x: 1_f64, y: 0_f64 },
+        position: Position::new(1_f64, 0_f64),
         object_type: ObjectType::Exit,
     });
     level.objects.push(Object {
-        position: Position { x: 2_f64, y: 0_f64 },
+        position: Position::new(2_f64, 0_f64),
         object_type: ObjectType::Exit,
     });
 
     // Add exact allowed dimensions.
-    level.polygons = vec![
-        Polygon {
-            grass: false,
-            vertices: vec![
-                Position {
-                    x: 0_f64,
-                    y: 188_f64,
-                },
-                Position {
-                    x: 188_f64,
-                    y: 188_f64,
-                },
-                Position {
-                    x: 188_f64,
-                    y: 0_f64,
-                },
-                Position { x: 0_f64, y: 0_f64 },
-            ],
-        },
-    ];
+    level.polygons = vec![Polygon {
+        grass: false,
+        vertices: vec![
+            Position::new(0_f64, 188_f64),
+            Position::new(188_f64, 188_f64),
+            Position::new(188_f64, 0_f64),
+            Position::new(0_f64, 0_f64),
+        ],
+    }];
 
     assert_eq!(level.check_topology().is_ok(), true);
 }
@@ -48,12 +37,9 @@ fn topology_err_too_wide() {
     level.polygons.push(Polygon {
         grass: false,
         vertices: vec![
-            Position { x: 0_f64, y: 0_f64 },
-            Position {
-                x: 188.0000000000001_f64,
-                y: 0_f64,
-            },
-            Position { x: 0_f64, y: 1_f64 },
+            Position::new(0_f64, 0_f64),
+            Position::new(188.0000000000001_f64, 0_f64),
+            Position::new(0_f64, 1_f64),
         ],
     });
     assert_eq!(
@@ -68,12 +54,9 @@ fn topology_err_too_high() {
     level.polygons.push(Polygon {
         grass: false,
         vertices: vec![
-            Position { x: 0_f64, y: 0_f64 },
-            Position {
-                x: 0_f64,
-                y: 188.0000000000001_f64,
-            },
-            Position { x: 1_f64, y: 0_f64 },
+            Position::new(0_f64, 0_f64),
+            Position::new(0_f64, 188.0000000000001_f64),
+            Position::new(1_f64, 0_f64),
         ],
     });
     assert_eq!(
@@ -85,12 +68,10 @@ fn topology_err_too_high() {
 #[test]
 fn topology_missing_exit() {
     let mut level = Level::new();
-    level.objects = vec![
-        Object {
-            position: Position { x: 0_f64, y: 0_f64 },
-            object_type: ObjectType::Player,
-        },
-    ];
+    level.objects = vec![Object {
+        position: Position::new(0_f64, 0_f64),
+        object_type: ObjectType::Player,
+    }];
     assert_eq!(
         level.check_topology().unwrap_err(),
         TopologyError::MissingExit
@@ -102,11 +83,11 @@ fn topology_err_too_many_players() {
     let mut level = Level::new();
     level.objects = vec![
         Object {
-            position: Position { x: 0_f64, y: 0_f64 },
+            position: Position::new(0_f64, 0_f64),
             object_type: ObjectType::Player,
         },
         Object {
-            position: Position { x: 0_f64, y: 0_f64 },
+            position: Position::new(0_f64, 0_f64),
             object_type: ObjectType::Player,
         },
     ];
@@ -119,12 +100,10 @@ fn topology_err_too_many_players() {
 #[test]
 fn topology_err_missing_player() {
     let mut level = Level::new();
-    level.objects = vec![
-        Object {
-            position: Position { x: 0_f64, y: 0_f64 },
-            object_type: ObjectType::Exit,
-        },
-    ];
+    level.objects = vec![Object {
+        position: Position::new(0_f64, 0_f64),
+        object_type: ObjectType::Exit,
+    }];
     assert_eq!(
         level.check_topology().unwrap_err(),
         TopologyError::InvalidPlayerCount(0)
@@ -177,45 +156,21 @@ fn topology_err_invalid_vertex_count() {
     level.polygons.push(Polygon {
         grass: false,
         vertices: vec![
-            Position {
-                x: 1_f64,
-                y: 12_f64,
-            },
-            Position {
-                x: 138_f64,
-                y: 118_f64,
-            },
+            Position::new(1_f64, 12_f64),
+            Position::new(138_f64, 118_f64),
         ],
     });
     level.polygons.push(Polygon {
         grass: false,
         vertices: vec![
-            Position {
-                x: 1_f64,
-                y: 12_f64,
-            },
-            Position {
-                x: 138_f64,
-                y: 118_f64,
-            },
-            Position {
-                x: 18_f64,
-                y: 28_f64,
-            },
+            Position::new(1_f64, 12_f64),
+            Position::new(138_f64, 118_f64),
+            Position::new(18_f64, 28_f64),
         ],
     });
     level.polygons.push(Polygon {
         grass: false,
-        vertices: vec![
-            Position {
-                x: 12_f64,
-                y: 32_f64,
-            },
-            Position {
-                x: 7_f64,
-                y: 83_f64,
-            },
-        ],
+        vertices: vec![Position::new(12_f64, 32_f64), Position::new(7_f64, 83_f64)],
     });
     assert_eq!(
         level.check_topology().unwrap_err(),
