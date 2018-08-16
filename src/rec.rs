@@ -157,7 +157,7 @@ pub(crate) struct ReplayHeader {
 }
 
 /// Player ride information (frames and events).
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct Ride {
     /// Player frames.
     pub frames: Vec<Frame>,
