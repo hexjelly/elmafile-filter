@@ -405,3 +405,15 @@ fn load_invalid_clip_level_1() {
         ElmaError::InvalidClipping(3)
     );
 }
+
+#[test]
+fn is_apple() {
+    let mut lev = Level::new();
+    lev.objects.push(Object::new());
+    assert_eq!(true, lev.objects[0].is_player());
+    assert_eq!(
+        false,
+        lev.objects[1].is_apple() || lev.objects[1].is_player()
+    );
+    assert_eq!(true, lev.objects[2].is_apple());
+}
