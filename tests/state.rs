@@ -9,7 +9,8 @@ use std::fs;
 #[test]
 /// Load state.dat, save it and compare without changes.
 fn load_parse_save_state() {
-    let orig_state = State::load("tests/assets/state/state.dat").unwrap();
+    let mut orig_state = State::load("tests/assets/state/state.dat").unwrap();
+    orig_state.path = None; // remove path for easier equality check
     let mut dir = env::temp_dir();
     dir.push("saved.dat");
     let mut state = orig_state.clone();
@@ -18,7 +19,8 @@ fn load_parse_save_state() {
     let file_original = fs::read("tests/assets/state/state.dat").unwrap();
     let file_saved = fs::read(&dir).unwrap();
 
-    let saved_state = State::load(&dir).unwrap();
+    let mut saved_state = State::load(&dir).unwrap();
+    saved_state.path = None; // remove path for easier equality check
 
     let mut expected_times = BestTimes::new();
     expected_times
@@ -60,14 +62,16 @@ fn load_parse_save_state() {
 
 #[test]
 fn load_state_from_bytes() {
-    let state = State::load("tests/assets/state/state.dat").unwrap();
+    let mut state = State::load("tests/assets/state/state.dat").unwrap();
+    state.path = None; // remove path for easier equality check
     let buffer = fs::read("tests/assets/state/state.dat").unwrap();
     assert_eq!(state, State::from_bytes(&buffer).unwrap());
 }
 
 #[test]
 fn default_state() {
-    let state = State::load("tests/assets/state/state_default.dat").unwrap();
+    let mut state = State::load("tests/assets/state/state_default.dat").unwrap();
+    state.path = None; // remove path for easier equality check
     assert_eq!(State::new(), state);
 }
 

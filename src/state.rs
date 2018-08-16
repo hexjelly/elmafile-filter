@@ -4,7 +4,7 @@ use constants::TOP10_SIZE;
 use nom::{le_i32, le_u32, le_u8};
 use shared::TimeEntry;
 use std::fs;
-use std::path::Path;
+use std::path::PathBuf;
 use std::str;
 use utils::boolean;
 use utils::null_padded_string;
@@ -106,6 +106,8 @@ pub struct PlayerKeys {
 /// State.dat struct
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct State {
+    /// Path to State file.
+    pub path: Option<PathBuf>,
     /// State file version; the only supported value is 200.
     pub version: u32,
     /// Best times lists. state.dat has a fixed-size array of 90 of these.
@@ -252,6 +254,7 @@ named!(parse_state<State>,
     last_played_external: apply!(null_padded_string, LEVEL_NAME_SIZE) >>
     verify!(le_u32, |x| x == STATE_END || x == STATE_END_ALT) >>
   (State {
+    path: None,
     version,
     times,
     players,
@@ -280,6 +283,7 @@ impl State {
     /// Create a new state.dat.
     pub fn new() -> Self {
         State {
+            path: None,
             version: 200,
             times: vec![
                 BestTimes {
@@ -335,9 +339,12 @@ impl State {
     /// # use elma::state::*;
     /// let state = State::load("state.dat").unwrap();
     /// ```
-    pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
-        let buffer = fs::read(filename)?;
-        State::parse(&buffer)
+    pub fn load<P: Into<PathBuf>>(path: P) -> Result<Self, ElmaError> {
+        let path = path.into();
+        let buffer = fs::read(path.as_path())?;
+        let mut state = State::parse(&buffer)?;
+        state.path = Some(path);
+        Ok(state)
     }
 
     /// Load a state.dat file from bytes.
@@ -443,10 +450,11 @@ impl State {
     /// let mut state = State::load("state.dat").unwrap();
     /// state.save("newstate.dat").unwrap();
     /// ```
-    pub fn save<P: AsRef<Path>>(&mut self, filename: P) -> Result<(), ElmaError> {
+    pub fn save<P: Into<PathBuf>>(&mut self, path: P) -> Result<(), ElmaError> {
         let buffer = self.to_bytes()?;
-        fs::write(filename, &buffer)?;
-
+        let path = path.into();
+        fs::write(path.as_path(), &buffer)?;
+        self.path = Some(path);
         Ok(())
     }
 }

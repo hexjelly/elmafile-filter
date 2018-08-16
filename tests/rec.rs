@@ -51,6 +51,7 @@ fn rec_default_values() {
             flag_tag: false,
             link: 0,
             level: String::new(),
+            path: None,
             rides: vec![],
         }
     );
@@ -215,7 +216,7 @@ fn load_valid_multi_replay_1() {
 
 #[test]
 fn load_valid_replay_1_and_save() {
-    let replay = Replay::load(PATH_TEST_1).unwrap();
+    let mut replay = Replay::load(PATH_TEST_1).unwrap();
     let mut dir = env::temp_dir();
     dir.push("save_replay_1.rec");
     replay.save(&dir).unwrap();
@@ -225,7 +226,8 @@ fn load_valid_replay_1_and_save() {
 
 #[test]
 fn load_valid_replay_1_from_buffer() {
-    let replay = Replay::load(PATH_TEST_1).unwrap();
+    let mut replay = Replay::load(PATH_TEST_1).unwrap();
+    replay.path = None; // remove path for easier equality check
     let buffer = fs::read(PATH_TEST_1).unwrap();
     assert_eq!(replay, Replay::from_bytes(&buffer).unwrap());
 }
@@ -253,7 +255,7 @@ fn check_save_load_same_replay_3() {
 
 #[test]
 fn load_valid_replay_2_and_save() {
-    let replay = Replay::load(PATH_TEST_3).unwrap();
+    let mut replay = Replay::load(PATH_TEST_3).unwrap();
     let mut dir = env::temp_dir();
     dir.push("save_replay_2.rec");
     replay.save(&dir).unwrap();
@@ -263,7 +265,7 @@ fn load_valid_replay_2_and_save() {
 
 #[test]
 fn load_valid_multi_replay_1_and_save() {
-    let replay = Replay::load(PATH_TEST_2).unwrap();
+    let mut replay = Replay::load(PATH_TEST_2).unwrap();
     let mut dir = env::temp_dir();
     dir.push("save_multi_replay_2.rec");
     replay.save(&dir).unwrap();

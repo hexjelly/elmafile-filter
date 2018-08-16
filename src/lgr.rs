@@ -1,6 +1,6 @@
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use std::fs;
-use std::path::Path;
+use std::path::PathBuf;
 
 use super::{
     utils::{string_null_pad, trim_string}, Clip, ElmaError,
@@ -29,6 +29,8 @@ pub enum LGRError {
 /// LGR structure.
 #[derive(Default, Debug, Clone, Eq, PartialEq)]
 pub struct LGR {
+    /// Path of LGR file.
+    pub path: Option<PathBuf>,
     /// List of pictures.
     pub picture_list: Vec<Picture>,
     /// Picture data.
@@ -113,9 +115,12 @@ impl LGR {
     /// # use elma::lgr::*;
     /// let lgr = LGR::load("default.lgr").unwrap();
     /// ```
-    pub fn load<P: AsRef<Path>>(file: P) -> Result<Self, ElmaError> {
-        let buffer = fs::read(file)?;
-        Self::parse_lgr(&buffer)
+    pub fn load<P: Into<PathBuf>>(path: P) -> Result<Self, ElmaError> {
+        let path = path.into();
+        let buffer = fs::read(path.as_path())?;
+        let mut lgr = Self::parse_lgr(&buffer)?;
+        lgr.path = Some(path);
+        Ok(lgr)
     }
 
     /// Load a LGR from bytes.
@@ -294,13 +299,14 @@ impl LGR {
     ///
     /// ```rust,no_run
     /// # use elma::lgr::*;
-    /// let lgr = LGR::new();
+    /// let mut lgr = LGR::new();
     /// lgr.save("cool.lgr");
     /// ```
-    pub fn save<P: AsRef<Path>>(&self, filename: P) -> Result<(), ElmaError> {
+    pub fn save<P: Into<PathBuf>>(&mut self, path: P) -> Result<(), ElmaError> {
         let bytes = self.to_bytes()?;
-        fs::write(filename, &bytes)?;
-
+        let path = path.into();
+        fs::write(path.as_path(), &bytes)?;
+        self.path = Some(path);
         Ok(())
     }
 }

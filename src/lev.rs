@@ -6,7 +6,6 @@ use super::{
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use rand::random;
 use std::fs;
-use std::path::Path;
 use std::path::PathBuf;
 
 // Magic arbitrary number signifying end-of-data in level file.
@@ -328,10 +327,11 @@ impl Level {
     /// # use elma::lev::*;
     /// let level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     /// ```
-    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, ElmaError> {
-        let buffer = fs::read(&path)?;
+    pub fn load<P: Into<PathBuf>>(path: P) -> Result<Self, ElmaError> {
+        let path = path.into();
+        let buffer = fs::read(path.as_path())?;
         let mut lev = Level::parse_level(&buffer)?;
-        lev.path = Some(path.as_ref().into());
+        lev.path = Some(path);
         Ok(lev)
     }
 
@@ -816,10 +816,11 @@ impl Level {
     /// let mut level = Level::new();
     /// level.save("newlevel.lev", Top10Save::No).unwrap();
     /// ```
-    pub fn save<P: AsRef<Path>>(&mut self, path: P, top10: Top10Save) -> Result<(), ElmaError> {
+    pub fn save<P: Into<PathBuf>>(&mut self, path: P, top10: Top10Save) -> Result<(), ElmaError> {
         let bytes = self.to_bytes(top10)?;
-        fs::write(&path, &bytes)?;
-        self.path = Some(path.as_ref().into());
+        let path = path.into();
+        fs::write(&path.as_path(), &bytes)?;
+        self.path = Some(path);
         Ok(())
     }
 }

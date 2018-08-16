@@ -10,7 +10,7 @@ use nom::verbose_errors::Context::List;
 use nom::Err::Failure;
 use nom::ErrorKind::Custom;
 use std::fs;
-use std::path::Path;
+use std::path::PathBuf;
 use utils::boolean;
 use utils::null_padded_string;
 
@@ -202,6 +202,8 @@ pub struct Replay {
     pub link: u32,
     /// Full level filename.
     pub level: String,
+    /// Path to file.
+    pub path: Option<PathBuf>,
     /// Rides of players.
     pub rides: Vec<Ride>,
 }
@@ -322,6 +324,7 @@ named!(parse_replay<Replay>,
          flag_tag: players[0].0.flag_tag,
          link: players[0].0.link,
          level: players[0].0.level.to_string(),
+         path: None,
          rides: players.into_iter().map(|x| x.1).collect(),
      }
     )
@@ -341,6 +344,7 @@ impl Replay {
             flag_tag: false,
             link: 0,
             level: String::new(),
+            path: None,
             rides: vec![],
         }
     }
@@ -353,9 +357,12 @@ impl Replay {
     /// # use elma::rec::*;
     /// let rec = Replay::load("tests/assets/replays/test_1.rec").unwrap();
     /// ```
-    pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
-        let buffer = fs::read(filename)?;
-        Replay::parse_replay(&buffer)
+    pub fn load<P: Into<PathBuf>>(path: P) -> Result<Self, ElmaError> {
+        let path = path.into();
+        let buffer = fs::read(path.as_path())?;
+        let mut rec = Replay::parse_replay(&buffer)?;
+        rec.path = Some(path);
+        Ok(rec)
     }
 
     /// Load a replay from bytes.
@@ -414,8 +421,10 @@ impl Replay {
     }
 
     /// Save replay as a file.
-    pub fn save<P: AsRef<Path>>(&self, filename: P) -> Result<(), ElmaError> {
-        fs::write(filename, &self.to_bytes()?)?;
+    pub fn save<P: Into<PathBuf>>(&mut self, path: P) -> Result<(), ElmaError> {
+        let path = path.into();
+        fs::write(path.as_path(), &self.to_bytes()?)?;
+        self.path = Some(path);
         Ok(())
     }
 
