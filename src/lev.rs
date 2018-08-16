@@ -6,8 +6,8 @@ use super::{
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use rand::random;
 use std::fs;
-use std::io::ErrorKind;
 use std::path::Path;
+use std::path::PathBuf;
 
 // Magic arbitrary number signifying end-of-data in level file.
 const EOD: i32 = 0x00_67_10_3A;
@@ -233,8 +233,8 @@ pub struct Level {
     pub pictures: Vec<Picture>,
     /// Best times lists.
     pub best_times: BestTimes,
-    /// Level file name.
-    pub filename: Option<String>,
+    /// Level path, if loaded/saved.
+    pub path: Option<PathBuf>,
 }
 
 impl Default for Level {
@@ -288,7 +288,7 @@ impl Level {
     /// ```
     pub fn new() -> Self {
         Level {
-            filename: None,
+            path: None,
             version: Version::Elma,
             link: random::<u32>(),
             integrity: [0f64; 4],
@@ -335,15 +335,9 @@ impl Level {
     /// let level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     /// ```
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, ElmaError> {
-        let filename_str = path
-            .as_ref()
-            .file_name()
-            .ok_or(ElmaError::Io(ErrorKind::InvalidInput))?
-            .to_string_lossy()
-            .to_string();
-        let buffer = fs::read(path)?;
+        let buffer = fs::read(&path)?;
         let mut lev = Level::parse_level(&buffer)?;
-        lev.filename = Some(filename_str);
+        lev.path = Some(path.as_ref().into());
         Ok(lev)
     }
 
@@ -830,14 +824,8 @@ impl Level {
     /// ```
     pub fn save<P: AsRef<Path>>(&mut self, path: P, top10: Top10Save) -> Result<(), ElmaError> {
         let bytes = self.to_bytes(top10)?;
-        let filename_str = path
-            .as_ref()
-            .file_name()
-            .ok_or(ElmaError::InvalidLevelFilename)?
-            .to_string_lossy()
-            .to_string();
-        fs::write(path, &bytes)?;
-        self.filename = Some(filename_str);
+        fs::write(&path, &bytes)?;
+        self.path = Some(path.as_ref().into());
         Ok(())
     }
 }
