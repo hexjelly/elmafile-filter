@@ -7,6 +7,7 @@ use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use rand::random;
 use std::fs;
 use std::path::Path;
+use std::path::PathBuf;
 
 // Magic arbitrary number signifying end-of-data in level file.
 const EOD: i32 = 0x00_67_10_3A;
@@ -55,7 +56,7 @@ pub enum ObjectType {
     /// Apple.
     Apple {
         /// Gravity change.
-        gravity: Direction,
+        gravity: GravityDirection,
         /// Animation number.
         animation: i32,
     },
@@ -70,15 +71,15 @@ pub enum ObjectType {
 impl Default for ObjectType {
     fn default() -> ObjectType {
         ObjectType::Apple {
-            gravity: Direction::default(),
+            gravity: GravityDirection::default(),
             animation: 1,
         }
     }
 }
 
 /// Apple direction object.
-#[derive(Debug, PartialEq)]
-pub enum Direction {
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum GravityDirection {
     /// No gravity change.
     None,
     /// Gravity up.
@@ -91,9 +92,9 @@ pub enum Direction {
     Right,
 }
 
-impl Default for Direction {
-    fn default() -> Direction {
-        Direction::None
+impl Default for GravityDirection {
+    fn default() -> GravityDirection {
+        GravityDirection::None
     }
 }
 
@@ -110,6 +111,22 @@ impl Object {
     /// Create a new `Object`.
     pub fn new() -> Self {
         Object::default()
+    }
+
+    /// Returns whether this object is an Apple.
+    pub fn is_apple(&self) -> bool {
+        match self.object_type {
+            ObjectType::Apple { .. } => true,
+            _ => false,
+        }
+    }
+
+    /// Returns whether this object is Player.
+    pub fn is_player(&self) -> bool {
+        match self.object_type {
+            ObjectType::Player => true,
+            _ => false,
+        }
     }
 }
 
@@ -145,10 +162,10 @@ impl BoundingBox for Polygon {
         }
 
         [
-            Position { x: min_x, y: max_y },
-            Position { x: max_x, y: max_y },
-            Position { x: min_x, y: min_y },
-            Position { x: max_x, y: min_y },
+            Position::new(min_x, max_y),
+            Position::new(max_x, max_y),
+            Position::new(min_x, min_y),
+            Position::new(max_x, min_y),
         ]
     }
 }
@@ -200,8 +217,8 @@ pub struct Level {
     pub link: u32,
     /// Contains four integrity checks.
     pub integrity: [f64; 4],
-    /// Level name.
-    pub name: String,
+    /// Level title.
+    pub title: String,
     /// LGR file name.
     pub lgr: String,
     /// Ground texture name.
@@ -216,6 +233,8 @@ pub struct Level {
     pub pictures: Vec<Picture>,
     /// Best times lists.
     pub best_times: BestTimes,
+    /// Level path, if loaded/saved.
+    pub path: Option<PathBuf>,
 }
 
 impl Default for Level {
@@ -250,10 +269,10 @@ impl BoundingBox for Level {
         }
 
         [
-            Position { x: min_x, y: max_y },
-            Position { x: max_x, y: max_y },
-            Position { x: min_x, y: min_y },
-            Position { x: max_x, y: min_y },
+            Position::new(min_x, max_y),
+            Position::new(max_x, max_y),
+            Position::new(min_x, min_y),
+            Position::new(max_x, min_y),
         ]
     }
 }
@@ -269,35 +288,30 @@ impl Level {
     /// ```
     pub fn new() -> Self {
         Level {
+            path: None,
             version: Version::Elma,
             link: random::<u32>(),
             integrity: [0f64; 4],
-            name: "".into(),
+            title: "".into(),
             lgr: "default".into(),
             ground: "ground".into(),
             sky: "sky".into(),
             polygons: vec![Polygon {
                 grass: false,
                 vertices: vec![
-                    Position { x: 10., y: 0. },
-                    Position { x: 10., y: 7. },
-                    Position { x: 0., y: 7. },
-                    Position { x: 0., y: 0. },
+                    Position::new(10., 0.),
+                    Position::new(10., 7.),
+                    Position::new(0., 7.),
+                    Position::new(0., 0.),
                 ],
             }],
             objects: vec![
                 Object {
-                    position: Position {
-                        x: 2.,
-                        y: 7. - OBJECT_RADIUS,
-                    },
+                    position: Position::new(2., 7. - OBJECT_RADIUS),
                     object_type: ObjectType::Player,
                 },
                 Object {
-                    position: Position {
-                        x: 8.,
-                        y: 7. - OBJECT_RADIUS,
-                    },
+                    position: Position::new(8., 7. - OBJECT_RADIUS),
                     object_type: ObjectType::Exit,
                 },
             ],
@@ -314,9 +328,11 @@ impl Level {
     /// # use elma::lev::*;
     /// let level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     /// ```
-    pub fn load<P: AsRef<Path>>(filename: P) -> Result<Self, ElmaError> {
-        let buffer = fs::read(filename)?;
-        Level::parse_level(&buffer)
+    pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, ElmaError> {
+        let buffer = fs::read(&path)?;
+        let mut lev = Level::parse_level(&buffer)?;
+        lev.path = Some(path.as_ref().into());
+        Ok(lev)
     }
 
     /// Load a level from bytes.
@@ -353,7 +369,7 @@ impl Level {
 
         // Level name.
         let (name, remaining) = remaining.split_at(51);
-        level.name = trim_string(name)?;
+        level.title = trim_string(name)?;
         // LGR name.
         let (lgr, remaining) = remaining.split_at(16);
         level.lgr = trim_string(lgr)?;
@@ -419,7 +435,7 @@ impl Level {
                 read_bytes += 16;
                 let x = buffer.read_f64::<LE>()?;
                 let y = buffer.read_f64::<LE>()?;
-                vertices.push(Position { x, y });
+                vertices.push(Position::new(x, -y));
             }
             polygons.push(Polygon { grass, vertices });
         }
@@ -431,15 +447,15 @@ impl Level {
         for _ in 0..n {
             let x = buffer.read_f64::<LE>()?;
             let y = buffer.read_f64::<LE>()?;
-            let position = Position { x, y };
+            let position = Position::new(x, -y);
             let object_type = buffer.read_i32::<LE>()?;
             let gravity = buffer.read_i32::<LE>()?;
             let gravity = match gravity {
-                0 => Direction::None,
-                1 => Direction::Up,
-                2 => Direction::Down,
-                3 => Direction::Left,
-                4 => Direction::Right,
+                0 => GravityDirection::None,
+                1 => GravityDirection::Up,
+                2 => GravityDirection::Down,
+                3 => GravityDirection::Left,
+                4 => GravityDirection::Right,
                 other => return Err(ElmaError::InvalidGravity(other)),
             };
             let animation = buffer.read_i32::<LE>()? + 1;
@@ -484,7 +500,7 @@ impl Level {
                 name,
                 texture,
                 mask,
-                position: Position { x, y },
+                position: Position::new(x, -y),
                 distance,
                 clip,
             });
@@ -524,7 +540,7 @@ impl Level {
         }
 
         // Level name.
-        buffer.extend_from_slice(&string_null_pad(&self.name, 51)?);
+        buffer.extend_from_slice(&string_null_pad(&self.title, 51)?);
         // LGR name.
         buffer.extend_from_slice(&string_null_pad(&self.lgr, 16)?);
         // Ground name.
@@ -574,7 +590,7 @@ impl Level {
             // Vertices.
             for vertex in &poly.vertices {
                 buffer.write_f64::<LE>(vertex.x)?;
-                buffer.write_f64::<LE>(vertex.y)?;
+                buffer.write_f64::<LE>(-vertex.y)?;
             }
         }
         Ok(buffer)
@@ -587,7 +603,7 @@ impl Level {
         for obj in &self.objects {
             // Position.
             buffer.write_f64::<LE>(obj.position.x)?;
-            buffer.write_f64::<LE>(obj.position.y)?;
+            buffer.write_f64::<LE>(-obj.position.y)?;
             // Object type.
             buffer.write_i32::<LE>(match obj.object_type {
                 ObjectType::Exit => 1,
@@ -598,19 +614,19 @@ impl Level {
             // Apple gravity.
             buffer.write_i32::<LE>(match obj.object_type {
                 ObjectType::Apple {
-                    gravity: Direction::Up,
+                    gravity: GravityDirection::Up,
                     ..
                 } => 1,
                 ObjectType::Apple {
-                    gravity: Direction::Down,
+                    gravity: GravityDirection::Down,
                     ..
                 } => 2,
                 ObjectType::Apple {
-                    gravity: Direction::Left,
+                    gravity: GravityDirection::Left,
                     ..
                 } => 3,
                 ObjectType::Apple {
-                    gravity: Direction::Right,
+                    gravity: GravityDirection::Right,
                     ..
                 } => 4,
                 _ => 0,
@@ -637,7 +653,7 @@ impl Level {
             buffer.extend_from_slice(&string_null_pad(&pic.mask, 10)?);
             // Position.
             buffer.write_f64::<LE>(pic.position.x)?;
-            buffer.write_f64::<LE>(pic.position.y)?;
+            buffer.write_f64::<LE>(-pic.position.y)?;
             // Z-distance.
             buffer.write_i32::<LE>(pic.distance)?;
             // Clipping.
@@ -790,7 +806,7 @@ impl Level {
     ///
     /// # Arguments
     ///
-    /// * `filename` - Path and filename to save as.
+    /// * `path` - Path to save as.
     /// * `top10` - Specifies whether to keep the top10 list (true), or write an empty list (false).
     ///
     /// # Examples
@@ -800,10 +816,10 @@ impl Level {
     /// let mut level = Level::new();
     /// level.save("newlevel.lev", Top10Save::No).unwrap();
     /// ```
-    pub fn save<P: AsRef<Path>>(&self, filename: P, top10: Top10Save) -> Result<(), ElmaError> {
+    pub fn save<P: AsRef<Path>>(&mut self, path: P, top10: Top10Save) -> Result<(), ElmaError> {
         let bytes = self.to_bytes(top10)?;
-        fs::write(filename, &bytes)?;
-
+        fs::write(&path, &bytes)?;
+        self.path = Some(path.as_ref().into());
         Ok(())
     }
 }

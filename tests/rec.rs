@@ -22,10 +22,10 @@ fn rec_default_values() {
     assert_eq!(
         frame,
         Frame {
-            bike: Position { x: 0_f32, y: 0_f32 },
-            left_wheel: Position { x: 0, y: 0 },
-            right_wheel: Position { x: 0, y: 0 },
-            head: Position { x: 0, y: 0 },
+            bike: Position::new(0_f32, 0_f32),
+            left_wheel: Position::new(0, 0),
+            right_wheel: Position::new(0, 0),
+            head: Position::new(0, 0),
             rotation: 0,
             left_wheel_rotation: 0,
             right_wheel_rotation: 0,
@@ -79,13 +79,10 @@ fn load_valid_replay_1() {
     assert_eq!(
         frames[0],
         Frame {
-            bike: Position {
-                x: 34.30250_f32,
-                y: -1.1253119_f32,
-            },
-            left_wheel: Position { x: -850, y: -524 },
-            right_wheel: Position { x: 849, y: -524 },
-            head: Position { x: 0, y: 439 },
+            bike: Position::new(34.30250_f32, -1.1253119_f32),
+            left_wheel: Position::new(-850, -524),
+            right_wheel: Position::new(849, -524),
+            head: Position::new(0, 439),
             rotation: 10000,
             left_wheel_rotation: 250,
             right_wheel_rotation: 0,
@@ -99,13 +96,10 @@ fn load_valid_replay_1() {
     assert_eq!(
         frames[100],
         Frame {
-            bike: Position {
-                x: 27.142517089844_f32,
-                y: -1.1152113676071_f32,
-            },
-            left_wheel: Position { x: -903, y: -514 },
-            right_wheel: Position { x: 586, y: -534 },
-            head: Position { x: 74, y: 397 },
+            bike: Position::new(27.142517089844_f32, -1.1152113676071_f32),
+            left_wheel: Position::new(-903, -514),
+            right_wheel: Position::new(586, -534),
+            head: Position::new(74, 397),
             rotation: 9826,
             left_wheel_rotation: 248,
             right_wheel_rotation: 238,
@@ -119,13 +113,10 @@ fn load_valid_replay_1() {
     assert_eq!(
         frames[201],
         Frame {
-            bike: Position {
-                x: 11.07129573822_f32,
-                y: 2.8753623962402_f32,
-            },
-            left_wheel: Position { x: -511, y: 917 },
-            right_wheel: Position { x: -692, y: -789 },
-            head: Position { x: 471, y: 10 },
+            bike: Position::new(11.07129573822_f32, 2.8753623962402_f32),
+            left_wheel: Position::new(-511, 917),
+            right_wheel: Position::new(-692, -789),
+            head: Position::new(471, 10),
             rotation: 7325,
             left_wheel_rotation: 25,
             right_wheel_rotation: 23,
@@ -139,13 +130,10 @@ fn load_valid_replay_1() {
     assert_eq!(
         frames[439],
         Frame {
-            bike: Position {
-                x: -34.779712677002_f32,
-                y: 11.526465415955_f32,
-            },
-            left_wheel: Position { x: -1050, y: -33 },
-            right_wheel: Position { x: 286, y: -757 },
-            head: Position { x: 226, y: 376 },
+            bike: Position::new(-34.779712677002_f32, 11.526465415955_f32),
+            left_wheel: Position::new(-1050, -33),
+            right_wheel: Position::new(286, -757),
+            head: Position::new(226, 376),
             rotation: 9047,
             left_wheel_rotation: 73,
             right_wheel_rotation: 163,
@@ -204,13 +192,10 @@ fn load_valid_multi_replay_1() {
     assert_eq!(
         frames[439],
         Frame {
-            bike: Position {
-                x: -34.779712677002_f32,
-                y: 11.526465415955_f32,
-            },
-            left_wheel: Position { x: -1050, y: -33 },
-            right_wheel: Position { x: 286, y: -757 },
-            head: Position { x: 226, y: 376 },
+            bike: Position::new(-34.779712677002_f32, 11.526465415955_f32),
+            left_wheel: Position::new(-1050, -33),
+            right_wheel: Position::new(286, -757),
+            head: Position::new(226, 376),
             rotation: 9047,
             left_wheel_rotation: 73,
             right_wheel_rotation: 163,

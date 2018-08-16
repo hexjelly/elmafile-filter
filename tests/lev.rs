@@ -36,10 +36,11 @@ fn level_default_values() {
 /// Generate a level with some arbitrary values and see if it saves.
 fn construct_level_and_save() {
     let mut level = Level {
+        path: None,
         version: Version::default(),
         link: random::<u32>(),
         integrity: [0f64; 4],
-        name: String::new(),
+        title: String::new(),
         lgr: String::from("default"),
         ground: String::from("ground"),
         sky: String::from("sky"),
@@ -52,9 +53,9 @@ fn construct_level_and_save() {
     level.polygons.push(Polygon::new());
     level.objects.push(Object::new());
     level.objects.push(Object {
-        position: Position { x: 0_f64, y: 0_f64 },
+        position: Position::new(0_f64, 0_f64),
         object_type: ObjectType::Apple {
-            gravity: Direction::Down,
+            gravity: GravityDirection::Down,
             animation: 1,
         },
     });
@@ -184,7 +185,7 @@ fn load_valid_level_1() {
             1162283.210607791_f64,
         ]
     );
-    assert_eq!(level.name, "Rust test");
+    assert_eq!(level.title, "Rust test");
     assert_eq!(level.lgr, "default");
     assert_eq!(level.ground, "ground");
     assert_eq!(level.sky, "sky");
@@ -197,43 +198,19 @@ fn load_valid_level_1() {
             Polygon {
                 grass: false,
                 vertices: vec![
-                    Position {
-                        x: -23.993693053024586_f64,
-                        y: -3.135779367971911_f64,
-                    },
-                    Position {
-                        x: -15.989070625361132_f64,
-                        y: -3.135779367971911_f64,
-                    },
-                    Position {
-                        x: -15.989070625361132_f64,
-                        y: 1.995755366905195_f64,
-                    },
-                    Position {
-                        x: -24_f64,
-                        y: 2_f64,
-                    },
+                    Position::new(-23.993693053024586_f64, 3.135779367971911_f64),
+                    Position::new(-15.989070625361132_f64, 3.135779367971911_f64),
+                    Position::new(-15.989070625361132_f64, -1.995755366905195_f64),
+                    Position::new(-24_f64, -2_f64),
                 ],
             },
             Polygon {
                 grass: true,
                 vertices: vec![
-                    Position {
-                        x: -23.83645939819548_f64,
-                        y: 2.310222676563402_f64,
-                    },
-                    Position {
-                        x: -17.60428907951465_f64,
-                        y: 2.2816347393217473_f64,
-                    },
-                    Position {
-                        x: -17.53281923641051_f64,
-                        y: 1.8956975865594021_f64,
-                    },
-                    Position {
-                        x: -23.96510511578293_f64,
-                        y: 1.924285523801057_f64,
-                    },
+                    Position::new(-23.83645939819548_f64, -2.310222676563402_f64),
+                    Position::new(-17.60428907951465_f64, -2.2816347393217473_f64),
+                    Position::new(-17.53281923641051_f64, -1.8956975865594021_f64),
+                    Position::new(-23.96510511578293_f64, -1.924285523801057_f64),
                 ],
             },
         ]
@@ -245,74 +222,50 @@ fn load_valid_level_1() {
         level.objects,
         vec![
             Object {
-                position: Position {
-                    x: -23.221818747499896_f64,
-                    y: -1.3204453531268072_f64,
-                },
+                position: Position::new(-23.221818747499896_f64, 1.3204453531268072_f64),
                 object_type: ObjectType::Killer,
             },
             Object {
-                position: Position {
-                    x: -20.37252715482359_f64,
-                    y: -0.3124543521844827_f64,
-                },
+                position: Position::new(-20.37252715482359_f64, 0.3124543521844827_f64),
                 object_type: ObjectType::Apple {
-                    gravity: Direction::None,
+                    gravity: GravityDirection::None,
                     animation: 9,
                 },
             },
             Object {
-                position: Position {
-                    x: -20.3914786548306_f64,
-                    y: 0.5277288147929609_f64,
-                },
+                position: Position::new(-20.3914786548306_f64, -0.5277288147929609_f64),
                 object_type: ObjectType::Apple {
-                    gravity: Direction::Up,
+                    gravity: GravityDirection::Up,
                     animation: 1,
                 },
             },
             Object {
-                position: Position {
-                    x: -19.526026821177144_f64,
-                    y: 0.36348248139887396_f64,
-                },
+                position: Position::new(-19.526026821177144_f64, -0.36348248139887396_f64),
                 object_type: ObjectType::Apple {
-                    gravity: Direction::Right,
+                    gravity: GravityDirection::Right,
                     animation: 5,
                 },
             },
             Object {
-                position: Position {
-                    x: -21.269564821822065_f64,
-                    y: 0.38243398140588436_f64,
-                },
+                position: Position::new(-21.269564821822065_f64, -0.38243398140588436_f64),
                 object_type: ObjectType::Apple {
-                    gravity: Direction::Left,
+                    gravity: GravityDirection::Left,
                     animation: 1,
                 },
             },
             Object {
-                position: Position {
-                    x: -19.55761265452216_f64,
-                    y: -0.4387976855645497_f64,
-                },
+                position: Position::new(-19.55761265452216_f64, 0.4387976855645497_f64),
                 object_type: ObjectType::Apple {
-                    gravity: Direction::Up,
+                    gravity: GravityDirection::Up,
                     animation: 1,
                 },
             },
             Object {
-                position: Position {
-                    x: -20.075620321380434_f64,
-                    y: -1.2473950191969765_f64,
-                },
+                position: Position::new(-20.075620321380434_f64, 1.2473950191969765_f64),
                 object_type: ObjectType::Exit,
             },
             Object {
-                position: Position {
-                    x: -22.94993115577695_f64,
-                    y: 1.5068896484884773_f64,
-                },
+                position: Position::new(-22.94993115577695_f64, -1.5068896484884773_f64),
                 object_type: ObjectType::Player,
             },
         ]
@@ -327,10 +280,7 @@ fn load_valid_level_1() {
                 name: String::from("barrel"),
                 texture: String::new(),
                 mask: String::new(),
-                position: Position {
-                    x: -19.37674118849727_f64,
-                    y: 0.895119783101471_f64,
-                },
+                position: Position::new(-19.37674118849727_f64, -0.895119783101471_f64),
                 distance: 380,
                 clip: Clip::Sky,
             },
@@ -338,10 +288,7 @@ fn load_valid_level_1() {
                 name: String::new(),
                 texture: String::from("stone1"),
                 mask: String::from("maskbig"),
-                position: Position {
-                    x: -24.465394017511894_f64,
-                    y: -3.964829547979911_f64,
-                },
+                position: Position::new(-24.465394017511894_f64, 3.964829547979911_f64),
                 distance: 750,
                 clip: Clip::Sky,
             },
@@ -369,14 +316,14 @@ fn load_valid_level_2() {
     let level = Level::load("tests/assets/levels/test_2.lev").unwrap();
     assert_eq!(level.version, Version::Elma);
     assert_eq!(level.link, 1505288190);
-    assert_eq!(level.name, "");
+    assert_eq!(level.title, "");
     assert_eq!(level.ground, "brick");
     assert_eq!(level.sky, "ground");
     assert_eq!(level.polygons.len(), 5);
     assert_eq!(level.polygons[0].grass, false);
     assert_eq!(level.polygons[0].vertices.len(), 4);
     assert_eq!(level.polygons[0].vertices[0].x, 18.507991950076164);
-    assert_eq!(level.polygons[0].vertices[1].y, 17.978810742022475);
+    assert_eq!(level.polygons[0].vertices[1].y, -17.978810742022475);
     assert_eq!(level.objects.len(), 17);
     assert_eq!(level.pictures.len(), 3);
     assert_eq!(level.best_times.single.len(), 0);
@@ -386,17 +333,19 @@ fn load_valid_level_2() {
 fn load_valid_level_2_from_bytes() {
     let level = Level::load("tests/assets/levels/test_2.lev").unwrap();
     let buffer = fs::read("tests/assets/levels/test_2.lev").unwrap();
-    assert_eq!(level, Level::from_bytes(&buffer).unwrap());
+    let mut buf_lev = Level::from_bytes(&buffer).unwrap();
+    buf_lev.path = Some("tests/assets/levels/test_2.lev".into());
+    assert_eq!(level, buf_lev);
 }
 
 #[test]
 fn load_valid_level_1_and_save_with_top10() {
-    let level = Level::load("tests/assets/levels/test_1.lev").unwrap();
+    let mut level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     let mut dir = env::temp_dir();
     dir.push("save_level_1_wtop10.lev");
     level.save(&dir, Top10Save::Yes).unwrap();
     let level_saved = Level::load(&dir).unwrap();
-    assert_eq!(level.name, level_saved.name);
+    assert_eq!(level.title, level_saved.title);
     assert_eq!(level.ground, level_saved.ground);
     assert_eq!(level.sky, level_saved.sky);
     assert_eq!(level.polygons, level_saved.polygons);
@@ -408,12 +357,12 @@ fn load_valid_level_1_and_save_with_top10() {
 
 #[test]
 fn load_valid_level_1_and_save_without_top10() {
-    let level = Level::load("tests/assets/levels/test_1.lev").unwrap();
+    let mut level = Level::load("tests/assets/levels/test_1.lev").unwrap();
     let mut dir = env::temp_dir();
     dir.push("save_level_1_notop10.lev");
     level.save(&dir, Top10Save::No).unwrap();
     let level_saved = Level::load(&dir).unwrap();
-    assert_eq!(level.name, level_saved.name);
+    assert_eq!(level.title, level_saved.title);
     assert_eq!(level.ground, level_saved.ground);
     assert_eq!(level.sky, level_saved.sky);
     assert_eq!(level.polygons, level_saved.polygons);

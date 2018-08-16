@@ -172,14 +172,21 @@ impl fmt::Display for Time {
 ///
 /// # Examples
 /// ```
-/// let vertex = elma::Position { x: 23.1928_f64, y: -199.200019_f64 };
+/// let vertex = elma::Position::new(23.1928_f64, -199.200019_f64);
 /// ```
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub struct Position<T> {
     /// X-position.
     pub x: T,
     /// Y-position.
     pub y: T,
+}
+
+impl<T> Position<T> {
+    /// Creates a new Position.
+    pub fn new(x: T, y: T) -> Self {
+        Position { x, y }
+    }
 }
 
 /// Top10 list entry struct.

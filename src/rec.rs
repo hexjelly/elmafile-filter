@@ -157,7 +157,7 @@ pub(crate) struct ReplayHeader {
 }
 
 /// Player ride information (frames and events).
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct Ride {
     /// Player frames.
     pub frames: Vec<Frame>,
@@ -166,6 +166,14 @@ pub struct Ride {
 }
 
 impl Ride {
+    /// Creates an empty Ride.
+    pub fn new() -> Self {
+        Ride {
+            frames: vec![],
+            events: vec![],
+        }
+    }
+
     /// Gets the time based on frame count.
     pub fn get_frame_time(&self) -> f64 {
         self.frames.len() as f64 * 33.333
@@ -259,10 +267,10 @@ named!(headerandride<(ReplayHeader, Ride)>,
             back_wheel,
             collision_strength).map(|(bx, by, lx, ly, rx, ry, hx, hy, r, lr, rr, dt, bw, cs)|
               Frame {
-                  bike: Position {x: bx, y: by},
-                  left_wheel: Position {x: lx, y: ly},
-                  right_wheel: Position {x: rx, y: ry},
-                  head: Position {x: hx, y: hy},
+                  bike: Position::new(bx, by),
+                  left_wheel: Position::new(lx, ly),
+                  right_wheel: Position::new(rx, ry),
+                  head: Position::new(hx, hy),
                   rotation: r,
                   left_wheel_rotation: lr,
                   right_wheel_rotation: rr,
