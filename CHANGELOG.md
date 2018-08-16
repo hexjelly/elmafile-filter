@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## \[0.1.13\] - 2018-08-16
+
+### Added
+
+-   Level's object struct now has `.is_player()` and `is_apple()` methods, thanks to Smibu.
+
+### Breaking
+
+-   All main structs now keep track of file paths in a `path` field.
+
 ## \[0.1.12\] - 2018-07-17
 
 ### Added

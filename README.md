@@ -29,8 +29,7 @@ elma = "*"
     -   [x] Level
     -   [x] Replay
     -   [x] LGR
-    -   [x] state.dat best times write/read support
-    -   [ ] full state.dat support
+    -   [x] full state.dat support
 
 ## Usage examples
 
