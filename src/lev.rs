@@ -447,7 +447,7 @@ impl Level {
                 read_bytes += 16;
                 let x = buffer.read_f64::<LE>()?;
                 let y = buffer.read_f64::<LE>()?;
-                vertices.push(Position { x, y });
+                vertices.push(Position { x, y: -y });
             }
             polygons.push(Polygon { grass, vertices });
         }
@@ -459,7 +459,7 @@ impl Level {
         for _ in 0..n {
             let x = buffer.read_f64::<LE>()?;
             let y = buffer.read_f64::<LE>()?;
-            let position = Position { x, y };
+            let position = Position { x, y: -y };
             let object_type = buffer.read_i32::<LE>()?;
             let gravity = buffer.read_i32::<LE>()?;
             let gravity = match gravity {
@@ -512,7 +512,7 @@ impl Level {
                 name,
                 texture,
                 mask,
-                position: Position { x, y },
+                position: Position { x, y: -y },
                 distance,
                 clip,
             });
@@ -602,7 +602,7 @@ impl Level {
             // Vertices.
             for vertex in &poly.vertices {
                 buffer.write_f64::<LE>(vertex.x)?;
-                buffer.write_f64::<LE>(vertex.y)?;
+                buffer.write_f64::<LE>(-vertex.y)?;
             }
         }
         Ok(buffer)
@@ -615,7 +615,7 @@ impl Level {
         for obj in &self.objects {
             // Position.
             buffer.write_f64::<LE>(obj.position.x)?;
-            buffer.write_f64::<LE>(obj.position.y)?;
+            buffer.write_f64::<LE>(-obj.position.y)?;
             // Object type.
             buffer.write_i32::<LE>(match obj.object_type {
                 ObjectType::Exit => 1,
@@ -665,7 +665,7 @@ impl Level {
             buffer.extend_from_slice(&string_null_pad(&pic.mask, 10)?);
             // Position.
             buffer.write_f64::<LE>(pic.position.x)?;
-            buffer.write_f64::<LE>(pic.position.y)?;
+            buffer.write_f64::<LE>(-pic.position.y)?;
             // Z-distance.
             buffer.write_i32::<LE>(pic.distance)?;
             // Clipping.
