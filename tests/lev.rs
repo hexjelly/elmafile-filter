@@ -22,17 +22,6 @@ fn decrypt_encrypt_top10() {
 }
 
 #[test]
-// Probably redundant, but maybe some new fields are added in the future. I don't know.
-// Doesn't hurt or impact anything.
-fn level_default_values() {
-    let mut default_lev = Level::default();
-    let mut new_lev = Level::new();
-    default_lev.link = 1000;
-    new_lev.link = 1000;
-    assert_eq!(default_lev, new_lev);
-}
-
-#[test]
 /// Generate a level with some arbitrary values and see if it saves.
 fn construct_level_and_save() {
     let mut level = Level {
