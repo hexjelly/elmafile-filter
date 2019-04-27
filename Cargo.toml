@@ -14,4 +14,4 @@ license = "MIT"
 byteorder = "1"
 itertools = "0.8"
 nom = {version = "4", features = ["verbose-errors"]}
-rand = "0.5.5"
+rand = "0.6.5"
