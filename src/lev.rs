@@ -1,7 +1,7 @@
 use super::{
-    constants::{PLAYER_TOP10_SIZE, TOP10_SIZE, OBJECT_RADIUS},
-    utils::{parse_top10, string_null_pad, trim_string, write_top10}, BestTimes, Clip, ElmaError,
-    Position, Version,
+    constants::{OBJECT_RADIUS, PLAYER_TOP10_SIZE, TOP10_SIZE},
+    utils::{parse_top10, string_null_pad, trim_string, write_top10},
+    BestTimes, Clip, ElmaError, Position, Version,
 };
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use rand::random;
@@ -306,11 +306,11 @@ impl Level {
             }],
             objects: vec![
                 Object {
-                    position: Position::new(2., 7. - OBJECT_RADIUS),
+                    position: Position::new(2., 0. + OBJECT_RADIUS),
                     object_type: ObjectType::Player,
                 },
                 Object {
-                    position: Position::new(8., 7. - OBJECT_RADIUS),
+                    position: Position::new(8., 0. + OBJECT_RADIUS),
                     object_type: ObjectType::Exit,
                 },
             ],
