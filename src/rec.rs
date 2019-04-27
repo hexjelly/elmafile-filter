@@ -289,13 +289,13 @@ named!(headerandride<(ReplayHeader, Ride)>,
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 named!(event<Event>,
-  return_error!(ErrorKind::Custom(EVENT_ERROR),
+  return_error!(Custom(EVENT_ERROR),
     do_parse!(
       time: le_f64 >>
       info: le_i16 >>
       event_type: le_u8 >>
       add_return_error!(
-        ErrorKind::Custom(u32::from(event_type)),
+        Custom(u32::from(event_type)),
         cond_reduce!([0, 1, 4, 5, 6, 7].iter().any(|x| *x == i32::from(event_type)), take!(0))) >>
       take!(1) >>
       info2: le_f32 >>
@@ -442,7 +442,8 @@ impl Replay {
     /// ```
     pub fn get_time_ms(&self) -> (usize, bool) {
         // First check if last event was a touch event in either event data.
-        let times = self.rides
+        let times = self
+            .rides
             .iter()
             .map(|r| (r.get_time(), r.get_frame_time()))
             .collect::<Vec<_>>();
