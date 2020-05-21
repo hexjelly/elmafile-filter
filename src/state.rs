@@ -1,13 +1,12 @@
 use super::{BestTimes, ElmaError};
 use byteorder::{WriteBytesExt, LE};
 use constants::TOP10_SIZE;
-use nom::{le_i32, le_u32, le_u8};
+use nom::number::complete::{le_i32, le_u32, le_u8};
 use shared::TimeEntry;
 use std::fs;
 use std::path::PathBuf;
 use std::str;
 use utils::boolean;
-use utils::null_padded_string;
 use utils::to_bool;
 use utils::{string_null_pad, write_top10};
 
@@ -252,7 +251,7 @@ named!(parse_state<State>,
     screenshot_key: le_u32 >>
     last_edited_lev_name: apply!(null_padded_string, LEVEL_NAME_SIZE) >>
     last_played_external: apply!(null_padded_string, LEVEL_NAME_SIZE) >>
-    verify!(le_u32, |x| x == STATE_END || x == STATE_END_ALT) >>
+    verify!(le_u32, |x| x == &STATE_END || x == &STATE_END_ALT) >>
   (State {
     path: None,
     version,

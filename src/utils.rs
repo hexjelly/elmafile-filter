@@ -1,5 +1,5 @@
 use byteorder::{ByteOrder, WriteBytesExt, LE};
-use nom::le_i32;
+use nom::number::complete::le_i32;
 use nom::IResult;
 use std::str;
 

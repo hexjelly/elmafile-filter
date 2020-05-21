@@ -1,18 +1,12 @@
 use super::{utils::string_null_pad, ElmaError, Position};
 use byteorder::{WriteBytesExt, LE};
-use nom::le_f32;
-use nom::le_f64;
-use nom::le_i16;
-use nom::le_i32;
-use nom::le_u32;
-use nom::le_u8;
-use nom::verbose_errors::Context::List;
-use nom::Err::Failure;
-use nom::ErrorKind::Custom;
+use nom::{
+    number::complete::{le_f32, le_f64, le_i16, le_i32, le_u32, le_u8},
+    Err::Failure,
+};
 use std::fs;
 use std::path::PathBuf;
 use utils::boolean;
-use utils::null_padded_string;
 
 // Magic arbitrary number to signify end of player data in a replay file.
 const END_OF_PLAYER: i32 = 0x00_49_2F_75;
@@ -225,7 +219,7 @@ impl Default for Replay {
 named!(headerandride<(ReplayHeader, Ride)>,
   do_parse!(
     frame_count: map!(le_i32, |x| x as usize) >>
-    _version: verify!(le_u32, |x| x == REPLAY_VERSION) >>
+    _version: verify!(le_u32, |x| x == &REPLAY_VERSION) >>
     multi: boolean >>
     flag_tag: boolean >>
     link: le_u32 >>
@@ -246,7 +240,7 @@ named!(headerandride<(ReplayHeader, Ride)>,
     collision_strength: many_m_n!(frame_count, frame_count, le_u8) >>
     num_events: map!(le_i32, |x| x as usize) >>
     events: many_m_n!(num_events, num_events, event) >>
-    verify!(le_i32, |x| x == END_OF_PLAYER) >>
+    verify!(le_i32, |x| x == &END_OF_PLAYER) >>
     (ReplayHeader {
          multi,
          flag_tag,
